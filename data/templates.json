@@ -1,0 +1,53 @@
+{
+  "templates": [
+    {
+      "id": "welcome",
+      "name": "Welcome",
+      "when": "Sent right after someone creates a workspace",
+      "subject": "Your ConverFlow workspace is ready, {{first_name}}",
+      "body": "Hi {{first_name}},\n\nYour ConverFlow workspace for {{business}} is live. You're on the {{plan_name}} plan with {{trial_days}} days free.\n\nThree things worth doing first:\n1. Connect your Instagram account\n2. Pick a reel and set your trigger keyword\n3. Test it on the Flow Tester before going live\n\nReply to this email if you get stuck — a real person answers.\n\n{{brand_name}}",
+      "enabled": true
+    },
+    {
+      "id": "ig_connected",
+      "name": "Instagram connected",
+      "when": "Sent when a workspace links its Instagram account",
+      "subject": "@{{ig_handle}} is connected",
+      "body": "Hi {{first_name}},\n\n@{{ig_handle}} is now connected to ConverFlow. Comment and DM triggers will start firing as soon as you switch an automation on.\n\n{{brand_name}}",
+      "enabled": true
+    },
+    {
+      "id": "trial_ending",
+      "name": "Trial ending",
+      "when": "Sent 3 days before a trial expires",
+      "subject": "{{days_left}} days left on your ConverFlow trial",
+      "body": "Hi {{first_name}},\n\nYour trial ends on {{expiry_date}}. Your automations captured {{contacts}} contacts and sent {{dms_sent}} DMs so far — all of that stays put if you upgrade.\n\n{{plan_name}} is {{price}}/month. Upgrade here: {{upgrade_url}}\n\n{{brand_name}}",
+      "enabled": true
+    },
+    {
+      "id": "trial_expired",
+      "name": "Trial expired",
+      "when": "Sent the day a trial runs out",
+      "subject": "Your automations are paused",
+      "body": "Hi {{first_name}},\n\nYour trial has ended, so your automations are paused. Nothing is deleted — your contacts, flows and tags are exactly where you left them.\n\nSwitch everything back on: {{upgrade_url}}\n\n{{brand_name}}",
+      "enabled": true
+    },
+    {
+      "id": "payment_received",
+      "name": "Payment received",
+      "when": "Sent after a successful payment",
+      "subject": "Payment received — invoice {{invoice_no}}",
+      "body": "Hi {{first_name}},\n\nWe've received {{amount}} for the {{plan_name}} plan. Your next renewal is {{renews_on}}.\n\nInvoice {{invoice_no}} is attached, GST included.\n\n{{brand_name}}",
+      "enabled": true
+    },
+    {
+      "id": "suspended",
+      "name": "Workspace suspended",
+      "when": "Sent when an account is suspended",
+      "subject": "Your ConverFlow workspace is on hold",
+      "body": "Hi {{first_name}},\n\nWe've put your workspace on hold. Your data is safe and nothing has been deleted.\n\nWrite to {{support_email}} and we'll sort it out.\n\n{{brand_name}}",
+      "enabled": true
+    }
+  ],
+  "updated_at": "2026-09-20T04:50:58"
+}

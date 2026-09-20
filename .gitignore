@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+
+# Browser profile, caches and session storage
+browser_profile/
+
+# Temporary and scratch files
+scratch/
+data/screenshots/
+
+# Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

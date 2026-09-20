@@ -1,0 +1,93 @@
+[
+  {
+    "id": 7,
+    "username": "rahul_marketing",
+    "name": "rahul_marketing",
+    "tags": [
+      "Reel Lead",
+      "Link Requested"
+    ],
+    "source": "Meta Webhook (Reel reel_555)",
+    "first_seen": "2026-09-18 23:44:26",
+    "last_interaction": "2026-09-18 23:44:26",
+    "messages_count": 1
+  },
+  {
+    "id": 6,
+    "username": "test_user2",
+    "name": "Alex Mercer",
+    "tags": [
+      "Pricing Inquiry"
+    ],
+    "source": "Simulator DM",
+    "first_seen": "2026-09-18 23:22:15",
+    "last_interaction": "2026-09-18 23:22:15",
+    "messages_count": 1
+  },
+  {
+    "id": 5,
+    "username": "test_user",
+    "name": "Alex Mercer",
+    "tags": [
+      "Reel Lead",
+      "Link Requested"
+    ],
+    "source": "Simulator Comment",
+    "first_seen": "2026-09-18 23:22:15",
+    "last_interaction": "2026-09-18 23:22:15",
+    "messages_count": 1
+  },
+  {
+    "id": 4,
+    "username": "alex_growth",
+    "name": "Alex Mercer",
+    "tags": [
+      "Link Requested",
+      "Reel Lead"
+    ],
+    "source": "Simulator Comment",
+    "first_seen": "2026-09-18 23:20:41",
+    "last_interaction": "2026-09-20 13:25:09",
+    "messages_count": 2
+  },
+  {
+    "id": 1,
+    "username": "sarah_growth",
+    "name": "Sarah Jenkins",
+    "tags": [
+      "Hot Lead",
+      "Reel Comment",
+      "Ebook Downloaded"
+    ],
+    "source": "Comment on Reel: 'Growth Tips 2026'",
+    "first_seen": "2026-03-15 14:22:10",
+    "last_interaction": "2026-03-18 18:45:00",
+    "messages_count": 3
+  },
+  {
+    "id": 2,
+    "username": "mike_dev",
+    "name": "Mike Ross",
+    "tags": [
+      "Pricing Inquiry",
+      "DM"
+    ],
+    "source": "DM Keyword: 'PRICE'",
+    "first_seen": "2026-03-16 09:12:44",
+    "last_interaction": "2026-03-18 20:10:15",
+    "messages_count": 2
+  },
+  {
+    "id": 3,
+    "username": "clara_design",
+    "name": "Clara Vance",
+    "tags": [
+      "Lead Magnet",
+      "VIP"
+    ],
+    "source": "Comment: 'LINK'",
+    "first_seen": "2026-03-17 11:05:30",
+    "last_interaction": "2026-03-17 11:06:05",
+    "messages_count": 1
+  }
+]

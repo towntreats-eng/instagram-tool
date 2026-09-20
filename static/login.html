@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — ConverFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/marketing.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300824b'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+</head>
+<body>
+<div class="auth">
+  <div class="auth-form-side">
+    <div class="auth-box">
+      <a href="/" class="brand">
+        <span class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+        ConverFlow
+      </a>
+      <h1>Welcome back</h1>
+      <p class="lead">Sign in to your workspace and check the overnight DMs.</p>
+
+      <div class="auth-msg" id="authMsg"></div>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="you@yourbrand.in" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-green btn-lg btn-block">Sign in</button>
+      </form>
+
+      <p class="auth-alt">New here? <a href="/signup">Create a free workspace</a></p>
+      <p style="text-align:center;font-size:12.5px;color:var(--faint);margin-top:22px;line-height:1.7">
+        Demo login — <b style="color:var(--muted)">hello@umangsatnam.in</b> / <b style="color:var(--muted)">converflow123</b><br>
+        Or jump straight to the <a href="/app" style="color:var(--green);font-weight:700">dashboard</a> ·
+        <a href="/admin" style="color:var(--green);font-weight:700">admin panel</a>
+      </p>
+    </div>
+  </div>
+
+  <aside class="auth-aside">
+    <h2>Your Instagram funnel kept running while you slept.</h2>
+    <p>Comments replied to, DMs delivered, leads tagged and logged — all waiting for you in the dashboard.</p>
+    <ul class="auth-points">
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> See overnight DM volume at a glance</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Jump into new leads and hot tags</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Launch a broadcast in two clicks</li>
+    </ul>
+    <div class="auth-quote">
+      <p>“We were paying a VA ₹12,000 a month just to answer ‘price?’ comments. ConverFlow does it better for ₹299.”</p>
+      <b>Arjun Nair</b>
+      <span>Co-founder, Urban Edge Apparel</span>
+    </div>
+  </aside>
+</div>
+<script src="/static/js/marketing.js"></script>
+</body>
+</html>

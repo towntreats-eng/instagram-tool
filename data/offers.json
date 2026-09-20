@@ -1,0 +1,65 @@
+{
+  "offers": [
+    {
+      "id": "off_1dfbbab6",
+      "code": "LAUNCH50",
+      "title": "Launch offer — 50% off first month",
+      "description": "Half price on the first month of any paid plan.",
+      "type": "percent",
+      "value": 50,
+      "applies_to": [
+        "starter",
+        "growth",
+        "agency"
+      ],
+      "duration": "first_month",
+      "starts_at": "2026-09-14T04:45:47",
+      "expires_at": "2026-10-14T04:45:47",
+      "max_redemptions": 100,
+      "redeemed": 14,
+      "active": true,
+      "created_at": "2026-09-14T04:45:47",
+      "status": "live"
+    },
+    {
+      "id": "off_f6127b5e",
+      "code": "DIWALI299",
+      "title": "Festive flat ₹299 off",
+      "description": "Flat discount on Growth and Agency during the festive season.",
+      "type": "flat",
+      "value": 299,
+      "applies_to": [
+        "growth",
+        "agency"
+      ],
+      "duration": "first_month",
+      "starts_at": "2026-09-20T04:45:47",
+      "expires_at": "2026-10-30T04:45:47",
+      "max_redemptions": 250,
+      "redeemed": 0,
+      "active": true,
+      "created_at": "2026-09-20T04:45:47",
+      "status": "live"
+    },
+    {
+      "id": "off_fb3fba9e",
+      "code": "EXTEND7",
+      "title": "7 extra trial days",
+      "description": "Gives a trial user one more week before they have to decide.",
+      "type": "trial_extend",
+      "value": 7,
+      "applies_to": [
+        "growth"
+      ],
+      "duration": "one_time",
+      "starts_at": "2026-08-21T04:45:47",
+      "expires_at": "2027-01-18T04:45:47",
+      "max_redemptions": 0,
+      "redeemed": 6,
+      "active": true,
+      "created_at": "2026-08-21T04:45:47",
+      "status": "live"
+    }
+  ],
+  "updated_at": "2026-09-20T04:50:58"
+}

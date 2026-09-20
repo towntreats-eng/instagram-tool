@@ -1,0 +1,219 @@
+[
+  {
+    "id": "evt_b045d28e",
+    "level": "SUCCESS",
+    "source": "campaign",
+    "message": "Broadcast 'Diwali Drop' finished - 142 sent, 3 failed",
+    "created_at": "2026-09-19T19:08:03"
+  },
+  {
+    "id": "evt_81ed18b7",
+    "level": "INFO",
+    "source": "watcher",
+    "message": "Comment watcher polled 6 reels across 4 accounts",
+    "created_at": "2026-09-19T18:08:03"
+  },
+  {
+    "id": "evt_4a33ba90",
+    "level": "WARN",
+    "source": "safety",
+    "message": "Daily DM cap reached for @kraftly.in - queue paused",
+    "created_at": "2026-09-19T15:08:03"
+  },
+  {
+    "id": "evt_d422f10f",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "Manual upgrade to Pro recorded for rohit@fitforge.in",
+    "created_at": "2026-09-19T11:08:03"
+  },
+  {
+    "id": "evt_6da74a31",
+    "level": "ERROR",
+    "source": "session",
+    "message": "Instagram session expired for @theslowstudio - relogin required",
+    "created_at": "2026-09-19T06:08:03"
+  },
+  {
+    "id": "evt_95c1050c",
+    "level": "INFO",
+    "source": "system",
+    "message": "Nightly backup of data/ completed",
+    "created_at": "2026-09-19T00:08:03"
+  },
+  {
+    "id": "evt_32e89945",
+    "level": "SUCCESS",
+    "source": "automation",
+    "message": "Comment-to-DM rule 'FREE GUIDE' delivered 38 DMs",
+    "created_at": "2026-09-19T17:08:03"
+  },
+  {
+    "id": "evt_843748cc",
+    "level": "INFO",
+    "source": "contacts",
+    "message": "27 new contacts captured from reel comments",
+    "created_at": "2026-09-19T16:08:03"
+  },
+  {
+    "id": "evt_1b15747d",
+    "level": "SUCCESS",
+    "source": "campaign",
+    "message": "Broadcast 'Festive Restock' finished - 96 sent, 0 failed",
+    "created_at": "2026-09-19T13:08:03"
+  },
+  {
+    "id": "evt_66b47bf2",
+    "level": "INFO",
+    "source": "watcher",
+    "message": "Watcher interval adjusted to 60s for 3 accounts",
+    "created_at": "2026-09-19T12:08:03"
+  },
+  {
+    "id": "evt_1538eb7f",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "Renewal recorded for riya@glowcart.in",
+    "created_at": "2026-09-19T08:08:03"
+  },
+  {
+    "id": "evt_41315987",
+    "level": "INFO",
+    "source": "system",
+    "message": "Spintax cache warmed for 41 templates",
+    "created_at": "2026-09-19T04:08:03"
+  },
+  {
+    "id": "evt_50f64b60",
+    "level": "SUCCESS",
+    "source": "automation",
+    "message": "Keyword rule 'PRICE' replied to 64 DMs",
+    "created_at": "2026-09-19T02:08:03"
+  },
+  {
+    "id": "evt_497a8f75",
+    "level": "INFO",
+    "source": "system",
+    "message": "Health probe OK - API latency 82ms",
+    "created_at": "2026-09-18T22:08:03"
+  },
+  {
+    "id": "evt_ad755621",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "Manual Pro upgrade recorded for ananya@petpalsindia (Rs.299)",
+    "created_at": "2026-09-20T09:52:45"
+  },
+  {
+    "id": "evt_3b514005",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "Manual Pro upgrade recorded for dev@nutriblend.in (Rs.299)",
+    "created_at": "2026-09-20T09:52:46"
+  },
+  {
+    "id": "evt_98ee3dc4",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "Manual Pro upgrade recorded for sneha@kraftly.in (Rs.299)",
+    "created_at": "2026-09-20T09:52:47"
+  },
+  {
+    "id": "evt_a8f0c9ea",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "Manual Pro upgrade recorded for kavya@theslowstudio (Rs.299)",
+    "created_at": "2026-09-20T09:52:48"
+  },
+  {
+    "id": "evt_e522ba11",
+    "level": "INFO",
+    "source": "plans",
+    "message": "Plan saved: Growth (Rs.899/mo)",
+    "created_at": "2026-09-20T04:50:57"
+  },
+  {
+    "id": "evt_0472bbfb",
+    "level": "INFO",
+    "source": "plans",
+    "message": "Plan saved: Growth (Rs.799/mo)",
+    "created_at": "2026-09-20T04:50:57"
+  },
+  {
+    "id": "evt_d1f8590e",
+    "level": "INFO",
+    "source": "plans",
+    "message": "Plan saved: Creator (Rs.599/mo)",
+    "created_at": "2026-09-20T04:50:57"
+  },
+  {
+    "id": "evt_89085b97",
+    "level": "WARN",
+    "source": "plans",
+    "message": "Plan deleted: creator",
+    "created_at": "2026-09-20T04:50:57"
+  },
+  {
+    "id": "evt_fcd71456",
+    "level": "SUCCESS",
+    "source": "offers",
+    "message": "Coupon TESTQA saved",
+    "created_at": "2026-09-20T04:50:57"
+  },
+  {
+    "id": "evt_5feff1b0",
+    "level": "INFO",
+    "source": "settings",
+    "message": "Updated meta_app settings",
+    "created_at": "2026-09-20T04:50:58"
+  },
+  {
+    "id": "evt_b5236d8a",
+    "level": "ERROR",
+    "source": "instagram",
+    "message": "Connect failed: That connect link is malformed.",
+    "created_at": "2026-09-20T04:50:58"
+  },
+  {
+    "id": "evt_c6799f4d",
+    "level": "INFO",
+    "source": "settings",
+    "message": "Updated meta_app settings",
+    "created_at": "2026-09-20T04:50:58"
+  },
+  {
+    "id": "evt_1cf22eba",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "ananya@petpalsindia moved to Starter (Rs.399/mo)",
+    "created_at": "2026-09-20T04:50:58"
+  },
+  {
+    "id": "evt_a5523845",
+    "level": "SUCCESS",
+    "source": "billing",
+    "message": "ananya@petpalsindia moved to Free (Rs.0/mo)",
+    "created_at": "2026-09-20T04:50:58"
+  },
+  {
+    "id": "evt_a8b458cf",
+    "level": "ERROR",
+    "source": "instagram",
+    "message": "Connect failed: That connect link is malformed.",
+    "created_at": "2026-09-20T04:51:20"
+  },
+  {
+    "id": "evt_cf2cce8b",
+    "level": "SUCCESS",
+    "source": "signup",
+    "message": "New workspace created: Umang Patel (umangptl11@gmail.com)",
+    "created_at": "2026-09-20T16:15:01"
+  },
+  {
+    "id": "evt_1a176d77",
+    "level": "WARN",
+    "source": "instagram",
+    "message": "hello@umangsatnam.in disconnected their Instagram account",
+    "created_at": "2026-09-20T16:15:37"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "app_id": "1234567890",
+  "app_secret": "",
+  "access_token": "EAABtest123456789xyz",
+  "page_id": "",
+  "instagram_account_id": "",
+  "verify_token": "manychat_secret_token_123",
+  "connected_account_name": "",
+  "connected_account_username": ""
+}

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConverFlow — Admin Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/admin.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230a1410'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+</head>
+<body>
+
+<div class="admin">
+  <!-- =========================== SIDEBAR =========================== -->
+  <aside class="side" id="side">
+    <div class="side-brand">
+      <span class="side-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+      ConverFlow
+      <span class="side-tag">Admin</span>
+    </div>
+
+    <div class="side-label">Business</div>
+    <nav class="side-nav">
+      <a class="side-link active" data-view="overview" href="#overview">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Overview
+      </a>
+      <a class="side-link" data-view="users" href="#users">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+        Users <span class="count" id="navUserCount">0</span>
+      </a>
+      <a class="side-link" data-view="revenue" href="#revenue">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Revenue
+      </a>
+      <a class="side-link" data-view="plans" href="#plans">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 15h5"/></svg>
+        Plans &amp; pricing
+      </a>
+      <a class="side-link" data-view="offers" href="#offers">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4L12 22l-9-9V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.4" fill="currentColor"/></svg>
+        Offers &amp; coupons
+      </a>
+    </nav>
+
+    <div class="side-label">Operations</div>
+    <nav class="side-nav">
+      <a class="side-link" data-view="health" href="#health">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        System health
+      </a>
+      <a class="side-link" data-view="announcements" href="#announcements">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 001 1h3l5 4V6L7 10H4a1 1 0 00-1 1z"/><path d="M16 8.5a4 4 0 010 7"/><path d="M19 5.5a8 8 0 010 13"/></svg>
+        Announcements
+      </a>
+      <a class="side-link" data-view="instagram" href="#instagram">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+        Instagram API
+      </a>
+      <a class="side-link" data-view="templates" href="#templates">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+        Email templates
+      </a>
+      <a class="side-link" data-view="settings" href="#settings">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 3.6 1.65 1.65 0 0010 2.09V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 8v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Platform settings
+      </a>
+    </nav>
+
+    <div class="side-foot">
+      <a href="/app">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        Open user dashboard
+      </a>
+      <a href="/">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Marketing site
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============================ MAIN ============================ -->
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div>
+        <h1 id="pageTitle">Business overview</h1>
+        <div class="sub" id="pageSub">Everything happening across ConverFlow right now</div>
+      </div>
+      <div class="top-right">
+        <span class="pill healthy" id="healthPill"><span class="dot"></span> Checking…</span>
+        <button class="btn btn-line btn-xs" id="btnRefresh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <div class="page">
+
+      <!-- ---------------------------- OVERVIEW ---------------------------- -->
+      <section class="view active" id="view-overview">
+        <div class="kpis" id="kpiRow"></div>
+
+        <div class="split">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>Revenue — last 6 months</h3>
+                <div class="sub">Paid subscriptions, in ₹</div>
+              </div>
+              <div class="spacer"></div>
+              <span class="badge badge-pro" id="revTrend">—</span>
+            </div>
+            <div class="card-body"><svg class="chart" id="chartRevenue"></svg></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Plan mix</h3></div>
+            <div class="card-body">
+              <div class="donut-wrap">
+                <svg id="chartDonut" width="150" height="150" viewBox="0 0 150 150"></svg>
+                <div class="donut-legend" id="donutLegend"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="card">
+            <div class="card-head">
+              <div><h3>Signups per month</h3><div class="sub">New workspaces created</div></div>
+            </div>
+            <div class="card-body"><svg class="chart" id="chartSignups"></svg></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Recent payments</h3></div>
+            <div class="tbl-wrap"><table class="tbl"><tbody id="recentPayments"></tbody></table></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Newest workspaces</h3><div class="sub">Latest signups and where they are in the funnel</div></div>
+            <div class="spacer"></div>
+            <button class="btn btn-line btn-xs" data-goto="users">View all users</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Workspace</th><th>Plan</th><th>Contacts</th><th>DMs sent</th><th>Joined</th></tr></thead>
+              <tbody id="recentUsers"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------- USERS ---------------------------- -->
+      <section class="view" id="view-users">
+        <div class="row-head">
+          <div class="search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input class="input" id="userSearch" type="search" placeholder="Search name, email, brand or handle">
+          </div>
+          <div class="seg" id="planFilter">
+            <button class="on" data-plan="all">All</button>
+            <button data-plan="pro">Pro</button>
+            <button data-plan="trial">Trial</button>
+            <button data-plan="expired">Expired</button>
+          </div>
+          <div class="seg" id="statusFilter">
+            <button class="on" data-status="all">Any status</button>
+            <button data-status="active">Active</button>
+            <button data-status="suspended">Suspended</button>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-green btn-xs" id="btnAddUser">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add workspace
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Workspace</th><th>Plan</th><th>Status</th><th>Contacts</th>
+                  <th>DMs</th><th>Revenue</th><th>Last active</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------- REVENUE ---------------------------- -->
+      <section class="view" id="view-revenue">
+        <div class="kpis" id="revKpis"></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <div><h3>Monthly recurring revenue</h3><div class="sub">Collected payments per month, in ₹</div></div>
+          </div>
+          <div class="card-body"><svg class="chart" id="chartRevenueBig" style="height:280px"></svg></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Payment ledger</h3><div class="sub">Every recorded subscription payment</div></div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Payment ID</th><th>Workspace</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="ledgerBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------- HEALTH ---------------------------- -->
+      <section class="view" id="view-health">
+        <div class="kpis" id="healthKpis"></div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Platform event log</h3><div class="sub">Automations, campaigns, sessions and billing events</div></div>
+            <div class="spacer"></div>
+            <div class="seg" id="logFilter">
+              <button class="on" data-level="all">All</button>
+              <button data-level="SUCCESS">Success</button>
+              <button data-level="INFO">Info</button>
+              <button data-level="WARN">Warn</button>
+              <button data-level="ERROR">Error</button>
+            </div>
+          </div>
+          <div class="card-body" id="eventList"></div>
+        </div>
+      </section>
+
+      <!-- ------------------------ ANNOUNCEMENTS ------------------------ -->
+      <section class="view" id="view-announcements">
+        <div class="split">
+          <div class="card">
+            <div class="card-head">
+              <div><h3>Published announcements</h3><div class="sub">Shown as an in-app notice to your users</div></div>
+            </div>
+            <div class="card-body" id="annList"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>New announcement</h3></div>
+            <div class="card-body">
+              <form id="annForm">
+                <div class="field">
+                  <label for="annTitle">Title</label>
+                  <input class="input" id="annTitle" name="title" placeholder="Story-mention automations are live" required>
+                </div>
+                <div class="field">
+                  <label for="annBody">Message</label>
+                  <textarea class="input" id="annBody" name="body" placeholder="Tell your users what changed and what to do next." required></textarea>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="annAudience">Audience</label>
+                    <select class="select" id="annAudience" name="audience">
+                      <option value="all">All users</option>
+                      <option value="pro">Pro only</option>
+                      <option value="trial">Trial only</option>
+                      <option value="expired">Expired only</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="annLevel">Type</label>
+                    <select class="select" id="annLevel" name="level">
+                      <option value="update">Product update</option>
+                      <option value="feature">New feature</option>
+                      <option value="maintenance">Maintenance</option>
+                      <option value="offer">Offer</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-green btn-block">Publish announcement</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------- PLANS ---------------------------- -->
+      <section class="view" id="view-plans">
+        <div class="row-head">
+          <h2>Pricing ladder</h2>
+          <span class="muted">Edits here change the website, signup and every limit check instantly.</span>
+          <div class="spacer"></div>
+          <button class="btn btn-green btn-xs" id="btnNewPlan">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New plan
+          </button>
+        </div>
+        <div id="planGrid" class="plan-grid"></div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-head">
+            <div><h3>What each plan unlocks</h3><div class="sub">Tick a feature to switch it on for everyone on that plan</div></div>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="featureMatrix"></table></div>
+        </div>
+      </section>
+
+      <!-- ---------------------------- OFFERS ---------------------------- -->
+      <section class="view" id="view-offers">
+        <div class="row-head">
+          <h2>Coupons &amp; offers</h2>
+          <span class="muted">Customers type the code at checkout.</span>
+          <div class="spacer"></div>
+          <button class="btn btn-green btn-xs" id="btnNewOffer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New coupon
+          </button>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Code</th><th>Discount</th><th>Applies to</th><th>Window</th><th>Used</th><th>Status</th><th></th></tr></thead>
+              <tbody id="offersBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-head"><div><h3>Try a code</h3><div class="sub">See exactly what a customer would pay</div></div></div>
+          <div class="card-body">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+              <div class="field" style="margin:0"><label>Code</label><input class="input" id="tryCode" placeholder="LAUNCH50"></div>
+              <div class="field" style="margin:0"><label>Plan</label><select class="select" id="tryPlan"></select></div>
+              <button class="btn btn-dark" id="btnTryCode">Check price</button>
+              <div id="tryResult" class="muted" style="align-self:center"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- -------------------------- INSTAGRAM API -------------------------- -->
+      <section class="view" id="view-instagram">
+        <div class="card" id="igStatusCard" style="margin-bottom:16px"></div>
+        <div class="split">
+          <div class="card">
+            <div class="card-head">
+              <div><h3>Meta app credentials</h3><div class="sub">Set this up once — then every customer connects with one click</div></div>
+            </div>
+            <div class="card-body">
+              <form id="metaForm">
+                <div class="field-row">
+                  <div class="field"><label for="mApp">App ID</label><input class="input" id="mApp" name="app_id" placeholder="1234567890123456"></div>
+                  <div class="field"><label for="mSecret">App Secret</label><input class="input" id="mSecret" name="app_secret" placeholder="••••••••"></div>
+                </div>
+                <div class="field">
+                  <label for="mRedirect">Redirect URI</label>
+                  <input class="input" id="mRedirect" name="redirect_uri">
+                  <div class="muted" style="font-size:12px;margin-top:6px">Paste this exact URL into Meta &gt; App &gt; Facebook Login &gt; Valid OAuth Redirect URIs.</div>
+                </div>
+                <div class="field-row">
+                  <div class="field"><label for="mVerify">Webhook verify token</label><input class="input" id="mVerify" name="verify_token"></div>
+                  <div class="field"><label for="mVersion">Graph API version</label><input class="input" id="mVersion" name="api_version" placeholder="v21.0"></div>
+                </div>
+                <div class="field">
+                  <label for="mWebhook">Webhook callback URL</label>
+                  <input class="input" id="mWebhook" name="webhook_url">
+                </div>
+                <div style="display:flex;gap:9px;flex-wrap:wrap">
+                  <button type="submit" class="btn btn-green">Save credentials</button>
+                  <button type="button" class="btn btn-line" id="btnTestMeta">Test connection</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Setup checklist</h3></div>
+            <div class="card-body">
+              <ol class="setup-list">
+                <li><b>Create a Meta app</b><span>developers.facebook.com → Create App → Business</span></li>
+                <li><b>Add two products</b><span>Facebook Login for Business, and Instagram</span></li>
+                <li><b>Paste the redirect URI</b><span>Facebook Login → Settings → Valid OAuth Redirect URIs</span></li>
+                <li><b>Add the webhook</b><span>Instagram → Webhooks → paste the callback URL and verify token, subscribe to <code>comments</code>, <code>messages</code>, <code>mentions</code></span></li>
+                <li><b>Request permissions</b><span>App Review → <code>instagram_basic</code>, <code>instagram_manage_messages</code>, <code>instagram_manage_comments</code>, <code>pages_show_list</code></span></li>
+                <li><b>Copy App ID &amp; Secret here</b><span>Then hit Test connection — a green tick means customers can connect</span></li>
+              </ol>
+              <div class="muted" style="font-size:12.5px;line-height:1.7;margin-top:14px">
+                Until Meta approves the app it works in development mode — only accounts listed as testers in your Meta app can connect.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-head">
+            <div><h3>Connected accounts</h3><div class="sub">Which workspaces have linked an Instagram account</div></div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Workspace</th><th>Instagram</th><th>Followers</th><th>Connected</th><th>Status</th></tr></thead>
+              <tbody id="igAccountsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- -------------------------- TEMPLATES -------------------------- -->
+      <section class="view" id="view-templates">
+        <div class="row-head">
+          <h2>Notification templates</h2>
+          <span class="muted">Use <code>{{first_name}}</code>, <code>{{plan_name}}</code>, <code>{{price}}</code>, <code>{{days_left}}</code>, <code>{{upgrade_url}}</code>.</span>
+        </div>
+        <div id="templateList"></div>
+      </section>
+
+      <!-- ---------------------------- SETTINGS ---------------------------- -->
+      <section class="view" id="view-settings">
+        <div class="split-even">
+          <div class="card">
+            <div class="card-head"><div><h3>Brand</h3><div class="sub">Shown across the site, emails and invoices</div></div></div>
+            <div class="card-body"><form id="brandForm" data-section="brand">
+              <div class="field"><label>Product name</label><input class="input" name="name"></div>
+              <div class="field"><label>Tagline</label><input class="input" name="tagline"></div>
+              <div class="field-row">
+                <div class="field"><label>Support email</label><input class="input" name="support_email"></div>
+                <div class="field"><label>WhatsApp</label><input class="input" name="whatsapp"></div>
+              </div>
+              <div class="field"><label>Company</label><input class="input" name="company"></div>
+              <div class="field"><label>Address</label><input class="input" name="address"></div>
+              <div class="field-row">
+                <div class="field"><label>Website</label><input class="input" name="website"></div>
+                <div class="field"><label>GSTIN</label><input class="input" name="gstin"></div>
+              </div>
+              <button class="btn btn-green btn-block" type="submit">Save brand</button>
+            </form></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div><h3>Billing</h3><div class="sub">Currency, tax and payment gateway</div></div></div>
+            <div class="card-body"><form id="billingForm" data-section="billing">
+              <div class="field-row">
+                <div class="field"><label>Currency</label><input class="input" name="currency"></div>
+                <div class="field"><label>GST %</label><input class="input" name="gst_percent" type="number"></div>
+              </div>
+              <div class="field">
+                <label>Payment mode</label>
+                <select class="select" name="payment_mode">
+                  <option value="manual">Manual / offline</option>
+                  <option value="razorpay">Razorpay</option>
+                </select>
+              </div>
+              <div class="field"><label>Razorpay Key ID</label><input class="input" name="razorpay_key_id" placeholder="rzp_live_..."></div>
+              <div class="field"><label>Razorpay Key Secret</label><input class="input" name="razorpay_key_secret" placeholder="••••••••"></div>
+              <div class="field"><label>Invoice prefix</label><input class="input" name="invoice_prefix"></div>
+              <button class="btn btn-green btn-block" type="submit">Save billing</button>
+            </form></div>
+          </div>
+        </div>
+
+        <div class="split-even">
+          <div class="card">
+            <div class="card-head"><div><h3>Safety defaults</h3><div class="sub">Applied to every workspace's sending</div></div></div>
+            <div class="card-body"><form id="safetyForm" data-section="safety">
+              <div class="field-row">
+                <div class="field"><label>Min delay (seconds)</label><input class="input" name="min_delay_seconds" type="number"></div>
+                <div class="field"><label>Max delay (seconds)</label><input class="input" name="max_delay_seconds" type="number"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label>Daily DM cap</label><input class="input" name="daily_dm_cap" type="number"></div>
+                <div class="field"><label>Watcher interval (s)</label><input class="input" name="watcher_interval_seconds" type="number"></div>
+              </div>
+              <label class="switch"><input type="checkbox" name="pause_on_error"><span></span> Pause a campaign automatically after repeated errors</label>
+              <button class="btn btn-green btn-block" type="submit" style="margin-top:16px">Save safety defaults</button>
+            </form></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div><h3>Platform switches</h3><div class="sub">Turn parts of the product on or off</div></div></div>
+            <div class="card-body"><form id="flagsForm" data-section="flags">
+              <label class="switch"><input type="checkbox" name="signups_open"><span></span> Accept new signups</label>
+              <label class="switch"><input type="checkbox" name="maintenance_mode"><span></span> Maintenance mode (pause all automations)</label>
+              <label class="switch"><input type="checkbox" name="show_trial_banner"><span></span> Show the upgrade banner in the dashboard</label>
+              <label class="switch"><input type="checkbox" name="allow_browser_login"><span></span> Allow browser-session login as an Instagram fallback</label>
+              <label class="switch"><input type="checkbox" name="require_email_verification"><span></span> Require email verification before first login</label>
+              <button class="btn btn-green btn-block" type="submit" style="margin-top:16px">Save switches</button>
+            </form>
+            <div style="height:1px;background:var(--line);margin:20px 0"></div>
+            <a class="btn btn-line btn-block" href="/api/admin/export/users" style="margin-bottom:10px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+              Export all users as CSV
+            </a>
+            <a class="btn btn-line btn-block" href="/api/contacts/export">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+              Export contacts as CSV
+            </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================ DRAWER ============================ -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3 id="drawerTitle">Workspace</h3>
+    <div style="margin-left:auto"></div>
+    <button class="btn btn-line btn-xs" id="drawerClose">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/js/admin.js"></script>
+</body>
+</html>

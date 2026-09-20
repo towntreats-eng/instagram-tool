@@ -1,0 +1,141 @@
+{
+  "plans": [
+    {
+      "id": "free",
+      "name": "Free",
+      "tagline": "Try one automation, forever free",
+      "price_monthly": 0,
+      "price_yearly": 0,
+      "currency": "INR",
+      "order": 1,
+      "is_public": true,
+      "highlight": false,
+      "badge": "Free forever",
+      "trial_days": 0,
+      "limits": {
+        "automations": 1,
+        "contacts": 100,
+        "dms_per_month": 200,
+        "ig_accounts": 1,
+        "team_seats": 1
+      },
+      "features": {
+        "comment_to_dm": true,
+        "dm_keyword": true,
+        "wildcard_trigger": false,
+        "story_mention": false,
+        "broadcast": false,
+        "ai_assist": false,
+        "analytics": false,
+        "csv_export": true,
+        "remove_branding": false,
+        "priority_support": false,
+        "white_label": false
+      },
+      "created_at": "2026-09-20T04:45:47"
+    },
+    {
+      "id": "starter",
+      "name": "Starter",
+      "tagline": "For creators posting every week",
+      "price_monthly": 399,
+      "price_yearly": 3990,
+      "currency": "INR",
+      "order": 2,
+      "is_public": true,
+      "highlight": false,
+      "badge": "",
+      "trial_days": 0,
+      "limits": {
+        "automations": 3,
+        "contacts": 1000,
+        "dms_per_month": 2000,
+        "ig_accounts": 1,
+        "team_seats": 1
+      },
+      "features": {
+        "comment_to_dm": true,
+        "dm_keyword": true,
+        "wildcard_trigger": true,
+        "story_mention": false,
+        "broadcast": false,
+        "ai_assist": false,
+        "analytics": false,
+        "csv_export": true,
+        "remove_branding": true,
+        "priority_support": false,
+        "white_label": false
+      },
+      "created_at": "2026-09-20T04:45:47"
+    },
+    {
+      "id": "growth",
+      "name": "Growth",
+      "tagline": "For brands selling every single day",
+      "price_monthly": 799,
+      "price_yearly": 7990,
+      "currency": "INR",
+      "order": 3,
+      "is_public": true,
+      "highlight": true,
+      "badge": "Most popular",
+      "trial_days": 15,
+      "limits": {
+        "automations": -1,
+        "contacts": 5000,
+        "dms_per_month": 15000,
+        "ig_accounts": 1,
+        "team_seats": 2
+      },
+      "features": {
+        "comment_to_dm": true,
+        "dm_keyword": true,
+        "wildcard_trigger": true,
+        "story_mention": true,
+        "broadcast": true,
+        "ai_assist": true,
+        "analytics": true,
+        "csv_export": true,
+        "remove_branding": true,
+        "priority_support": true,
+        "white_label": false
+      },
+      "created_at": "2026-09-20T04:45:47"
+    },
+    {
+      "id": "agency",
+      "name": "Agency",
+      "tagline": "Run several brands from one login",
+      "price_monthly": 1999,
+      "price_yearly": 19990,
+      "currency": "INR",
+      "order": 4,
+      "is_public": true,
+      "highlight": false,
+      "badge": "Best for agencies",
+      "trial_days": 0,
+      "limits": {
+        "automations": -1,
+        "contacts": 25000,
+        "dms_per_month": -1,
+        "ig_accounts": 3,
+        "team_seats": 5
+      },
+      "features": {
+        "comment_to_dm": true,
+        "dm_keyword": true,
+        "wildcard_trigger": true,
+        "story_mention": true,
+        "broadcast": true,
+        "ai_assist": true,
+        "analytics": true,
+        "csv_export": true,
+        "remove_branding": true,
+        "priority_support": true,
+        "white_label": true
+      },
+      "created_at": "2026-09-20T04:45:47"
+    }
+  ],
+  "updated_at": "2026-09-20T04:50:57"
+}

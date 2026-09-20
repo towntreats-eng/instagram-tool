@@ -1,0 +1,433 @@
+{
+  "users": [
+    {
+      "id": "usr_a1f7481921de",
+      "name": "Umang Satnam",
+      "email": "hello@umangsatnam.in",
+      "password_hash": "384b957bd026d967$e95acc4779851cb61c1c328b88ee1799d504df24fb7e73c3358495ce3831b7be",
+      "ig_handle": "satnamwebservices",
+      "business": "Satnam Web Services",
+      "phone": "",
+      "role": "owner",
+      "plan": "agency",
+      "subscription_state": "active",
+      "status": "active",
+      "created_at": "2026-06-16T04:48:56",
+      "trial_start": "2026-06-16T04:48:56",
+      "pro_since": "2026-06-19T04:48:56",
+      "renews_on": "2026-10-02T04:48:56",
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false,
+        "disconnected_at": "2026-09-20T16:15:37"
+      },
+      "stats": {
+        "contacts": 120,
+        "automations": 3,
+        "active_automations": 1,
+        "dms_sent": 1840,
+        "dms_this_month": 625,
+        "dms_failed": 9,
+        "last_active": "2026-09-20T02:48:56"
+      },
+      "payments": [
+        {
+          "id": "pay_349e03c115",
+          "date": "2026-06-19T04:48:56",
+          "amount": 1999,
+          "plan": "agency",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_5f089f1cdd",
+          "date": "2026-07-19T04:48:56",
+          "amount": 1999,
+          "plan": "agency",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_84b48937e2",
+          "date": "2026-08-18T04:48:56",
+          "amount": 1999,
+          "plan": "agency",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_65570f13b6",
+          "date": "2026-09-17T04:48:56",
+          "amount": 1999,
+          "plan": "agency",
+          "method": "manual",
+          "status": "paid"
+        }
+      ]
+    },
+    {
+      "id": "usr_4bffabd082a3",
+      "name": "Riya Mehta",
+      "email": "riya@glowcart.in",
+      "password_hash": "e1a6f27761ed7399$bc35078617f61cfd60d53bfaf7cc2ba606a098a34baac69d252342903b6b3208",
+      "ig_handle": "glowcart.in",
+      "business": "GlowCart Skincare",
+      "phone": "",
+      "role": "owner",
+      "plan": "growth",
+      "subscription_state": "active",
+      "status": "active",
+      "created_at": "2026-07-08T04:48:56",
+      "trial_start": "2026-07-08T04:48:56",
+      "pro_since": "2026-07-11T04:48:56",
+      "renews_on": "2026-10-11T04:48:56",
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": true,
+        "provider": "meta_oauth",
+        "username": "glowcart.in",
+        "display_name": "GlowCart Skincare",
+        "followers": 24100,
+        "connected_at": "2026-07-09T04:48:56",
+        "instagram_account_id": "1784dfc0ca29ff"
+      },
+      "stats": {
+        "contacts": 640,
+        "automations": 5,
+        "active_automations": 5,
+        "dms_sent": 2410,
+        "dms_this_month": 819,
+        "dms_failed": 14,
+        "last_active": "2026-09-19T23:48:56"
+      },
+      "payments": [
+        {
+          "id": "pay_38ad519220",
+          "date": "2026-07-11T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_c5c1b1bbce",
+          "date": "2026-08-10T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_0d892a0f0f",
+          "date": "2026-09-14T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        }
+      ]
+    },
+    {
+      "id": "usr_e1334bbc3b9b",
+      "name": "Arjun Nair",
+      "email": "arjun@urbanedge.co",
+      "password_hash": "28dc266389555324$908a32b592c496e49f027271e2e6b7e8de31747c1b7fe5a0603b87e34894556a",
+      "ig_handle": "urbanedge.co",
+      "business": "Urban Edge Apparel",
+      "phone": "",
+      "role": "owner",
+      "plan": "growth",
+      "subscription_state": "active",
+      "status": "active",
+      "created_at": "2026-07-21T04:48:56",
+      "trial_start": "2026-07-21T04:48:56",
+      "pro_since": "2026-07-24T04:48:56",
+      "renews_on": "2026-09-26T04:48:56",
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false
+      },
+      "stats": {
+        "contacts": 410,
+        "automations": 4,
+        "active_automations": 4,
+        "dms_sent": 1620,
+        "dms_this_month": 550,
+        "dms_failed": 7,
+        "last_active": "2026-09-19T19:48:56"
+      },
+      "payments": [
+        {
+          "id": "pay_c963afbd44",
+          "date": "2026-07-24T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_dcc8ac21b6",
+          "date": "2026-09-11T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        }
+      ]
+    },
+    {
+      "id": "usr_508d33366fe2",
+      "name": "Sneha Patel",
+      "email": "sneha@kraftly.in",
+      "password_hash": "1ea6f99218f653b6$ca34bd90bfe4bdf7f26a2494fdcb4e75d2d07f71fa27d7f240284b5e79f25cfe",
+      "ig_handle": "kraftly.in",
+      "business": "Kraftly Home Decor",
+      "phone": "",
+      "role": "owner",
+      "plan": "starter",
+      "subscription_state": "active",
+      "status": "active",
+      "created_at": "2026-08-09T04:48:56",
+      "trial_start": "2026-08-09T04:48:56",
+      "pro_since": "2026-08-12T04:48:56",
+      "renews_on": "2026-10-07T04:48:56",
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false
+      },
+      "stats": {
+        "contacts": 190,
+        "automations": 2,
+        "active_automations": 2,
+        "dms_sent": 310,
+        "dms_this_month": 105,
+        "dms_failed": 3,
+        "last_active": "2026-09-19T02:48:56"
+      },
+      "payments": [
+        {
+          "id": "pay_08c17d3310",
+          "date": "2026-08-12T04:48:56",
+          "amount": 399,
+          "plan": "starter",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_df2e58dcf6",
+          "date": "2026-09-15T04:48:56",
+          "amount": 399,
+          "plan": "starter",
+          "method": "manual",
+          "status": "paid"
+        }
+      ]
+    },
+    {
+      "id": "usr_9fb10f575fb0",
+      "name": "Dev Shah",
+      "email": "dev@nutriblend.in",
+      "password_hash": "3ec5dda5378030fc$c36d010a2e27e67f6aac504b7e1cdf7e24f256a8d58025483de7635d4b6788bd",
+      "ig_handle": "nutriblend.in",
+      "business": "NutriBlend Foods",
+      "phone": "",
+      "role": "owner",
+      "plan": "growth",
+      "subscription_state": "trialing",
+      "status": "active",
+      "created_at": "2026-09-16T04:48:56",
+      "trial_start": "2026-09-16T04:48:56",
+      "pro_since": null,
+      "renews_on": null,
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false
+      },
+      "stats": {
+        "contacts": 44,
+        "automations": 1,
+        "active_automations": 1,
+        "dms_sent": 96,
+        "dms_this_month": 32,
+        "dms_failed": 1,
+        "last_active": "2026-09-20T03:48:56"
+      },
+      "payments": []
+    },
+    {
+      "id": "usr_40647c8d06d0",
+      "name": "Kavya Iyer",
+      "email": "kavya@theslowstudio",
+      "password_hash": "dee9a5c5825a5d4f$a25fdc2870e9d6b8511d3eeaeb6999122fe5e5661ceb4feeca88a84caa254657",
+      "ig_handle": "theslowstudio",
+      "business": "The Slow Studio",
+      "phone": "",
+      "role": "owner",
+      "plan": "growth",
+      "subscription_state": "expired",
+      "status": "active",
+      "created_at": "2026-05-13T04:48:56",
+      "trial_start": "2026-05-13T04:48:56",
+      "pro_since": null,
+      "renews_on": null,
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false
+      },
+      "stats": {
+        "contacts": 380,
+        "automations": 2,
+        "active_automations": 1,
+        "dms_sent": 740,
+        "dms_this_month": 251,
+        "dms_failed": 11,
+        "last_active": "2026-08-25T08:48:56"
+      },
+      "payments": []
+    },
+    {
+      "id": "usr_f79cca6b2347",
+      "name": "Rohit Verma",
+      "email": "rohit@fitforge.in",
+      "password_hash": "f6f358dd6e03b3d0$b6c553767b1ae88bfe371de6453eae23be77ce3f688c12a69e12a24c501b32a6",
+      "ig_handle": "fitforge.in",
+      "business": "FitForge Gym Gear",
+      "phone": "",
+      "role": "owner",
+      "plan": "growth",
+      "subscription_state": "active",
+      "status": "active",
+      "created_at": "2026-06-24T04:48:56",
+      "trial_start": "2026-06-24T04:48:56",
+      "pro_since": "2026-06-27T04:48:56",
+      "renews_on": "2026-10-17T04:48:56",
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": true,
+        "provider": "meta_oauth",
+        "username": "fitforge.in",
+        "display_name": "FitForge Gym Gear",
+        "followers": 15600,
+        "connected_at": "2026-06-25T04:48:56",
+        "instagram_account_id": "1784931dd1eba2"
+      },
+      "stats": {
+        "contacts": 880,
+        "automations": 6,
+        "active_automations": 6,
+        "dms_sent": 3120,
+        "dms_this_month": 1060,
+        "dms_failed": 18,
+        "last_active": "2026-09-20T01:48:56"
+      },
+      "payments": [
+        {
+          "id": "pay_55aa68a07e",
+          "date": "2026-06-27T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_e6bbbc15e7",
+          "date": "2026-07-27T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        },
+        {
+          "id": "pay_93c422f5de",
+          "date": "2026-09-18T04:48:56",
+          "amount": 799,
+          "plan": "growth",
+          "method": "manual",
+          "status": "paid"
+        }
+      ]
+    },
+    {
+      "id": "usr_9fba8021f6a6",
+      "name": "Ananya Das",
+      "email": "ananya@petpalsindia",
+      "password_hash": "df78d212cb950db2$2de3a415e39b6f10444612d2fb8e7b68a1c446db461d43d0781c1faf2f995285",
+      "ig_handle": "petpalsindia",
+      "business": "PetPals India",
+      "phone": "",
+      "role": "owner",
+      "plan": "free",
+      "subscription_state": "free",
+      "status": "active",
+      "created_at": "2026-09-18T04:48:56",
+      "trial_start": "2026-09-18T04:48:56",
+      "pro_since": null,
+      "renews_on": null,
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false
+      },
+      "stats": {
+        "contacts": 22,
+        "automations": 1,
+        "active_automations": 1,
+        "dms_sent": 44,
+        "dms_this_month": 14,
+        "dms_failed": 0,
+        "last_active": "2026-09-18T12:48:56"
+      },
+      "payments": [
+        {
+          "id": "pay_2ad72a9bd3",
+          "date": "2026-09-20T04:50:58",
+          "amount": 399,
+          "plan": "starter",
+          "method": "manual",
+          "coupon": null,
+          "status": "paid"
+        }
+      ]
+    },
+    {
+      "id": "usr_c05b6d5ba6f4",
+      "name": "Umang Patel",
+      "email": "umangptl11@gmail.com",
+      "password_hash": "2526a8542635133e$24f7e79b445793ffceeb0779d9a8906db568274c8ba7ab6a6ff71d7a251e82b9",
+      "ig_handle": "umangsatnam.in",
+      "business": "satnam",
+      "phone": "",
+      "role": "owner",
+      "plan": "growth",
+      "subscription_state": "trialing",
+      "status": "active",
+      "created_at": "2026-09-20T16:15:01",
+      "trial_start": "2026-09-20T16:15:01",
+      "pro_since": null,
+      "renews_on": null,
+      "coupon": null,
+      "notes": "",
+      "instagram": {
+        "connected": false
+      },
+      "stats": {
+        "contacts": 0,
+        "automations": 0,
+        "active_automations": 0,
+        "dms_sent": 0,
+        "dms_this_month": 0,
+        "dms_failed": 0,
+        "last_active": "2026-09-20T16:15:01"
+      },
+      "payments": []
+    }
+  ],
+  "updated_at": "2026-09-20T16:15:37"
+}

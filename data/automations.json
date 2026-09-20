@@ -1,0 +1,89 @@
+[
+  {
+    "id": "rule_1",
+    "name": "Reel Comment 'LINK' -> Instant DM with Link",
+    "type": "comment_to_dm",
+    "post_target": "https://www.instagram.com/reel/C7xyz123/",
+    "post_thumbnail": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80",
+    "post_caption": "Simple website = 20% conversion. DM for custom client website development \ud83d\ude80 #webdesign #freelance",
+    "trigger_keywords": [
+      "link",
+      "send",
+      "url",
+      "info"
+    ],
+    "public_comment_reply": "{Thanks! Please see DMs.|Sent you a message! Check it out!|Nice! Check your DMs!}",
+    "comment_replies": [
+      "Thanks! Please see DMs.",
+      "Sent you a message! Check it out!",
+      "Nice! Check your DMs!"
+    ],
+    "opening_dm": "Hey there! I'm so happy you're here, thanks so much for your interest \ud83d\ude0a\nClick below and I'll send you the link in just a sec \u2728",
+    "button_text": "Send me the link",
+    "dm_message": "Hey {name}! Here is your direct link: https://satnamwebservices.com/offer Let me know if you need anything!",
+    "delivery_link": "https://satnamwebservices.com/offer",
+    "require_follow": false,
+    "ask_email": false,
+    "tags": [
+      "Reel Lead",
+      "Link Requested"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "rule_2",
+    "name": "Reel Comment 'GUIDE' -> Free Ebook PDF Delivery",
+    "type": "comment_to_dm",
+    "post_target": "all_posts",
+    "post_thumbnail": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80",
+    "post_caption": "Free 2026 Growth Blueprint guide! Comment 'GUIDE' to receive it in DMs \ud83d\udcda",
+    "trigger_keywords": [
+      "guide",
+      "ebook",
+      "free",
+      "pdf"
+    ],
+    "public_comment_reply": "{Guide sent to your DMs! \ud83d\udcda|Check your direct messages for the free guide! \ud83c\udf81}",
+    "comment_replies": [
+      "Guide sent to your DMs! \ud83d\udcda",
+      "Check your direct messages for the free guide! \ud83c\udf81"
+    ],
+    "opening_dm": "Hey {name}! Click below to get your Free Growth Guide delivered right now \u2728",
+    "button_text": "Get the Free Guide",
+    "dm_message": "Hi {first_name}! Here is your Free 2026 Growth Blueprint guide: https://mywebsite.com/growth-guide.pdf Enjoy reading! \ud83d\ude80",
+    "delivery_link": "https://mywebsite.com/growth-guide.pdf",
+    "require_follow": false,
+    "ask_email": false,
+    "tags": [
+      "Ebook Download",
+      "Warm Lead"
+    ],
+    "is_active": false
+  },
+  {
+    "name": "Reel 2 Automation",
+    "type": "comment_to_dm",
+    "post_target": "https://instagram.com/reel/2",
+    "post_thumbnail": "",
+    "post_caption": "",
+    "trigger_keywords": [
+      "*"
+    ],
+    "public_comment_reply": "{Check DMs!}",
+    "comment_replies": [
+      "Check DMs!"
+    ],
+    "opening_dm": "Hey there! Second link",
+    "button_text": "Get it",
+    "delivery_link": "https://example.com/2",
+    "dm_message": "Hey there! Second link\n\n\ud83d\udc49 https://example.com/2",
+    "require_follow": false,
+    "ask_email": false,
+    "tags": [
+      "Reel Lead",
+      "ManyChat Flow"
+    ],
+    "is_active": false,
+    "id": "rule_16673424"
+  }
+]

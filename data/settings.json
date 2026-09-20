@@ -1,0 +1,56 @@
+{
+  "brand": {
+    "name": "ConverFlow",
+    "tagline": "Turn every Instagram comment into a paying customer",
+    "support_email": "hello@umangsatnam.in",
+    "whatsapp": "+91 88498 66193",
+    "website": "https://satnamwebservices.com",
+    "company": "Satnam Web Services",
+    "address": "Shalin Complex, above Design Womens, Unjha, Gujarat",
+    "gstin": ""
+  },
+  "billing": {
+    "currency": "INR",
+    "gst_percent": 18,
+    "payment_mode": "manual",
+    "razorpay_key_id": "",
+    "razorpay_key_secret": "",
+    "invoice_prefix": "CF"
+  },
+  "safety": {
+    "min_delay_seconds": 45,
+    "max_delay_seconds": 90,
+    "daily_dm_cap": 35,
+    "watcher_interval_seconds": 60,
+    "pause_on_error": true
+  },
+  "meta_app": {
+    "enabled": false,
+    "app_id": "",
+    "app_secret": "",
+    "redirect_uri": "http://localhost:8000/api/instagram/callback",
+    "verify_token": "converflow_webhook_token",
+    "webhook_url": "http://localhost:8000/api/meta/webhook",
+    "api_version": "v21.0",
+    "scopes": [
+      "instagram_basic",
+      "instagram_manage_messages",
+      "instagram_manage_comments",
+      "pages_show_list",
+      "pages_manage_metadata",
+      "pages_read_engagement",
+      "business_management"
+    ],
+    "configured_at": "2026-09-20T04:50:58",
+    "last_test": null,
+    "last_test_ok": null
+  },
+  "flags": {
+    "signups_open": true,
+    "maintenance_mode": false,
+    "show_trial_banner": true,
+    "allow_browser_login": true,
+    "require_email_verification": false
+  },
+  "updated_at": "2026-09-20T04:50:58"
+}

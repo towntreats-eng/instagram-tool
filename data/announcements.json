@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ann_826fe7d9",
+    "title": "Story-mention automations are live",
+    "body": "Trigger a DM whenever someone mentions you in their story. Find it under Automations > New rule.",
+    "audience": "all",
+    "level": "feature",
+    "published": true,
+    "created_at": "2026-09-15T19:46:53"
+  },
+  {
+    "id": "ann_9dc8aaaf",
+    "title": "Scheduled maintenance, Sunday 2-3 AM IST",
+    "body": "Comment watchers will pause for roughly 40 minutes. Queued DMs resume automatically.",
+    "audience": "all",
+    "level": "maintenance",
+    "published": true,
+    "created_at": "2026-09-08T19:46:53"
+  }
+]
