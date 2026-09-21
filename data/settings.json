@@ -28,9 +28,9 @@
     "enabled": false,
     "app_id": "",
     "app_secret": "",
-    "redirect_uri": "http://localhost:8000/api/instagram/callback",
+    "redirect_uri": "https://instagram-tool-production-c3f0.up.railway.app/api/instagram/callback",
     "verify_token": "converflow_webhook_token",
-    "webhook_url": "http://localhost:8000/api/meta/webhook",
+    "webhook_url": "https://instagram-tool-production-c3f0.up.railway.app/api/meta/webhook",
     "api_version": "v21.0",
     "scopes": [
       "instagram_basic",
