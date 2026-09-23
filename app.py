@@ -163,6 +163,18 @@ async def serve_login():
 async def serve_signup():
     return _page("signup.html", "Signup page missing")
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def serve_privacy():
+    return _page("privacy.html", "Privacy policy page missing")
+
+@app.get("/terms", response_class=HTMLResponse)
+async def serve_terms():
+    return _page("terms.html", "Terms of service page missing")
+
+@app.get("/deletion", response_class=HTMLResponse)
+async def serve_deletion():
+    return _page("deletion.html", "Data deletion instructions page missing")
+
 # --- Product dashboard ---
 
 @app.get("/app", response_class=HTMLResponse)
@@ -1238,6 +1250,34 @@ async def instagram_connect(user_id: Optional[str] = None):
     if not ok:
         return {"success": False, "error": url}
     return {"success": True, "url": url}
+
+
+@app.post("/api/instagram/connect-token")
+async def instagram_connect_token(req: MetaTestRequest, user_id: Optional[str] = None):
+    user = user_manager.get(user_id) if user_id else current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+    
+    result = meta_client.test_connection(req.access_token)
+    if not result.get("success"):
+        return result
+    
+    account = result.get("account", {})
+    conn = {
+        "connected": True,
+        "provider": "direct_token",
+        "access_token": req.access_token,
+        "connected_at": _now(),
+        "page_id": account.get("page_id", ""),
+        "page_name": account.get("page_name", ""),
+        "page_access_token": account.get("page_access_token") or req.access_token,
+        "instagram_account_id": account.get("ig_id", ""),
+        "username": account.get("ig_username", ""),
+        "display_name": account.get("ig_name", ""),
+        "avatar": account.get("profile_picture", ""),
+    }
+    user_manager.set_instagram(user["id"], conn)
+    return {"success": True, "message": result.get("message"), "account": account}
 
 
 @app.get("/api/instagram/callback", response_class=HTMLResponse)

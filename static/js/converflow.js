@@ -61,19 +61,43 @@
       card.className = "connect-card";
       card.innerHTML =
         '<div class="connect-badge" style="background:#eef1f4;color:#8b95a3"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
-        '<div class="connect-copy"><h3>Instagram connect is being set up</h3>' +
-        '<p>One-click connect is not switched on yet. Until then you can sign in with the browser session below.</p></div>';
+        '<div class="connect-copy"><h3>Connect your Instagram account</h3>' +
+        '<p>Connect with your Meta Page Access Token, or use browser sign-in below.</p></div>' +
+        '<div class="connect-actions">' +
+        '<button class="btn btn-primary" id="btnConnectToken">Connect with Access Token</button>' +
+        '</div>';
     } else {
       card.className = "connect-card";
       card.innerHTML =
         '<div class="connect-badge"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg></div>' +
         '<div class="connect-copy"><h3>Connect your Instagram account</h3>' +
         '<p>One click, no tokens to copy. You need a Business or Creator account linked to a Facebook page.</p></div>' +
-        '<div class="connect-actions"><button class="btn btn-primary" id="igConnect">Connect Instagram</button></div>';
+        '<div class="connect-actions" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<button class="btn btn-primary" id="igConnect">Connect Instagram</button>' +
+        '<button class="btn btn-secondary btn-sm" id="btnConnectToken">Paste Access Token</button>' +
+        '</div>';
     }
   }
 
   document.addEventListener("click", async function (ev) {
+    if (ev.target.closest("#btnConnectToken")) {
+      var token = window.prompt("Paste your Meta / Facebook Page Access Token:");
+      if (!token || !token.trim()) return;
+      var btn = ev.target.closest("#btnConnectToken");
+      btn.disabled = true; btn.textContent = "Connecting…";
+      var out = await api("/api/instagram/connect-token", {
+        method: "POST",
+        body: JSON.stringify({ access_token: token.trim() })
+      });
+      if (out.success) {
+        flash(out.message || "Connected to @" + (out.account ? out.account.ig_username : "Instagram") + "!");
+        renderConnect();
+      } else {
+        flash(out.error || out.message || "Could not connect with this token", true);
+        btn.disabled = false; btn.textContent = "Paste Access Token";
+      }
+      return;
+    }
     if (ev.target.closest("#igConnect")) {
       var btn = ev.target.closest("#igConnect");
       btn.disabled = true; btn.textContent = "Opening Instagram…";
