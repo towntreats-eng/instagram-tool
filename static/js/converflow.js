@@ -48,10 +48,13 @@
     var out = await api("/api/instagram/status");
     var ig = out.instagram || {};
 
+    // Instagram SVG icon used across all states
+    var igIcon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>';
+
     if (ig.connected) {
       card.className = "connect-card is-live";
       card.innerHTML =
-        '<div class="connect-badge"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg></div>' +
+        '<div class="connect-badge ig-gradient">' + igIcon + '</div>' +
         '<div class="connect-copy"><h3>@' + esc(ig.username || "") + ' is connected</h3>' +
         '<p>' + (ig.followers ? num(ig.followers) + " followers · " : "") +
         'Comment and DM triggers are being delivered through the official Instagram API.</p></div>' +
@@ -69,15 +72,16 @@
     } else {
       card.className = "connect-card";
       card.innerHTML =
-        '<div class="connect-badge"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg></div>' +
+        '<div class="connect-badge ig-gradient">' + igIcon + '</div>' +
         '<div class="connect-copy"><h3>Connect your Instagram account</h3>' +
-        '<p>One click, no tokens to copy. You need a Business or Creator account linked to a Facebook page.</p></div>' +
+        '<p>One click — log in with your Instagram credentials. You need a Business or Creator account.</p></div>' +
         '<div class="connect-actions" style="display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<button class="btn btn-primary" id="igConnect">Connect Instagram</button>' +
+        '<button class="btn btn-ig" id="igConnect"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:6px;vertical-align:-2px"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>Connect with Instagram</button>' +
         '<button class="btn btn-secondary btn-sm" id="btnConnectToken">Paste Access Token</button>' +
         '</div>';
     }
   }
+
 
   document.addEventListener("click", async function (ev) {
     if (ev.target.closest("#btnConnectToken")) {
@@ -103,7 +107,7 @@
       btn.disabled = true; btn.textContent = "Opening Instagram…";
       var out = await api("/api/instagram/connect");
       if (out.success) { window.location.href = out.url; }
-      else { flash(out.error, true); btn.disabled = false; btn.textContent = "Connect Instagram"; }
+      else { flash(out.error, true); btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:6px;vertical-align:-2px"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>Connect with Instagram'; }
       return;
     }
     if (ev.target.closest("#igDisconnect")) {

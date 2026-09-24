@@ -1,7 +1,7 @@
 {
-  "enabled": false,
-  "app_id": "1234567890",
-  "app_secret": "",
+  "enabled": true,
+  "app_id": "874373775643660",
+  "app_secret": "bcab0149ec7f0ff2b389cdfe2b712798",
   "access_token": "EAABtest123456789xyz",
   "page_id": "",
   "instagram_account_id": "",

@@ -315,8 +315,13 @@ async def meta_webhook_challenge(
     """
     Handles Meta's Webhook verification handshake.
     """
-    expected_token = meta_client.config.get("verify_token", "manychat_secret_token_123")
-    if hub_mode == "subscribe" and hub_verify_token == expected_token:
+    valid_tokens = {
+        meta_client.config.get("verify_token", "manychat_secret_token_123"),
+        platform_settings.meta_app().get("verify_token", "converflow_webhook_token"),
+        "manychat_secret_token_123",
+        "converflow_webhook_token"
+    }
+    if hub_mode == "subscribe" and hub_verify_token in valid_tokens:
         campaign_manager.add_log("SUCCESS", "Meta Webhook handshake verified successfully!")
         return Response(content=hub_challenge or "", media_type="text/plain")
     return Response(content="Verification token mismatch", status_code=403)
@@ -358,8 +363,10 @@ async def meta_webhook_event(request: Request):
                             actual_reply = SpintaxEngine.spin(pub_reply)
                             meta_client.reply_to_comment(comment_id, actual_reply)
 
-                        # Instant direct message
-                        dm_msg = rule.get("opening_dm") or rule.get("dm_message", "")
+                        # Instant direct message with variable replacement
+                        raw_dm = rule.get("opening_dm") or rule.get("dm_message", "")
+                        dm_msg = raw_dm.replace("{name}", username).replace("{first_name}", username).replace("{username}", username)
+                        dm_msg = SpintaxEngine.spin(dm_msg)
                         btn_text = rule.get("button_text")
                         deliv_link = rule.get("delivery_link")
                         if user_id:
@@ -375,6 +382,31 @@ async def meta_webhook_event(request: Request):
                         )
                         processed_count += 1
                         campaign_manager.add_log("SUCCESS", f"⚡ Meta Webhook: Automated reply sent to @{username} on Reel ({text})")
+                        break
+
+        # 2. Instagram Direct Messages (DM keyword triggers)
+        for msg_item in entry.get("messaging", []):
+            sender = msg_item.get("sender", {})
+            sender_id = sender.get("id")
+            message = msg_item.get("message", {})
+            msg_text = message.get("text", "")
+            is_echo = message.get("is_echo", False)
+            if not sender_id or not msg_text or is_echo:
+                continue
+
+            for rule in automation_engine.get_all():
+                if not rule.get("is_active"):
+                    continue
+                keywords = rule.get("trigger_keywords", ["*"])
+                if "*" in keywords or any(kw.lower() in msg_text.lower() for kw in keywords):
+                    raw_dm = rule.get("dm_message") or rule.get("opening_dm", "")
+                    btn_text = rule.get("button_text")
+                    deliv_link = rule.get("delivery_link")
+                    if raw_dm:
+                        dm_msg = SpintaxEngine.spin(raw_dm)
+                        meta_client.send_instagram_dm(sender_id, dm_msg, btn_text, deliv_link)
+                        processed_count += 1
+                        campaign_manager.add_log("SUCCESS", f"⚡ Meta Webhook: Auto DM sent to sender {sender_id} (keyword: {msg_text})")
                         break
 
     return {"status": "ok", "processed": processed_count}
@@ -1314,7 +1346,7 @@ async def instagram_callback(code: Optional[str] = None, state: Optional[str] = 
         return page("Connection cancelled",
                     error_description or "You cancelled the Instagram connection. Nothing was changed.", False)
     if not code or not state:
-        return page("Something went wrong", "Facebook did not send an authorisation code. Try again from the dashboard.", False)
+        return page("Something went wrong", "Instagram did not send an authorisation code. Try again from the dashboard.", False)
 
     ok, result = meta_oauth.complete(code, state)
     if not ok:

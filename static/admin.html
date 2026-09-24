@@ -358,7 +358,7 @@
                 <div class="field">
                   <label for="mRedirect">Redirect URI</label>
                   <input class="input" id="mRedirect" name="redirect_uri">
-                  <div class="muted" style="font-size:12px;margin-top:6px">Paste this exact URL into Meta &gt; App &gt; Facebook Login &gt; Valid OAuth Redirect URIs.</div>
+                  <div class="muted" style="font-size:12px;margin-top:6px">Paste this exact URL into Meta &gt; Instagram API with Instagram Login &gt; Valid OAuth Redirect URIs.</div>
                 </div>
                 <div class="field-row">
                   <div class="field"><label for="mVerify">Webhook verify token</label><input class="input" id="mVerify" name="verify_token"></div>
@@ -377,18 +377,18 @@
           </div>
 
           <div class="card">
-            <div class="card-head"><h3>Setup checklist</h3></div>
+            <div class="card-head"><h3>Instagram Setup Checklist</h3></div>
             <div class="card-body">
               <ol class="setup-list">
-                <li><b>Create a Meta app</b><span>developers.facebook.com → Create App → Business</span></li>
-                <li><b>Add two products</b><span>Facebook Login for Business, and Instagram</span></li>
-                <li><b>Paste the redirect URI</b><span>Facebook Login → Settings → Valid OAuth Redirect URIs</span></li>
-                <li><b>Add the webhook</b><span>Instagram → Webhooks → paste the callback URL and verify token, subscribe to <code>comments</code>, <code>messages</code>, <code>mentions</code></span></li>
-                <li><b>Request permissions</b><span>App Review → <code>instagram_basic</code>, <code>instagram_manage_messages</code>, <code>instagram_manage_comments</code>, <code>pages_show_list</code></span></li>
-                <li><b>Copy App ID &amp; Secret here</b><span>Then hit Test connection — a green tick means customers can connect</span></li>
+                <li><b>Create a Meta App</b><span>developers.facebook.com → My Apps → Create App → Select "Other" / "Business"</span></li>
+                <li><b>Add Instagram Login Product</b><span>Add <b>"Instagram API with Instagram Login"</b> (Direct Instagram login, no Facebook Page required!)</span></li>
+                <li><b>Paste the Redirect URI</b><span>Instagram API with Instagram Login → Settings → Valid OAuth Redirect URIs → Paste the URL shown on the left</span></li>
+                <li><b>Configure Webhook</b><span>Instagram → Webhooks → Paste Webhook Callback URL &amp; Verify Token → Subscribe to <code>comments</code> &amp; <code>messages</code></span></li>
+                <li><b>Permissions &amp; Scopes</b><span>Instagram Login uses: <code>instagram_business_basic</code>, <code>instagram_business_manage_messages</code>, <code>instagram_business_manage_comments</code></span></li>
+                <li><b>Enter App ID &amp; App Secret</b><span>Copy from App Settings &gt; Basic → Paste here and click <b>Save credentials</b></span></li>
               </ol>
               <div class="muted" style="font-size:12.5px;line-height:1.7;margin-top:14px">
-                Until Meta approves the app it works in development mode — only accounts listed as testers in your Meta app can connect.
+                In Development mode, add your own Instagram account under <b>Instagram API with Instagram Login → Roles / User Token Generator</b> to test immediately.
               </div>
             </div>
           </div>

@@ -23,16 +23,16 @@ TEMPLATES_FILE = os.path.join(DATA_DIR, "templates.json")
 ISO = "%Y-%m-%dT%H:%M:%S"
 SECRET_FIELDS = {("meta_app", "app_secret"), ("billing", "razorpay_key_secret")}
 
-# Permissions the Connect-Instagram flow asks Meta for.
+# Permissions the Connect-Instagram flow asks Instagram for.
+# These scopes work with the Instagram API via Instagram Login
+# (api.instagram.com/oauth/authorize) — NOT the Facebook Login flow.
 DEFAULT_SCOPES = [
-    "instagram_basic",
-    "instagram_manage_messages",
-    "instagram_manage_comments",
-    "pages_show_list",
-    "pages_manage_metadata",
-    "pages_read_engagement",
-    "business_management",
+    "instagram_business_basic",
+    "instagram_business_manage_messages",
+    "instagram_business_manage_comments",
+    "instagram_business_content_publish",
 ]
+
 
 
 def _now() -> str:
@@ -82,12 +82,12 @@ class PlatformSettings:
                 "pause_on_error": True,
             },
             "meta_app": {
-                "enabled": False,
-                "app_id": "",
-                "app_secret": "",
-                "redirect_uri": "http://localhost:8000/api/instagram/callback",
+                "enabled": True,
+                "app_id": "874373775643660",
+                "app_secret": "bcab0149ec7f0ff2b389cdfe2b712798",
+                "redirect_uri": "https://instagram-tool-production-c3f0.up.railway.app/api/instagram/callback",
                 "verify_token": "converflow_webhook_token",
-                "webhook_url": "http://localhost:8000/api/meta/webhook",
+                "webhook_url": "https://instagram-tool-production-c3f0.up.railway.app/api/meta/webhook",
                 "api_version": "v21.0",
                 "scopes": list(DEFAULT_SCOPES),
                 "configured_at": None,

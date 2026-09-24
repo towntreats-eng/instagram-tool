@@ -1,16 +1,18 @@
 """
-ConverFlow — Instagram Connect (Meta OAuth)
-===========================================
+ConverFlow — Instagram Connect (Instagram Login API)
+=====================================================
 The owner registers ONE Meta app in Admin > Instagram API. After that every
 customer connects their own Instagram account with a single click:
 
   dashboard  ->  GET /api/instagram/connect?user_id=...
-                 (redirects to Facebook's consent screen)
-  Facebook   ->  GET /api/instagram/callback?code=...&state=...
+                 (redirects to Instagram's consent screen)
+  Instagram  ->  GET /api/instagram/callback?code=...&state=...
                  (we swap the code for a long-lived token and store it
                   on that workspace — never shared between workspaces)
 
 No customer ever sees an App ID or a token.
+Uses the Instagram API with Instagram Login (api.instagram.com) so users
+see the Instagram authorization screen, NOT Facebook.
 """
 
 import os
@@ -46,8 +48,30 @@ def _get_json(url: str, timeout: int = 20) -> Tuple[bool, Any]:
         return False, {"error": {"message": str(e)}}
 
 
+def _post_form(url: str, data: Dict[str, str], timeout: int = 20) -> Tuple[bool, Any]:
+    """POST with application/x-www-form-urlencoded body (Instagram's token endpoint requires this)."""
+    try:
+        encoded = urllib.parse.urlencode(data).encode("utf-8")
+        req = urllib.request.Request(
+            url, data=encoded, method="POST",
+            headers={
+                "User-Agent": "ConverFlow/3.0",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            return True, json.loads(res.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            return False, json.loads(e.read().decode("utf-8"))
+        except Exception:
+            return False, {"error_message": f"HTTP {e.code}"}
+    except Exception as e:
+        return False, {"error_message": str(e)}
+
+
 class MetaOAuth:
-    """Builds the consent URL and completes the token exchange."""
+    """Builds the Instagram consent URL and completes the token exchange."""
 
     def __init__(self, settings):
         self.settings = settings  # PlatformSettings instance
@@ -90,47 +114,132 @@ class MetaOAuth:
 
     # --------------------------------------------------------------- flow
     def consent_url(self, user_id: str) -> Tuple[bool, str]:
+        """
+        Build the Instagram authorization URL.
+        Uses https://api.instagram.com/oauth/authorize — the Instagram-native
+        login screen. Users see Instagram branding and log in with their
+        Instagram credentials directly. No Facebook login page.
+        """
         if not self.ready():
             return False, "Instagram connect is not configured yet. Add the Meta app in Admin > Instagram API."
+
+        raw_scopes = self.app.get("scopes", [])
+        scope_map = {
+            "instagram_basic": "instagram_business_basic",
+            "instagram_manage_messages": "instagram_business_manage_messages",
+            "instagram_manage_comments": "instagram_business_manage_comments",
+            "instagram_content_publish": "instagram_business_content_publish",
+        }
+        scopes = []
+        for s in raw_scopes:
+            if s.startswith("pages_") or s == "business_management":
+                continue
+            mapped = scope_map.get(s, s)
+            if mapped not in scopes:
+                scopes.append(mapped)
+
+        if not scopes:
+            scopes = [
+                "instagram_business_basic",
+                "instagram_business_manage_messages",
+                "instagram_business_manage_comments",
+                "instagram_business_content_publish",
+            ]
+
         params = {
             "client_id": self.app["app_id"],
             "redirect_uri": self.app["redirect_uri"],
             "state": self.make_state(user_id),
-            "scope": ",".join(self.app.get("scopes", [])),
+            "scope": ",".join(scopes),
             "response_type": "code",
         }
-        base = "https://www.facebook.com/dialog/oauth"
+
+        # ── Use the Instagram Login authorization endpoint ──
+        # Shows the Instagram login screen directly with Instagram branding.
+        base = "https://api.instagram.com/oauth/authorize"
         return True, base + "?" + urllib.parse.urlencode(params)
 
     def exchange_code(self, code: str) -> Tuple[bool, Any]:
-        params = {
+        """
+        Exchange the authorization code for a short-lived Instagram access token.
+        Instagram's token endpoint requires a POST with form data (not GET).
+        """
+        data = {
             "client_id": self.app["app_id"],
             "client_secret": self.app["app_secret"],
+            "grant_type": "authorization_code",
             "redirect_uri": self.app["redirect_uri"],
             "code": code,
         }
-        ok, data = _get_json(f"{self.graph}/oauth/access_token?" + urllib.parse.urlencode(params))
-        if not ok or "access_token" not in data:
-            return False, data.get("error", {}).get("message", "Facebook refused the authorisation code.")
-        return True, data["access_token"]
+        ok, result = _post_form("https://api.instagram.com/oauth/access_token", data)
+        if not ok or "access_token" not in result:
+            error_msg = result.get("error_message") or result.get("error", {}).get("message", "")
+            if not error_msg:
+                error_msg = "Instagram refused the authorization code. Please try connecting again."
+            return False, error_msg
+        return True, {
+            "access_token": result["access_token"],
+            "user_id": str(result.get("user_id", "")),
+        }
 
     def long_lived_token(self, short_token: str) -> Tuple[bool, Any]:
+        """
+        Exchange the short-lived token (1 hour) for a long-lived token (60 days).
+        Uses the Instagram Graph API endpoint at graph.instagram.com.
+        """
         params = {
-            "grant_type": "fb_exchange_token",
-            "client_id": self.app["app_id"],
+            "grant_type": "ig_exchange_token",
             "client_secret": self.app["app_secret"],
-            "fb_exchange_token": short_token,
+            "access_token": short_token,
         }
-        ok, data = _get_json(f"{self.graph}/oauth/access_token?" + urllib.parse.urlencode(params))
+        ok, data = _get_json("https://graph.instagram.com/access_token?" + urllib.parse.urlencode(params))
         if not ok or "access_token" not in data:
-            return False, data.get("error", {}).get("message", "Could not extend the access token.")
+            error_msg = data.get("error", {}).get("message", "Could not extend the Instagram access token.")
+            return False, error_msg
         return True, {
             "access_token": data["access_token"],
             "expires_in": data.get("expires_in", 5184000),
         }
 
-    def discover_instagram(self, token: str) -> Tuple[bool, Any]:
-        """Find the Instagram business account behind the user's Facebook page."""
+    def discover_instagram(self, token: str, ig_user_id: str = "") -> Tuple[bool, Any]:
+        """
+        Fetch the Instagram user's profile using the Instagram Graph API.
+        With Instagram Login, we get the IG user directly — no need to go
+        through Facebook Pages.
+        """
+        # Use the IG user ID from the token exchange, or "me"
+        user_path = ig_user_id if ig_user_id else "me"
+        fields = "id,username"
+
+        ok, data = _get_json(
+            f"https://graph.instagram.com/{user_path}"
+            f"?fields={fields}&access_token={urllib.parse.quote(token)}"
+        )
+        if not ok:
+            error_msg = data.get("error", {}).get("message", "Could not read your Instagram profile.")
+            return False, error_msg
+
+        username = data.get("username", "")
+        ig_id = data.get("id", ig_user_id)
+
+        return True, {
+            "instagram_account_id": str(ig_id),
+            "username": username,
+            "display_name": data.get("name", username),
+            "avatar": data.get("profile_picture_url", ""),
+            "followers": data.get("followers_count", 0),
+            # For Instagram Login flow, page fields are not applicable
+            "page_id": "",
+            "page_name": "",
+            "page_access_token": "",
+        }
+
+    def _discover_via_facebook_pages(self, token: str) -> Tuple[bool, Any]:
+        """
+        Fallback: Find Instagram business account through Facebook Pages.
+        Used when the app has Facebook Login permissions (pages_show_list etc.)
+        and the IG account is linked to a Facebook Page.
+        """
         ok, pages = _get_json(
             f"{self.graph}/me/accounts?fields=id,name,access_token,"
             f"instagram_business_account{{id,username,name,profile_picture_url,followers_count}}"
@@ -162,24 +271,33 @@ class MetaOAuth:
         if not ok:
             return False, user_id
 
-        ok, short = self.exchange_code(code)
+        # Step 1: Exchange the code for a short-lived token
+        ok, token_data = self.exchange_code(code)
         if not ok:
-            return False, short
+            return False, token_data
 
-        ok, long = self.long_lived_token(short)
+        short_token = token_data["access_token"]
+        ig_user_id = token_data.get("user_id", "")
+
+        # Step 2: Exchange for a long-lived token (60 days)
+        ok, long = self.long_lived_token(short_token)
         if not ok:
             return False, long
 
-        ok, account = self.discover_instagram(long["access_token"])
+        # Step 3: Get the Instagram user profile
+        ok, account = self.discover_instagram(long["access_token"], ig_user_id)
         if not ok:
-            return False, account
+            # Fallback: try the Facebook Pages discovery method
+            ok, account = self._discover_via_facebook_pages(long["access_token"])
+            if not ok:
+                return False, account
 
         expires = datetime.now() + timedelta(seconds=int(long.get("expires_in", 5184000)))
         return True, {
             "user_id": user_id,
             "connection": {
                 "connected": True,
-                "provider": "meta_oauth",
+                "provider": "instagram_login",
                 "access_token": long["access_token"],
                 "token_expires_at": expires.strftime(ISO),
                 "connected_at": _now(),
@@ -189,6 +307,8 @@ class MetaOAuth:
 
     def subscribe_webhook(self, page_id: str, page_token: str) -> Tuple[bool, Any]:
         """Ask Meta to send this page's comment and message events to our webhook."""
+        if not page_id or not page_token:
+            return False, "No Facebook Page linked — webhook subscription skipped."
         params = {
             "subscribed_fields": "messages,messaging_postbacks,comments,mentions",
             "access_token": page_token,
@@ -212,9 +332,9 @@ class MetaOAuth:
         if ok and data.get("data", {}).get("app_id"):
             self.settings.record_meta_test(True)
             return {"success": True,
-                    "message": f"Meta app {data['data']['app_id']} verified. Customers can connect now.",
+                    "message": f"Meta app {data['data']['app_id']} verified. Customers can connect Instagram now.",
                     "app_id": data["data"]["app_id"]}
-        
+
         # In newer Meta API, debug_token throws OAuthException 190 for app tokens.
         # Fallback: if App ID and secret format are valid, mark as verified.
         app_id = str(self.app.get("app_id", "")).strip()
@@ -222,7 +342,7 @@ class MetaOAuth:
         if app_id.isdigit() and len(app_id) >= 10 and len(app_secret) >= 16:
             self.settings.record_meta_test(True)
             return {"success": True,
-                    "message": f"Meta app {app_id} verified. Customers can connect now.",
+                    "message": f"Meta app {app_id} verified. Customers can connect Instagram now.",
                     "app_id": app_id}
 
         self.settings.record_meta_test(False)

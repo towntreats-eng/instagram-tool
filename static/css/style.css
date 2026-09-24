@@ -3984,6 +3984,30 @@ input:checked + .slider:before {
 .connect-copy p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
 .connect-actions { display: flex; gap: 9px; flex-shrink: 0; flex-wrap: wrap; }
 
+/* Instagram gradient badge icon */
+.connect-badge.ig-gradient {
+  background: linear-gradient(135deg, #f58529, #dd2a7b 55%, #8134af); color: #fff;
+}
+
+/* Instagram-branded "Connect with Instagram" button */
+.btn-ig {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 11px 22px; font-size: 14px; font-weight: 700; font-family: inherit;
+  color: #fff; border: none; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(135deg, #f58529 0%, #dd2a7b 50%, #8134af 100%);
+  box-shadow: 0 4px 16px rgba(221, 42, 123, .25);
+  transition: transform .15s, box-shadow .15s, filter .15s;
+  letter-spacing: -.01em;
+}
+.btn-ig:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(221, 42, 123, .35);
+  filter: brightness(1.06);
+}
+.btn-ig:active { transform: translateY(0); }
+.btn-ig:disabled { opacity: .55; cursor: not-allowed; transform: none; filter: none; }
+
+
 /* ------------------------------------------------------------- plan meters */
 .plan-hero {
   display: flex; align-items: center; gap: 18px; padding: 22px;

@@ -59,14 +59,50 @@ class MetaAPIClient:
 
     def test_connection(self, access_token: Optional[str] = None) -> Dict[str, Any]:
         """
-        Validates Access Token against Meta Graph API and retrieves Instagram business account details.
+        Validates Access Token against Instagram / Meta Graph API and retrieves Instagram account details.
+        Supports both Instagram Login tokens (graph.instagram.com) and Facebook Page tokens.
         """
         token = access_token or self.config.get("access_token")
         if not token:
             return {"success": False, "message": "No Access Token provided."}
 
+        # 1. Try Instagram Login API directly (graph.instagram.com)
         try:
-            # 1. Fetch connected user / page details
+            ig_resp = requests.get(
+                f"https://graph.instagram.com/me?fields=id,username,name,profile_pic&access_token={token}",
+                timeout=10
+            )
+            ig_data = ig_resp.json()
+            if "username" in ig_data or ("id" in ig_data and "error" not in ig_data):
+                chosen = {
+                    "page_id": "",
+                    "page_name": "Instagram Direct",
+                    "page_access_token": token,
+                    "ig_id": str(ig_data.get("id")),
+                    "ig_username": ig_data.get("username", "instagram_user"),
+                    "ig_name": ig_data.get("name", ig_data.get("username", "")),
+                    "profile_picture": ig_data.get("profile_pic", "")
+                }
+                self.save_config({
+                    "enabled": True,
+                    "access_token": token,
+                    "page_id": "",
+                    "instagram_account_id": chosen["ig_id"],
+                    "connected_account_name": chosen["ig_name"],
+                    "connected_account_username": chosen["ig_username"],
+                    "provider": "instagram_login"
+                })
+                return {
+                    "success": True,
+                    "message": f"Successfully connected to @{chosen['ig_username']} ({chosen['ig_name']}) via Instagram Login!",
+                    "account": chosen,
+                    "all_accounts": [chosen]
+                }
+        except Exception:
+            pass
+
+        # 2. Try Facebook Graph API (for tokens connected via Facebook Page)
+        try:
             url = f"{self.GRAPH_URL}/me?fields=id,name,accounts{{id,name,access_token,instagram_business_account{{id,username,name,profile_picture_url}}}}&access_token={token}"
             resp = requests.get(url, timeout=10)
             data = resp.json()
@@ -94,7 +130,7 @@ class MetaAPIClient:
                         "profile_picture": ig_info.get("profile_picture_url")
                     })
 
-            # Also check if token is directly an Instagram User token
+            # Also check if token is directly an Instagram User token on Facebook Graph
             if not ig_accounts and "id" in data:
                 direct_url = f"{self.GRAPH_URL}/{data['id']}?fields=username,name,profile_picture_url&access_token={token}"
                 d_resp = requests.get(direct_url, timeout=10).json()
@@ -115,7 +151,8 @@ class MetaAPIClient:
                     "page_id": chosen["page_id"],
                     "instagram_account_id": chosen["ig_id"],
                     "connected_account_name": chosen["ig_name"],
-                    "connected_account_username": chosen["ig_username"]
+                    "connected_account_username": chosen["ig_username"],
+                    "provider": "meta_oauth"
                 })
                 return {
                     "success": True,
@@ -126,7 +163,7 @@ class MetaAPIClient:
             else:
                 return {
                     "success": False,
-                    "message": "Connected to Facebook, but no Instagram Business/Creator account found linked to your Facebook Pages. Please link your Instagram account to a Facebook Page."
+                    "message": "Connected to Facebook, but no Instagram Business/Creator account found linked to your Facebook Pages. Please link your Instagram account to a Facebook Page or connect directly with Instagram."
                 }
 
         except Exception as e:
@@ -134,16 +171,22 @@ class MetaAPIClient:
 
     def send_instagram_dm(self, recipient_ig_id: str, message_text: str, button_text: Optional[str] = None, button_url: Optional[str] = None) -> Dict[str, Any]:
         """
-        Sends an official Instagram DM via Meta Messenger API for Instagram.
-        Supports standard text and structured buttons/quick replies.
+        Sends an official Instagram DM via Meta Messenger API / Instagram Graph API.
+        Automatically detects whether to use graph.instagram.com (Instagram Login) or graph.facebook.com (Page token).
         """
         token = self.config.get("access_token")
-        page_id = self.config.get("page_id") or "me"
+        page_id = self.config.get("page_id")
+        provider = self.config.get("provider")
 
         if not token:
-            return {"success": False, "error": "Meta Graph API token is not configured."}
+            return {"success": False, "error": "Instagram API token is not configured."}
 
-        url = f"{self.GRAPH_URL}/{page_id}/messages?access_token={token}"
+        # Instagram Login endpoint vs Facebook Page endpoint
+        is_ig_login = not page_id or provider == "instagram_login" or token.startswith("IG")
+        if is_ig_login:
+            url = f"https://graph.instagram.com/v21.0/me/messages?access_token={token}"
+        else:
+            url = f"{self.GRAPH_URL}/{page_id}/messages?access_token={token}"
 
         # If button with URL is requested, use Generic Template
         if button_text and button_url:
@@ -181,6 +224,18 @@ class MetaAPIClient:
             resp = requests.post(url, json=payload, timeout=10)
             data = resp.json()
             if "error" in data:
+                # Fallback to plain text + link if rich template is not enabled for the app
+                if button_url and "attachment" in payload.get("message", {}):
+                    fallback_text = f"{message_text}\n\n👉 {button_url}"
+                    fb_payload = {
+                        "recipient": {"id": recipient_ig_id},
+                        "message": {"text": fallback_text}
+                    }
+                    fb_resp = requests.post(url, json=fb_payload, timeout=10)
+                    fb_data = fb_resp.json()
+                    if "error" not in fb_data:
+                        return {"success": True, "message_id": fb_data.get("message_id")}
+
                 logger.error(f"Meta DM Error: {data['error']}")
                 return {"success": False, "error": data["error"].get("message")}
             return {"success": True, "message_id": data.get("message_id")}
@@ -195,7 +250,12 @@ class MetaAPIClient:
         if not token:
             return {"success": False, "error": "Token not configured."}
 
-        url = f"{self.GRAPH_URL}/{comment_id}/replies?access_token={token}"
+        is_ig_login = not self.config.get("page_id") or token.startswith("IG")
+        if is_ig_login:
+            url = f"https://graph.instagram.com/v21.0/{comment_id}/replies?access_token={token}"
+        else:
+            url = f"{self.GRAPH_URL}/{comment_id}/replies?access_token={token}"
+
         try:
             resp = requests.post(url, json={"message": reply_text}, timeout=10)
             data = resp.json()
@@ -210,11 +270,16 @@ class MetaAPIClient:
         Fetches live Posts and Reels directly from Instagram Graph API.
         """
         token = self.config.get("access_token")
-        ig_id = self.config.get("instagram_account_id")
-        if not token or not ig_id:
+        ig_id = self.config.get("instagram_account_id") or "me"
+        if not token:
             return []
 
-        url = f"{self.GRAPH_URL}/{ig_id}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,like_count,comments_count,timestamp&limit={limit}&access_token={token}"
+        is_ig_login = not self.config.get("page_id") or token.startswith("IG")
+        if is_ig_login:
+            url = f"https://graph.instagram.com/v21.0/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,like_count,comments_count,timestamp&limit={limit}&access_token={token}"
+        else:
+            url = f"{self.GRAPH_URL}/{ig_id}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,like_count,comments_count,timestamp&limit={limit}&access_token={token}"
+
         try:
             resp = requests.get(url, timeout=10)
             data = resp.json()

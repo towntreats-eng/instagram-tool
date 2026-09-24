@@ -33,13 +33,10 @@
     "webhook_url": "https://instagram-tool-production-c3f0.up.railway.app/api/meta/webhook",
     "api_version": "v21.0",
     "scopes": [
-      "instagram_basic",
-      "instagram_manage_messages",
-      "instagram_manage_comments",
-      "pages_show_list",
-      "pages_manage_metadata",
-      "pages_read_engagement",
-      "business_management"
+      "instagram_business_basic",
+      "instagram_business_manage_messages",
+      "instagram_business_manage_comments",
+      "instagram_business_content_publish"
     ],
     "configured_at": "2026-09-20T04:50:58",
     "last_test": null,
