@@ -1,753 +1,587 @@
-/* =============================================================================
-   ConverFlow v3 — Instagram connect, Plan & billing, Broadcast, Analytics
-   Loaded after app.js; owns only the views app.js does not touch.
-   ========================================================================== */
+/**
+ * ConverFlow — Noir Dashboard JS
+ * =============================================================
+ * Clean, minimal JavaScript for the redesigned SaaS dashboard.
+ * Handles: navigation, API calls, modals, automations CRUD,
+ *          contacts table, billing/Razorpay, toasts.
+ * =============================================================
+ */
+
 (function () {
   "use strict";
 
-  var $ = function (s, r) { return (r || document).querySelector(s); };
-  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  // ── DOM Helpers ──
+  const $ = (s, p) => (p || document).querySelector(s);
+  const $$ = (s, p) => [...(p || document).querySelectorAll(s)];
+  const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
 
-  var STATE = { billing: null, plans: [], targets: 0, stream: null, insights: null, upgradeTarget: null };
+  // ── State ──
+  let currentView = "view-home";
+  let rules = [];
+  let contacts = [];
+  let editingRuleId = null;
 
-  function inr(n) { return "₹" + Number(n || 0).toLocaleString("en-IN"); }
-  function num(n) { return Number(n || 0).toLocaleString("en-IN"); }
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
-  function limitLabel(v) { return v === -1 ? "Unlimited" : num(v); }
-
-  async function api(url, opts) {
-    var res = await fetch(url, Object.assign({ headers: { "Content-Type": "application/json" } }, opts || {}));
-    return res.json();
-  }
-
-  function flash(msg, bad) {
-    var t = $("#cfToast");
-    if (!t) {
-      t = document.createElement("div");
-      t.id = "cfToast";
-      t.style.cssText = "position:fixed;bottom:22px;left:50%;transform:translate(-50%,140%);z-index:999;" +
-        "background:#0b0f14;color:#fff;padding:12px 20px;border-radius:999px;font-size:13.5px;font-weight:700;" +
-        "box-shadow:0 18px 44px rgba(11,15,20,.22);transition:transform .3s cubic-bezier(.2,.8,.2,1);font-family:inherit";
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.style.background = bad ? "#e5484d" : "#0b0f14";
-    t.style.transform = "translate(-50%,0)";
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function () { t.style.transform = "translate(-50%,140%)"; }, 2800);
-  }
-
-  // ===================================================== Instagram connect
-  async function renderConnect() {
-    var card = $("#connectCard");
-    if (!card) return;
-    var out = await api("/api/instagram/status");
-    var ig = out.instagram || {};
-
-    // Instagram SVG icon used across all states
-    var igIcon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>';
-
-    if (ig.connected) {
-      card.className = "connect-card is-live";
-      card.innerHTML =
-        '<div class="connect-badge ig-gradient">' + igIcon + '</div>' +
-        '<div class="connect-copy"><h3>@' + esc(ig.username || "") + ' is connected</h3>' +
-        '<p>' + (ig.followers ? num(ig.followers) + " followers · " : "") +
-        'Comment and DM triggers are being delivered through the official Instagram API.</p></div>' +
-        '<div class="connect-actions">' +
-        '<button class="btn btn-secondary btn-sm" id="igDisconnect">Disconnect</button></div>';
-    } else if (!out.platform_ready) {
-      card.className = "connect-card";
-      card.innerHTML =
-        '<div class="connect-badge" style="background:#eef1f4;color:#8b95a3"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
-        '<div class="connect-copy"><h3>Connect your Instagram account</h3>' +
-        '<p>Connect with your Meta Page Access Token, or use browser sign-in below.</p></div>' +
-        '<div class="connect-actions">' +
-        '<button class="btn btn-primary" id="btnConnectToken">Connect with Access Token</button>' +
-        '</div>';
-    } else {
-      card.className = "connect-card";
-      card.innerHTML =
-        '<div class="connect-badge ig-gradient">' + igIcon + '</div>' +
-        '<div class="connect-copy"><h3>Connect your Instagram account</h3>' +
-        '<p>One click — log in with your Instagram credentials. You need a Business or Creator account.</p></div>' +
-        '<div class="connect-actions" style="display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<button class="btn btn-ig" id="igConnect"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:6px;vertical-align:-2px"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>Connect with Instagram</button>' +
-        '<button class="btn btn-secondary btn-sm" id="btnConnectToken">Paste Access Token</button>' +
-        '</div>';
-    }
-  }
-
-
-  document.addEventListener("click", async function (ev) {
-    if (ev.target.closest("#btnConnectToken")) {
-      var token = window.prompt("Paste your Meta / Facebook Page Access Token:");
-      if (!token || !token.trim()) return;
-      var btn = ev.target.closest("#btnConnectToken");
-      btn.disabled = true; btn.textContent = "Connecting…";
-      var out = await api("/api/instagram/connect-token", {
-        method: "POST",
-        body: JSON.stringify({ access_token: token.trim() })
-      });
-      if (out.success) {
-        flash(out.message || "Connected to @" + (out.account ? out.account.ig_username : "Instagram") + "!");
-        renderConnect();
-      } else {
-        flash(out.error || out.message || "Could not connect with this token", true);
-        btn.disabled = false; btn.textContent = "Paste Access Token";
-      }
-      return;
-    }
-    if (ev.target.closest("#igConnect")) {
-      var btn = ev.target.closest("#igConnect");
-      btn.disabled = true; btn.textContent = "Opening Instagram…";
-      var out = await api("/api/instagram/connect");
-      if (out.success) { window.location.href = out.url; }
-      else { flash(out.error, true); btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:6px;vertical-align:-2px"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>Connect with Instagram'; }
-      return;
-    }
-    if (ev.target.closest("#igDisconnect")) {
-      if (!window.confirm("Disconnect Instagram? Your automations will stop firing.")) return;
-      await api("/api/instagram/disconnect", { method: "POST" });
-      flash("Instagram disconnected");
-      renderConnect();
-      return;
-    }
-  });
-
-  // ========================================================= Plan & billing
-  async function renderBilling() {
-    var out = await api("/api/billing/status");
-    STATE.billing = out.billing;
-    STATE.plans = out.plans || [];
-    var b = out.billing;
-
-    var hero = $("#planHero");
-    if (hero) {
-      var sub = b.state === "trialing"
-        ? b.days_left + " days left on your trial"
-        : b.state === "expired"
-        ? "Your trial has ended — automations are paused"
-        : b.renews_on
-        ? "Renews on " + new Date(String(b.renews_on).replace(" ", "T")).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-        : "No renewal — this plan is free";
-      hero.innerHTML =
-        '<div><span class="plan-chip">' + esc(b.badge || "") + '</span>' +
-        '<h3 style="margin-top:10px">' + esc(b.plan_name) + '</h3>' +
-        '<p>' + esc(sub) + '</p></div>' +
-        '<div class="spacer"></div>' +
-        '<div style="text-align:right"><div style="font-size:26px;font-weight:800;letter-spacing:-.04em">' +
-        inr(b.price_monthly) + '<span style="font-size:13px;opacity:.6">/mo</span></div></div>';
-    }
-
-    var grid = $("#usageGrid");
-    if (grid) {
-      var names = {
-        automations: "Active automations", contacts: "Contacts stored",
-        dms_per_month: "DMs this month", ig_accounts: "Instagram accounts", team_seats: "Team seats"
-      };
-      grid.innerHTML = Object.keys(b.usage || {}).map(function (key) {
-        var u = b.usage[key];
-        var cls = u.over ? "over" : u.percent >= 80 ? "warn" : "";
-        return '<div class="usage-tile"><div class="label">' + esc(names[key] || key) + '</div>' +
-          '<div class="value">' + num(u.used) + ' <small>/ ' + limitLabel(u.limit) + '</small></div>' +
-          '<div class="meter ' + cls + '"><i style="width:' + (u.unlimited ? 6 : u.percent) + '%"></i></div></div>';
-      }).join("");
-    }
-
-    syncSidebar(b);
-
-    var picker = $("#planPicker");
-    if (picker) {
-      picker.innerHTML = STATE.plans.map(function (p) {
-        var current = p.id === b.plan_id;
-        var perks = Object.keys(p.features || {}).filter(function (k) { return p.features[k]; }).slice(0, 5);
-        return '<div class="pick-card' + (current ? " current" : "") + '">' +
-          (p.badge ? '<span class="pick-flag">' + esc(p.badge) + '</span>' : "") +
-          '<h4>' + esc(p.name) + '</h4>' +
-          '<div class="price"><b>' + inr(p.price_monthly) + '</b><span>/mo</span></div>' +
-          '<ul>' +
-            '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-              limitLabel(p.limits.automations) + ' automations</li>' +
-            '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-              limitLabel(p.limits.contacts) + ' contacts</li>' +
-            '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-              limitLabel(p.limits.dms_per_month) + ' DMs / month</li>' +
-            (p.features.broadcast ? '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Broadcast engine</li>' : "") +
-            (p.features.ai_assist ? '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>AI flow generator</li>' : "") +
-          '</ul>' +
-          (current
-            ? '<button class="btn btn-secondary btn-sm btn-block" disabled>Current plan</button>'
-            : '<button class="btn btn-primary btn-sm btn-block" data-pick="' + p.id + '">' +
-              (p.price_monthly === 0 ? "Switch to Free" : "Choose " + esc(p.name)) + '</button>') +
-          '</div>';
-      }).join("");
-    }
-  }
-
-  document.addEventListener("click", async function (ev) {
-    var pick = ev.target.closest("[data-pick]");
-    if (pick) {
-      var planId = pick.dataset.pick;
-      var coupon = ($("#couponCode") && $("#couponCode").value.trim()) || null;
-      pick.disabled = true; pick.textContent = "Switching…";
-      var out = await api("/api/billing/upgrade", { method: "POST", body: JSON.stringify({ plan_id: planId, coupon: coupon }) });
-      if (!out.success) { flash(out.error || "Could not switch plan", true); pick.disabled = false; return; }
-      flash("You're on the " + out.billing.plan_name + " plan");
-      renderBilling();
-      return;
-    }
-    if (ev.target.closest("#couponApply")) {
-      var code = $("#couponCode").value.trim();
-      if (!code) { flash("Type a code first", true); return; }
-      var planId = STATE.billing ? STATE.billing.plan_id : "growth";
-      var r = await api("/api/billing/coupon", { method: "POST", body: JSON.stringify({ code: code, plan_id: planId }) });
-      var box = $("#couponResult");
-      if (!r.valid) box.innerHTML = '<span style="color:var(--mc-coral);font-weight:700">' + esc(r.error) + '</span>';
-      else if (r.trial_days) box.innerHTML = '<b style="color:var(--mc-green)">+' + r.trial_days + ' trial days</b> — pick a plan to apply it';
-      else box.innerHTML = '<s>' + inr(r.original_price) + '</s> → <b style="color:var(--mc-green);font-size:15px">' +
-        inr(r.final_price) + '</b> <span style="color:var(--text-faint)">(' + inr(r.discount) + ' off)</span>';
-      return;
-    }
-  });
-
-  // Keep the sidebar plan chip and the contacts meter honest.
-  function syncSidebar(b) {
-    var badge = $("#sidebarPlanBadge");
-    if (badge) {
-      badge.textContent = b.badge || b.plan_name;
-      badge.style.cssText = b.state === "expired"
-        ? "background:#fef1f1;color:#e5484d"
-        : b.is_paid ? "background:#e8f5ee;color:#00824b" : "";
-    }
-    var count = $("#sidebarLimitCount");
-    if (count && b.usage && b.usage.contacts) {
-      var u = b.usage.contacts;
-      count.textContent = num(u.used) + " / " + limitLabel(u.limit);
-    }
-    var label = document.querySelector(".limit-label");
-    if (label) label.textContent = b.plan_name + " contacts";
-
-    // the mobile header carries its own badge
-    var mob = document.querySelector(".mobile-badge-free");
-    if (mob) {
-      mob.textContent = b.badge || b.plan_name;
-      if (b.is_paid) mob.style.cssText = "background:#e8f5ee;color:#00824b";
-    }
-  }
-
-  // ============================================================= broadcast
-  function bcLog(level, text) {
-    var box = $("#bcLog");
-    if (!box) return;
-    var colour = { SUCCESS: "#00824b", ERROR: "#e5484d", WARN: "#b45309" }[level] || "#5b6673";
-    var row = document.createElement("div");
-    row.style.cssText = "color:" + colour + ";line-height:1.5;flex-shrink:0";
-    row.textContent = "› " + text;
-    box.appendChild(row);
-    box.scrollTop = box.scrollHeight;
-  }
-
-  async function renderBroadcast() {
-    var out = await api("/api/billing/status");
-    var allowed = (out.billing.features || {}).broadcast;
-    var lock = $("#bcLock");
-    if (lock) {
-      lock.style.display = allowed ? "none" : "flex";
-      if (!allowed) {
-        var upsell = (out.plans || []).find(function (p) { return p.features && p.features.broadcast; });
-        $("#bcLockText").innerHTML = "Broadcast is not on the <strong>" + esc(out.billing.plan_name) +
-          "</strong> plan." + (upsell ? " It's included from <strong>" + esc(upsell.name) + " — " + inr(upsell.price_monthly) + "/month</strong>." : "");
-      }
-    }
-    ["bcStart", "bcPause", "bcStop"].forEach(function (id) {
-      var el = $("#" + id);
-      if (el) el.disabled = !allowed;
-    });
-
-    var data = await insights(true);
-    var cockpit = $("#bcSafety");
-    if (cockpit) cockpit.innerHTML = safetyHTML(data.safety);
-
-    var t = await api("/api/targets");
-    STATE.targets = (t.targets || []).length;
-    var c = $("#bcCount");
-    if (c) c.textContent = STATE.targets ? STATE.targets + " leads loaded" : "No leads loaded yet";
-  }
-
-  function openStream() {
-    if (STATE.stream || !window.EventSource) return;
-    try {
-      STATE.stream = new EventSource("/api/logs/stream");
-      STATE.stream.onmessage = function (e) {
-        try {
-          var d = JSON.parse(e.data);
-          if (d.message) bcLog(d.level, d.message);
-          if (d.stats) {
-            if ($("#bcSent")) $("#bcSent").textContent = num(d.stats.sent || 0);
-            if ($("#bcFailed")) $("#bcFailed").textContent = num(d.stats.failed || 0);
-          }
-        } catch (_) {}
-      };
-      STATE.stream.onerror = function () { STATE.stream.close(); STATE.stream = null; };
-    } catch (_) {}
-  }
-
-  document.addEventListener("click", async function (ev) {
-    if (ev.target.closest("#bcLoadText")) {
-      var text = $("#bcTargets").value;
-      var out = await api("/api/targets/load-text", { method: "POST", body: JSON.stringify({ text: text }) });
-      flash((out.count || 0) + " leads loaded");
-      renderBroadcast();
-      return;
-    }
-    if (ev.target.closest("#bcClear")) {
-      await api("/api/targets/clear", { method: "POST" });
-      $("#bcTargets").value = "";
-      flash("Lead list cleared");
-      renderBroadcast();
-      return;
-    }
-    if (ev.target.closest("#bcPreview")) {
-      var tpl = $("#bcTemplate").value;
-      var box = $("#bcPreviewBox");
-      box.innerHTML = "";
-      for (var i = 0; i < 3; i++) {
-        var r = await api("/api/spintax/preview", { method: "POST", body: JSON.stringify({ template: tpl }) });
-        var line = document.createElement("div");
-        line.className = "bot-bubble";
-        line.style.cssText = "max-width:100%;align-self:stretch";
-        line.textContent = r.preview || r.result || "";
-        box.appendChild(line);
-      }
-      return;
-    }
-    if (ev.target.closest("#bcStart")) {
-      if (!STATE.targets) { flash("Load a lead list first", true); return; }
-      openStream();
-      var body = {
-        template: $("#bcTemplate").value,
-        min_delay: parseInt($("#bcMin").value || 45, 10),
-        max_delay: parseInt($("#bcMax").value || 90, 10),
-        daily_limit: parseInt($("#bcCap").value || 35, 10),
-        headless: false
-      };
-      var out = await api("/api/campaign/start", { method: "POST", body: JSON.stringify(body) });
-      flash(out.success ? "Campaign started" : (out.error || "Could not start"), !out.success);
-      bcLog("INFO", "Campaign starting — " + STATE.targets + " leads queued.");
-      return;
-    }
-    if (ev.target.closest("#bcPause")) { await api("/api/campaign/pause", { method: "POST" }); flash("Campaign paused"); return; }
-    if (ev.target.closest("#bcStop")) { await api("/api/campaign/stop", { method: "POST" }); flash("Campaign stopped"); return; }
-  });
-
-  document.addEventListener("change", async function (ev) {
-    if (ev.target.id === "bcCsv" && ev.target.files && ev.target.files[0]) {
-      var fd = new FormData();
-      fd.append("file", ev.target.files[0]);
-      var res = await fetch("/api/targets/upload-csv", { method: "POST", body: fd });
-      var out = await res.json();
-      flash((out.count || 0) + " leads imported from CSV");
-      renderBroadcast();
-    }
-  });
-
-  // ============================================================= insights
-  // Everything below renders /api/insights — the funnel, the safety margin and
-  // the 60-second speed line. See COMPETITIVE_STRATEGY.md for why each exists.
-
-  async function insights(force) {
-    if (STATE.insights && !force) return STATE.insights;
-    STATE.insights = await api("/api/insights");
-    return STATE.insights;
-  }
-
-  var CHECK_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-  var DOT_ICON = '<svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="12"/></svg>';
-
-  // --- safety cockpit -------------------------------------------------------
-  function safetyHTML(sf) {
-    function gauge(cap, d) {
-      return '<div class="cf-gauge"><div class="cap">' + cap + '</div>' +
-        '<div class="fig">' + num(d.used) + ' <small>/ ' + num(d.limit) + '</small></div>' +
-        '<div class="track"><i style="width:' + Math.max(2, d.percent) + '%"></i></div></div>';
-    }
-    return '<div class="cf-safety ' + sf.state + '">' +
-      '<div><h4>' + esc(sf.headline) + '</h4><p>' + esc(sf.detail) +
-      (sf.your_cap ? ' Your own daily cap is set to ' + num(sf.your_cap) + '.' : '') + '</p></div>' +
-      '<div class="cf-gauges">' + gauge("This hour", sf.hour) + gauge("Today", sf.day) + '</div></div>';
-  }
-
-  // --- home -----------------------------------------------------------------
-  async function renderHome() {
-    var data = await insights();
-    var f = data.funnel, h = data.health, sp = data.speed;
-
-    var head = $("#cfHeadline"), sub = $("#cfHeadlineSub");
-    if (head) {
-      var comments = f.stages[0].value, dms = f.stages[1].value;
-      if (!comments && !dms) {
-        head.textContent = "Nothing has come through yet";
-        sub.textContent = "Switch on an automation and your first comment will show up here within seconds.";
-      } else {
-        head.innerHTML = num(comments) + " comment" + (comments === 1 ? "" : "s") +
-          " turned into <b>" + num(dms) + "</b> DM" + (dms === 1 ? "" : "s") + ".";
-        sub.textContent = sp.known
-          ? "Median reply time " + sp.label + ". " + (sp.fast
-              ? "That's inside the 60-second window where intent is still hot."
-              : "Automating this trigger would cut it to seconds.")
-          : "Reply speed fills in once your first automation fires.";
-      }
-    }
-
-    var list = $("#cfHealthList");
-    if (list) {
-      list.innerHTML = h.checks.map(function (c) {
-        return '<div class="cf-check' + (c.ok ? " ok" : "") + '">' +
-          '<span class="dot">' + (c.ok ? CHECK_ICON : DOT_ICON) + '</span>' +
-          '<span><span class="what">' + esc(c.label) + '</span>' +
-          (c.ok ? '' : '<span class="fix">' + esc(c.fix) + '</span>') + '</span>' +
-          '<span>' + (c.ok
-            ? '<span style="font-size:12px;font-weight:700;color:var(--mc-green)">OK</span>'
-            : '<span style="font-size:12px;font-weight:700;color:var(--mc-coral)">Fix</span>') + '</span></div>';
-      }).join("") +
-      '<p style="font-size:12.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">' +
-      esc(h.summary) + ' · delivery ' + h.success_rate + '%</p>';
-    }
-
-    var safe = $("#cfHomeSafety");
-    if (safe) safe.innerHTML = safetyHTML(data.safety);
-  }
-
-  // --- analytics ------------------------------------------------------------
-  async function renderAnalytics() {
-    var data = await insights(true);
-    var f = data.funnel;
-
-    var box = $("#anFunnel");
-    if (box) {
-      box.innerHTML = f.stages.map(function (st) {
-        var width = Math.max(24, st.of_top);
-        return '<div class="cf-stage">' +
-          '<div class="cf-stage-bar' + (st.known ? "" : " unknown") + '" style="width:' + width + '%">' +
-          '<b>' + (st.known ? num(st.value) : "—") + '</b><span>' + esc(st.label) + '</span></div>' +
-          '<div class="cf-stage-meta">' +
-          (st.drop != null && st.drop > 0
-            ? '<span class="cf-drop">' + st.drop + '% drop off here</span>' : '') +
-          '<span class="cf-stage-hint">' + esc(st.hint) + '</span></div></div>';
-      }).join("");
-    }
-
-    var conv = $("#anConversion");
-    if (conv) {
-      conv.innerHTML = f.attribution_ready
-        ? '<b>' + f.conversion + '%</b> of comments became orders'
-        : 'Tag a contact <b>Converted</b> to start measuring orders';
-    }
-
-    var speedBox = $("#anSpeed");
-    if (speedBox) {
-      var sp = data.speed;
-      if (!sp.known) {
-        speedBox.innerHTML = '<div class="cf-speed"><div class="cf-speed-dial" style="--dial:0%"><span>—</span></div>' +
-          '<div><h4>' + esc(sp.label) + '</h4><p>' + esc(sp.detail) + '</p></div></div>';
-      } else {
-        var dial = Math.max(6, Math.min(100, 100 - (sp.seconds / sp.benchmark) * 100));
-        if (!sp.fast) dial = 88;
-        speedBox.innerHTML = '<div class="cf-speed' + (sp.fast ? "" : " slow") + '">' +
-          '<div class="cf-speed-dial" style="--dial:' + dial + '%"><span>' + esc(sp.label) + '</span></div>' +
-          '<div><h4>' + (sp.fast ? "Inside the 60-second window" : "Slower than the 60-second window") + '</h4>' +
-          '<p>' + esc(sp.detail) + '</p></div></div>';
-      }
-    }
-
-    var kw = $("#anKeywords");
-    if (kw) {
-      kw.innerHTML = (data.keywords || []).map(function (r, i) {
-        return '<tr><td><span class="cf-rank' + (i === 0 && r.converted ? " top" : "") + '">' + (i + 1) + '</span></td>' +
-          '<td><b>' + esc(r.name) + '</b></td>' +
-          '<td>' + (r.keywords.length
-            ? r.keywords.map(function (w) { return '<span class="cf-word">' + esc(w) + '</span>'; }).join("")
-            : '<span class="cf-word">any comment</span>') + '</td>' +
-          '<td class="num">' + num(r.contacts) + '</td>' +
-          '<td class="num">' + num(r.converted) + '</td>' +
-          '<td class="num">' + r.conversion + '%</td>' +
-          '<td>' + (r.active
-            ? '<span style="font-size:12px;font-weight:700;color:var(--mc-green)">Live</span>'
-            : '<span style="font-size:12px;font-weight:700;color:var(--text-faint)">Paused</span>') + '</td></tr>';
-      }).join("") ||
-      '<tr><td colspan="7" style="padding:36px;text-align:center;color:var(--text-faint)">' +
-      'No automations yet — build one and this table tells you which word earns.</td></tr>';
-    }
-
-    // sources, from the contacts CRM
-    var contacts = await api("/api/contacts");
-    var rows = contacts.contacts || [];
-    var sources = {};
-    rows.forEach(function (c) {
-      var src = (c.source || "Unknown").replace(/\s*\(.*\)$/, "");
-      sources[src] = (sources[src] || 0) + 1;
-    });
-    var total = rows.length || 1;
-    var sbox = $("#anSources");
-    if (sbox) {
-      sbox.innerHTML = Object.keys(sources)
-        .sort(function (a, b) { return sources[b] - sources[a]; })
-        .map(function (src) {
-          var pct = Math.round(sources[src] / total * 100);
-          return '<div style="display:flex;align-items:center;gap:14px;padding:10px 0">' +
-            '<span style="font-size:13.5px;font-weight:600;width:240px;flex-shrink:0">' + esc(src) + '</span>' +
-            '<div class="meter" style="flex:1"><i style="width:' + pct + '%"></i></div>' +
-            '<span style="font-size:12.5px;font-weight:700;width:90px;text-align:right;color:var(--text-muted)">' +
-            sources[src] + ' · ' + pct + '%</span></div>';
-        }).join("") ||
-        '<p class="helper-text">No contacts captured yet — run an automation or the Flow Tester.</p>';
-    }
-  }
-
-  // --- the upgrade modal ----------------------------------------------------
-  // The old modal hardcoded "Pro — ₹299/month" and a fixed benefit list. With a
-  // four-tier catalogue that was guaranteed to go stale, so it now reads the
-  // plans the admin actually sells and offers the next one up.
-  var FEATURE_COPY = {
-    broadcast: ["Broadcast engine", "Send a personalised DM to a whole lead list, with anti-ban delays."],
-    ai_assist: ["AI flow generator", "Describe your offer and get the whole comment-to-DM flow written."],
-    story_mention: ["Story mention trigger", "Reply automatically when someone mentions you in a story."],
-    wildcard_trigger: ["Any-comment trigger", "Catch every comment on a post, not just chosen keywords."],
-    analytics: ["Campaign analytics", "See which keyword earns and where people drop off."],
-    priority_support: ["Priority WhatsApp support", "A real person on WhatsApp, not a ticket queue."],
-    white_label: ["White-label", "Run client brands without ConverFlow's name on it."],
-    remove_branding: ["No ConverFlow branding", "Your DMs look like yours."]
-  };
-
-  async function fillUpgradeModal() {
-    if (!$("#upModalPrice")) return;
-    var out = await api("/api/billing/status");
-    var b = out.billing, plans = out.plans || [];
-
-    var current = plans.find(function (p) { return p.id === b.plan_id; });
-    var order = current ? current.order : 0;
-    // Only ever offer a plan ABOVE the current one. Falling back to the
-    // "recommended" plan would have pitched Growth to an Agency customer — a
-    // downgrade dressed up as an upgrade.
-    var target = plans.filter(function (p) { return p.order > order; })[0];
-
-    if (!target) {
-      STATE.upgradeTarget = null;
-      $("#upModalTitle").textContent = "You're on our top plan";
-      $("#upModalPrice").textContent = num(b.price_monthly);
-      $("#upModalSub").textContent = (current && current.tagline) || "Everything is unlocked.";
-      $("#upModalCta").textContent = "Manage plan & usage";
-      $("#upModalBenefits").innerHTML =
-        '<div class="benefit-item"><span class="benefit-check">✓</span>' +
-        '<div><strong>Nothing left to unlock</strong> — ' + esc(b.plan_name) +
-        ' includes every feature we ship. Need more than it allows? Talk to us about a custom limit.</div></div>';
-      return;
-    }
-
-    STATE.upgradeTarget = target.id;
-    $("#upModalTitle").textContent = "Upgrade to " + target.name;
-    $("#upModalPrice").textContent = num(target.price_monthly);
-    $("#upModalSub").textContent = target.tagline || "";
-    $("#upModalCta").textContent = "Switch to " + target.name + " — " + inr(target.price_monthly) + " / month";
-
-    // what this plan adds that the current one does not
-    var have = (current && current.features) || {};
-    var gains = Object.keys(target.features || {}).filter(function (k) {
-      return target.features[k] && !have[k] && FEATURE_COPY[k];
-    });
-    // -1 means unlimited, so treat it as the largest possible value when
-    // deciding whether a limit actually improves.
-    var rank = function (v) { return v === -1 ? Infinity : (v || 0); };
-    var limitLine = function (key, label) {
-      var to = target.limits[key];
-      if (to == null) return null;
-      var from = current ? current.limits[key] : null;
-      if (from != null && rank(to) <= rank(from)) return null;   // not an upgrade
-      return [limitLabel(to) + " " + label,
-              from != null ? "Up from " + limitLabel(from) + "." : ""];
+  // ── Toast Notifications ──
+  function toast(msg, type = "info") {
+    const c = $("#toastContainer");
+    if (!c) return;
+    const icons = {
+      success: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>',
+      error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+      warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
     };
-    var rows = [limitLine("automations", "automations"),
-                limitLine("contacts", "contacts"),
-                limitLine("dms_per_month", "DMs a month")]
-      .filter(Boolean)
-      .concat(gains.map(function (k) { return FEATURE_COPY[k]; }));
-
-    $("#upModalBenefits").innerHTML = rows.slice(0, 6).map(function (r) {
-      return '<div class="benefit-item"><span class="benefit-check">✓</span>' +
-        '<div><strong>' + esc(r[0]) + '</strong>' + (r[1] ? ' — ' + esc(r[1]) : '') + '</div></div>';
-    }).join("") || '<div class="benefit-item"><span class="benefit-check">✓</span>' +
-      '<div>You are already on our top plan.</div></div>';
+    const t = document.createElement("div");
+    t.className = `toast ${type}`;
+    t.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span>${msg}</span>`;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 300); }, 4000);
   }
 
-  document.addEventListener("click", async function (ev) {
-    var confirm = ev.target.closest("#btnConfirmUpgrade");
-    if (confirm && !STATE.upgradeTarget) {
-      var modalTop = document.getElementById("upgradeModal");
-      if (modalTop) modalTop.classList.remove("active", "show");
-      window.location.hash = "#billing";
-      renderFor("view-billing");
+  // ── API Helper ──
+  async function api(url, method = "GET", body = null) {
+    try {
+      const opts = { method, headers: { "Content-Type": "application/json" } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(url, opts);
+      return await res.json();
+    } catch (e) {
+      console.error("API error:", url, e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  // ── Navigation ──
+  function navigate(viewId) {
+    $$(".content-view").forEach((v) => v.classList.remove("active"));
+    const target = $(`#${viewId}`);
+    if (target) target.classList.add("active");
+    $$(".nav-item").forEach((n) => n.classList.remove("active"));
+    const navLink = $(`.nav-item[data-view="${viewId}"]`);
+    if (navLink) navLink.classList.add("active");
+    currentView = viewId;
+    window.location.hash = viewId.replace("view-", "");
+
+    // Load data for the view
+    if (viewId === "view-home") loadDashboard();
+    if (viewId === "view-automations") loadRules();
+    if (viewId === "view-contacts") loadContacts();
+    if (viewId === "view-analytics") loadAnalytics();
+    if (viewId === "view-settings") loadSettings();
+    if (viewId === "view-billing") loadBilling();
+  }
+
+  function initNav() {
+    $$(".nav-item[data-view]").forEach((link) => {
+      on(link, "click", (e) => {
+        e.preventDefault();
+        navigate(link.dataset.view);
+        // Close mobile sidebar
+        $("#sidebar")?.classList.remove("mobile-open");
+        $("#mobileOverlay")?.classList.remove("open");
+      });
+    });
+    // Quick actions
+    $$(".quick-action[data-goto]").forEach((el) => {
+      on(el, "click", () => navigate(el.dataset.goto));
+    });
+    // Hash routing
+    const hash = window.location.hash.replace("#", "");
+    if (hash) navigate("view-" + hash);
+  }
+
+  // ── Sidebar ──
+  function initSidebar() {
+    on($("#btnCollapse"), "click", () => {
+      $("#sidebar")?.classList.toggle("collapsed");
+    });
+    on($("#btnMobileMenu"), "click", () => {
+      $("#sidebar")?.classList.add("mobile-open");
+      $("#mobileOverlay")?.classList.add("open");
+    });
+    on($("#mobileOverlay"), "click", () => {
+      $("#sidebar")?.classList.remove("mobile-open");
+      $("#mobileOverlay")?.classList.remove("open");
+    });
+  }
+
+  // ── Dashboard / Home ──
+  async function loadDashboard() {
+    const data = await api("/api/status");
+    if (!data.success) return;
+    const s = data.stats || {};
+    const b = s.billing || {};
+
+    // Stats
+    setText("statDms", s.dms_sent || s.dm_count || 0);
+    setText("statContacts", b.usage?.contacts || 0);
+    setText("statRules", s.active_reels_count || 0);
+    setText("statComments", s.comments_replied || 0);
+
+    // Sidebar
+    setText("sidebarAccountName", b.workspace?.name || b.workspace?.business || "Workspace");
+    const avatar = $("#accountAvatarLetter");
+    if (avatar) avatar.textContent = (b.workspace?.name || "W")[0].toUpperCase();
+    const badge = $("#sidebarPlanBadge");
+    if (badge) {
+      badge.textContent = b.label || (b.is_pro ? "PRO" : "FREE");
+      badge.classList.toggle("pro", !!b.is_pro);
+    }
+
+    // Limits
+    const used = b.usage?.contacts || 0;
+    const max = b.limits?.contacts || 25;
+    setText("limitsCount", `${used} / ${max === -1 ? "∞" : max}`);
+    const pct = max === -1 ? 0 : Math.round((used / max) * 100);
+    setText("limitsPercent", `${pct}%`);
+    const gauge = $("#limitsGauge");
+    if (gauge) {
+      gauge.classList.toggle("low", pct > 60 && pct < 90);
+      gauge.classList.toggle("full", pct >= 90);
+    }
+    setText("navContactCount", used);
+
+    // Connection checks
+    setCheck("checkMeta", s.meta_connected);
+    setCheck("checkIG", !!s.meta_account);
+    if (s.meta_account) setText("igAccountLabel", `@${s.meta_account}`);
+    setCheck("checkWatcher", s.watcher_status === "running" || s.meta_connected);
+    setCheck("checkRule", (s.active_reels_count || 0) > 0);
+
+    // Greeting
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    setText("greetingText", `${greeting}. ${s.active_reels_count || 0} automation${(s.active_reels_count || 0) !== 1 ? "s" : ""} running.`);
+
+    // Activity feed
+    loadLogs();
+  }
+
+  function setCheck(id, ok) {
+    const el = $(`#${id}`);
+    if (!el) return;
+    el.className = `check-icon ${ok ? "pass" : "fail"}`;
+    el.textContent = ok ? "✓" : "✕";
+  }
+
+  function setText(id, text) {
+    const el = $(`#${id}`);
+    if (el) el.textContent = text;
+  }
+
+  async function loadLogs() {
+    const data = await api("/api/logs");
+    if (!data.success) return;
+    const feed = $("#activityFeed");
+    if (!feed) return;
+    const logs = (data.logs || []).slice(0, 30);
+    if (!logs.length) {
+      feed.innerHTML = '<div class="empty-state"><div class="empty-state-title">No activity yet</div><div class="empty-state-text">Events appear here when automations run.</div></div>';
       return;
     }
-    if (confirm && STATE.upgradeTarget) {
-      confirm.disabled = true;
-      var out = await api("/api/billing/upgrade", {
-        method: "POST", body: JSON.stringify({ plan_id: STATE.upgradeTarget })
-      });
-      confirm.disabled = false;
-      if (!out.success) { flash(out.error || "Could not switch plan", true); return; }
-      flash("You're on the " + out.billing.plan_name + " plan");
-      var modal = document.getElementById("upgradeModal");
-      if (modal) modal.classList.remove("active", "show");
-      renderBilling(); fillUpgradeModal(); renderSettingsPlan();
-    }
-  });
-
-  // --- the small plan card on Settings --------------------------------------
-  async function renderSettingsPlan() {
-    if (!$("#setPlanLine")) return;
-    var out = await api("/api/billing/status");
-    var b = out.billing;
-    var badge = $("#setPlanBadge");
-    if (badge) {
-      badge.textContent = b.badge || b.plan_name;
-      if (b.is_paid) badge.style.cssText = "background:#e8f5ee;color:#00824b";
-    }
-    var limits = b.limits || {};
-    var autos = limits.automations === -1 ? "unlimited automations"
-      : limits.automations + " automation" + (limits.automations === 1 ? "" : "s");
-    $("#setPlanLine").textContent = b.state === "trialing"
-      ? "Trial of " + b.plan_name + " — " + b.days_left + " days left, " + autos + "."
-      : b.state === "expired"
-      ? "Your trial has ended, so automations are paused."
-      : "You're on " + b.plan_name + " with " + autos + ".";
-    $("#setPlanPrice").textContent = inr(b.price_monthly);
-    $("#setPlanCycle").textContent = b.price_monthly ? " / month" : " — free forever";
-  }
-
-  // --- connection doctor ----------------------------------------------------
-  // Every step reports its own state. A failure always carries its cause and its
-  // fix, because the single loudest complaint about ManyChat is a connect button
-  // that does nothing and says nothing.
-  async function renderDoctor() {
-    var steps = $("#doctorSteps");
-    if (!steps) return;
-    var out = await api("/api/instagram/status");
-    var ig = out.instagram || {};
-    var data = await insights(true);
-    var health = data.health.checks.reduce(function (m, c) { m[c.key] = c.ok; return m; }, {});
-
-    var plan = [
-      {
-        label: "ConverFlow can talk to Meta",
-        pass: out.platform_ready,
-        desc: out.platform_ready
-          ? "The platform's Meta app is configured and accepted."
-          : "One-click connect is off. An existing session can still work, but new users cannot self-connect.",
-        why: "The Meta app is not set up yet, so the Connect button has nowhere to send you.",
-        fix: "We're finishing this setup at our end. Until it's live you can use "
-             + "\"Sign in with a browser window\" below."
-      },
-      {
-        label: "Your Instagram account is linked",
-        pass: !!ig.connected,
-        desc: ig.connected ? "@" + (ig.username || "") + " is connected." : "Not connected yet.",
-        why: "No Instagram account is attached to this workspace.",
-        fix: "Press Connect Instagram above. You need a Business or Creator account linked to a Facebook page."
-      },
-      {
-        label: "Account type is Business or Creator",
-        pass: !!ig.connected,
-        desc: "Personal accounts cannot receive automated DMs — Meta blocks it at the API.",
-        why: "Meta only exposes messaging for professional accounts.",
-        fix: "Instagram app → Settings → Account type → switch to Business, then link a Facebook page."
-      },
-      {
-        label: "Comment watcher is running",
-        pass: !!health.watcher,
-        desc: "Something is listening for new comments.",
-        why: "The watcher is idle, so comments are not being picked up.",
-        fix: "Open Automations and press Start Live Watcher."
-      },
-      {
-        label: "At least one automation is live",
-        pass: !!health.rules,
-        desc: "A rule is switched on and ready to fire.",
-        why: "Every rule is paused, so nothing will trigger even with a healthy connection.",
-        fix: "Switch a rule on in Automations."
-      }
-    ];
-
-    // Every failing step is marked failed — hiding the later ones would repeat
-    // exactly the vagueness we're trying to beat. Only the first one carries the
-    // fix panel, so the user always knows which single thing to do next.
-    var failing = plan.filter(function (p) { return !p.pass; });
-    var firstFail = plan.findIndex(function (p) { return !p.pass; });
-
-    steps.innerHTML = plan.map(function (p, i) {
-      return '<div class="cf-step ' + (p.pass ? "done" : "failed") + '">' +
-        '<span class="cf-step-mark">' + (p.pass ? CHECK_ICON : (i + 1)) + '</span>' +
-        '<div><b>' + esc(p.label) + '</b><p>' + esc(p.desc) + '</p>' +
-        (i === firstFail
-          ? '<div class="reason"><em>Why it is stuck:</em> ' + esc(p.why) +
-            '<br><em>Fix:</em> ' + esc(p.fix) + '</div>'
-          : '') +
-        '</div><span>' + (p.pass
-          ? ''
-          : '<span style="font-size:11.5px;font-weight:700;color:var(--mc-coral)">' +
-            (i === firstFail ? "Do this" : "Blocked") + '</span>') + '</span></div>';
+    feed.innerHTML = logs.map((l) => {
+      const cls = (l.level || "").toLowerCase().includes("error") ? "error" : (l.level || "").toLowerCase().includes("warn") ? "warn" : "success";
+      return `<div class="feed-item"><div class="feed-dot ${cls}"></div><div class="feed-text">${esc(l.message || l.text || "")}</div><div class="feed-time">${timeAgo(l.timestamp || l.time)}</div></div>`;
     }).join("");
+  }
 
-    var chip = $("#doctorChip");
-    if (chip) {
-      var n = failing.length;
-      chip.textContent = n === 0 ? "ALL CLEAR" : n + (n === 1 ? " STEP LEFT" : " STEPS LEFT");
-      chip.style.cssText = n === 0
-        ? "background:var(--mc-green-light);color:var(--mc-green)"
-        : "background:#fef2f2;color:#c2262b";
+  // ── Automations ──
+  async function loadRules() {
+    const data = await api("/api/automations");
+    if (!data.success) return;
+    rules = data.rules || [];
+    renderRules(rules);
+  }
+
+  function renderRules(list) {
+    const container = $("#rulesList");
+    if (!container) return;
+    if (!list.length) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div class="empty-state-title">No automations yet</div><div class="empty-state-text">Create your first rule to automate Instagram DMs.</div><button class="btn btn-primary" onclick="document.getElementById('btnNewRule').click()">Create first automation</button></div>`;
+      return;
+    }
+    container.innerHTML = list.map((r) => {
+      const active = r.is_active !== false;
+      const kws = (r.trigger_keywords || []).map((k) => `<span class="tag">${esc(k)}</span>`).join("");
+      return `
+        <div class="rule-card">
+          <div class="status-dot ${active ? "active" : "off"}"></div>
+          <div class="rule-info">
+            <div class="rule-name">${esc(r.name || "Untitled Rule")}</div>
+            <div class="rule-meta">${esc(r.type || "comment_to_dm")} · ${r.trigger_keywords?.length || 0} keywords</div>
+            <div class="rule-keywords">${kws}</div>
+          </div>
+          <div class="rule-actions">
+            <label class="toggle"><input type="checkbox" ${active ? "checked" : ""} onchange="window.CF.toggleRule('${r.id}', this.checked)"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+            <button class="btn btn-ghost btn-sm" onclick="window.CF.editRule('${r.id}')">Edit</button>
+            <button class="btn btn-ghost btn-sm text-red" onclick="window.CF.deleteRule('${r.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // Rule CRUD
+  function openRuleModal(rule = null) {
+    editingRuleId = rule?.id || null;
+    setText("ruleModalTitle", rule ? "Edit Rule" : "New Automation Rule");
+    $("#ruleInputName").value = rule?.name || "";
+    $("#ruleInputType").value = rule?.type || "comment_to_dm";
+    $("#ruleInputKeywords").value = (rule?.trigger_keywords || []).join(", ");
+    $("#ruleInputCommentReply").value = rule?.public_comment_reply || "";
+    $("#ruleInputDM").value = rule?.dm_message || rule?.opening_dm || "";
+    $("#ruleInputBtnText").value = rule?.button_text || "";
+    $("#ruleInputLink").value = rule?.delivery_link || "";
+    $("#modalRule")?.classList.add("open");
+  }
+
+  async function saveRule() {
+    const payload = {
+      name: $("#ruleInputName")?.value?.trim(),
+      type: $("#ruleInputType")?.value,
+      trigger_keywords: ($("#ruleInputKeywords")?.value || "").split(",").map((k) => k.trim()).filter(Boolean),
+      public_comment_reply: $("#ruleInputCommentReply")?.value?.trim(),
+      dm_message: $("#ruleInputDM")?.value?.trim(),
+      button_text: $("#ruleInputBtnText")?.value?.trim(),
+      delivery_link: $("#ruleInputLink")?.value?.trim(),
+      is_active: true,
+    };
+    if (!payload.name) return toast("Rule name is required", "error");
+    if (!payload.dm_message) return toast("DM message is required", "error");
+
+    if (editingRuleId) payload.id = editingRuleId;
+    const data = await api("/api/automations/save", "POST", payload);
+    if (data.success) {
+      toast(editingRuleId ? "Rule updated" : "Rule created", "success");
+      closeModal("modalRule");
+      loadRules();
+    } else {
+      toast(data.error || "Failed to save rule", "error");
     }
   }
 
-  // ================================================================ routing
-  var RENDER = {
-    "view-home": renderHome,
-    "view-billing": renderBilling,
-    "view-broadcast": renderBroadcast,
-    "view-analytics": renderAnalytics,
-    "view-settings": function () { renderConnect(); renderDoctor(); renderSettingsPlan(); }
+  window.CF = {
+    toggleRule: async (id, active) => {
+      await api("/api/automations/toggle", "POST", { id, is_active: active });
+      toast(active ? "Rule activated" : "Rule paused", active ? "success" : "warn");
+      loadRules();
+    },
+    editRule: (id) => {
+      const rule = rules.find((r) => r.id === id);
+      if (rule) openRuleModal(rule);
+    },
+    deleteRule: async (id) => {
+      if (!confirm("Delete this automation rule?")) return;
+      const data = await api("/api/automations/delete", "POST", { id });
+      if (data.success) { toast("Rule deleted", "success"); loadRules(); }
+      else toast(data.error || "Failed to delete", "error");
+    },
   };
 
-  function renderFor(viewId) {
-    var fn = RENDER[viewId];
-    if (fn) { try { fn(); } catch (e) { console.error(e); } }
+  // ── Contacts ──
+  async function loadContacts() {
+    const data = await api("/api/contacts");
+    if (!data.success) return;
+    contacts = data.contacts || [];
+    const tbody = $("#contactsTableBody");
+    if (!tbody) return;
+    if (!contacts.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:40px">No contacts yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = contacts.map((c) => {
+      const tags = (c.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join(" ");
+      return `<tr>
+        <td><strong>@${esc(c.username || "")}</strong></td>
+        <td>${esc(c.name || "")}</td>
+        <td class="text-muted">${esc(c.source || "")}</td>
+        <td>${tags}</td>
+        <td class="text-muted">${shortDate(c.created_at || c.first_seen)}</td>
+        <td><button class="btn btn-ghost btn-xs" onclick="window.CF.deleteContact('${c.username}')">×</button></td>
+      </tr>`;
+    }).join("");
   }
 
-  document.addEventListener("click", function (ev) {
-    var link = ev.target.closest("[data-view]");
-    if (link) setTimeout(function () { renderFor(link.getAttribute("data-view")); }, 60);
-  });
-  window.addEventListener("hashchange", function () {
-    var map = { "#billing": "view-billing", "#broadcast": "view-broadcast",
-                "#analytics": "view-analytics", "#settings": "view-settings" };
-    renderFor(map[window.location.hash]);
-  });
-  $("#anRefresh") && $("#anRefresh").addEventListener("click", renderAnalytics);
+  window.CF.deleteContact = async (username) => {
+    if (!confirm(`Remove contact @${username}?`)) return;
+    await api("/api/contacts/delete", "POST", { username });
+    toast("Contact removed", "success");
+    loadContacts();
+  };
 
-  document.addEventListener("DOMContentLoaded", boot);
-  if (document.readyState !== "loading") boot();
-  function boot() {
-    renderConnect();
-    renderHome();
-    fillUpgradeModal();
-    api("/api/billing/status").then(function (out) {
-      if (out && out.billing) { STATE.billing = out.billing; STATE.plans = out.plans || []; syncSidebar(out.billing); }
-    }).catch(function () {});
-    var map = { "#billing": "view-billing", "#broadcast": "view-broadcast", "#analytics": "view-analytics" };
-    var v = map[window.location.hash];
-    if (v) renderFor(v);
+  // ── Analytics ──
+  async function loadAnalytics() {
+    const data = await api("/api/insights/summary");
+    if (!data.success) return;
+    const s = data.summary || {};
+    setText("analyticsDms", s.total_dms || 0);
+    setText("analyticsLeads", s.total_contacts || 0);
+    const rate = s.total_dms > 0 ? Math.round((s.total_contacts / s.total_dms) * 100) : 0;
+    setText("analyticsConversion", `${rate}%`);
   }
+
+  // ── Settings ──
+  async function loadSettings() {
+    const data = await api("/api/meta/config");
+    if (!data.success) return;
+    const cfg = data.config || {};
+
+    const connected = cfg.enabled && cfg.connected_account_username;
+    setText("settingsIGTitle", connected ? `@${cfg.connected_account_username}` : "Not connected");
+    setText("settingsIGSubtitle", connected ? "Connected via Meta Graph API" : "Add your access token to connect");
+
+    // Connection checks
+    setSettingsCheck("sCheckMeta", cfg.enabled, cfg.enabled ? "Connected" : "Not configured");
+    setSettingsCheck("sCheckIG", !!cfg.connected_account_username, cfg.connected_account_username ? `@${cfg.connected_account_username}` : "Pending");
+    setSettingsCheck("sCheckBusiness", connected, connected ? "Verified" : "Pending");
+
+    const statusData = await api("/api/status");
+    const watcher = statusData?.stats?.watcher_status === "running" || cfg.enabled;
+    setSettingsCheck("sCheckWatcher", watcher, watcher ? "Active" : "Inactive");
+
+    const steps = [cfg.enabled, !!cfg.connected_account_username, connected, watcher].filter(Boolean).length;
+    setText("connectionStepCount", `${4 - steps} steps left`);
+
+    if (cfg.access_token_masked) {
+      const tokenInput = $("#inputAccessToken");
+      if (tokenInput) tokenInput.placeholder = cfg.access_token_masked;
+    }
+  }
+
+  function setSettingsCheck(id, ok, label) {
+    const icon = $(`#${id}`);
+    if (icon) { icon.className = `check-icon ${ok ? "pass" : "fail"}`; icon.textContent = ok ? "✓" : "✕"; }
+    const status = $(`#${id}Status`);
+    if (status) {
+      status.textContent = label;
+      status.className = `badge ${ok ? "badge-green" : "badge-red"}`;
+    }
+  }
+
+  async function connectToken(token) {
+    if (!token) return toast("Please paste an access token", "error");
+    const result = await api("/api/meta/test", "POST", { access_token: token });
+    if (result.success) {
+      await api("/api/meta/save", "POST", { access_token: token, enabled: true });
+      toast("Instagram connected successfully!", "success");
+      closeModal("modalToken");
+      loadSettings();
+      loadDashboard();
+    } else {
+      toast(result.error || result.message || "Connection failed", "error");
+    }
+  }
+
+  // ── Billing ──
+  async function loadBilling() {
+    const data = await api("/api/billing/status");
+    if (!data.success) return;
+    const b = data.billing || {};
+    const plans = data.plans || [];
+
+    setText("currentPlanName", b.label || b.plan_name || "Free");
+    setText("currentPlanExpiry", b.expired ? "Plan expired" : b.days_left !== undefined ? `${b.days_left} days remaining` : "Active");
+
+    const limits = b.limits || {};
+    const usage = b.usage || {};
+    setText("billingAutomations", `${usage.automations || 0} / ${limits.automations === -1 ? "∞" : limits.automations || 1}`);
+    setText("billingContacts", `${usage.contacts || 0} / ${limits.contacts === -1 ? "∞" : limits.contacts || 25}`);
+    setText("billingDms", `${usage.dms_this_month || 0} / ${limits.dms_per_month === -1 ? "∞" : limits.dms_per_month || 50}`);
+
+    // Plans grid
+    const grid = $("#plansGrid");
+    if (grid && plans.length) {
+      grid.innerHTML = plans.map((p) => {
+        const isCurrent = p.id === b.plan_id;
+        const featured = p.featured || p.recommended;
+        return `
+          <div class="plan-card${featured ? " featured" : ""}">
+            <div class="plan-name">${esc(p.name)}</div>
+            <div class="plan-price"><span class="currency">₹</span>${p.price_monthly || 0}<span class="period">/mo</span></div>
+            <ul class="plan-features">
+              <li>${(p.limits?.automations ?? 1) === -1 ? "Unlimited" : p.limits?.automations || 1} automations</li>
+              <li>${(p.limits?.contacts ?? 25) === -1 ? "Unlimited" : p.limits?.contacts || 25} contacts</li>
+              <li>${(p.limits?.dms_per_month ?? 50) === -1 ? "Unlimited" : p.limits?.dms_per_month || 50} DMs/month</li>
+            </ul>
+            <button class="btn ${isCurrent ? "btn-secondary" : "btn-primary"} btn-block" ${isCurrent ? "disabled" : ""} onclick="window.CF.checkout('${p.id}')">${isCurrent ? "Current Plan" : "Choose Plan"}</button>
+          </div>`;
+      }).join("");
+    }
+
+    // Payment history
+    const user = b.workspace?.id;
+    if (user) {
+      const userData = await api(`/api/users/${user}`);
+      const payments = userData?.user?.payments || [];
+      const tbody = $("#paymentHistoryBody");
+      if (tbody && payments.length) {
+        tbody.innerHTML = payments.map((p) => `
+          <tr>
+            <td>${shortDate(p.date)}</td>
+            <td>${esc(p.plan || "—")}</td>
+            <td>₹${p.amount || 0}</td>
+            <td><span class="badge badge-green">${p.status || "paid"}</span></td>
+            <td>${esc(p.method || "—")}</td>
+          </tr>`).join("");
+      }
+    }
+  }
+
+  // Razorpay checkout
+  window.CF.checkout = async (planId) => {
+    const gw = await api("/api/billing/gateway");
+    if (!gw.ready) {
+      toast("Payment gateway not configured. Contact admin.", "warn");
+      // Fallback: direct upgrade
+      const res = await api("/api/billing/upgrade", "POST", { plan_id: planId });
+      if (res.success) { toast("Plan upgraded!", "success"); loadBilling(); loadDashboard(); }
+      return;
+    }
+
+    const coupon = $("#inputCoupon")?.value?.trim() || undefined;
+    const order = await api("/api/billing/checkout", "POST", { plan_id: planId, coupon });
+    if (!order.success) return toast(order.error || "Checkout failed", "error");
+    if (order.free) { toast("Plan activated!", "success"); loadBilling(); loadDashboard(); return; }
+
+    const options = {
+      key: order.order.key_id,
+      amount: order.order.amount,
+      currency: order.order.currency || "INR",
+      name: order.brand || "ConverFlow",
+      description: `${order.plan.name} Plan`,
+      order_id: order.order.order_id,
+      prefill: order.prefill || {},
+      theme: { color: "#000000" },
+      handler: async (response) => {
+        const verify = await api("/api/billing/verify", "POST", {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          plan_id: planId,
+          coupon,
+          amount: order.amount_inr,
+        });
+        if (verify.success) {
+          toast("Payment successful! Plan upgraded.", "success");
+          loadBilling();
+          loadDashboard();
+        } else {
+          toast(verify.error || "Verification failed", "error");
+        }
+      },
+    };
+
+    if (typeof Razorpay !== "undefined") {
+      new Razorpay(options).open();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => new Razorpay(options).open();
+      document.head.appendChild(script);
+    }
+  };
+
+  // Coupon preview
+  on($("#btnApplyCoupon"), "click", async () => {
+    const code = $("#inputCoupon")?.value?.trim();
+    if (!code) return;
+    const res = await api("/api/billing/coupon", "POST", { code });
+    const el = $("#couponResult");
+    if (el) {
+      el.textContent = res.success ? `✓ ${res.discount_label || "Coupon applied"} → ₹${res.final_price}` : res.error || "Invalid coupon";
+      el.style.color = res.success ? "var(--green)" : "var(--red)";
+    }
+  });
+
+  // ── Modals ──
+  function closeModal(id) {
+    $(`#${id}`)?.classList.remove("open");
+  }
+
+  function initModals() {
+    // Rule modal
+    on($("#btnNewRule"), "click", () => openRuleModal());
+    on($("#btnNewRuleEmpty"), "click", () => openRuleModal());
+    on($("#btnCloseRuleModal"), "click", () => closeModal("modalRule"));
+    on($("#btnCancelRule"), "click", () => closeModal("modalRule"));
+    on($("#btnSaveRule"), "click", saveRule);
+
+    // Token modal
+    on($("#btnConnectToken"), "click", () => $("#modalToken")?.classList.add("open"));
+    on($("#btnCloseTokenModal"), "click", () => closeModal("modalToken"));
+    on($("#btnCancelToken"), "click", () => closeModal("modalToken"));
+    on($("#btnSubmitToken"), "click", () => connectToken($("#modalTokenInput")?.value?.trim()));
+
+    // Settings token save
+    on($("#btnSaveToken"), "click", () => connectToken($("#inputAccessToken")?.value?.trim()));
+    on($("#btnTestToken"), "click", async () => {
+      const token = $("#inputAccessToken")?.value?.trim();
+      if (!token) return toast("Enter an access token", "error");
+      const res = await api("/api/meta/test", "POST", { access_token: token });
+      toast(res.success ? "Connection successful!" : (res.error || "Failed"), res.success ? "success" : "error");
+    });
+
+    // Close modals on overlay click
+    $$(".modal-overlay").forEach((overlay) => {
+      on(overlay, "click", (e) => { if (e.target === overlay) overlay.classList.remove("open"); });
+    });
+
+    // Refresh buttons
+    on($("#btnRefreshStatus"), "click", loadDashboard);
+    on($("#btnRefreshSettings"), "click", loadSettings);
+    on($("#btnClearLogs"), "click", async () => {
+      await api("/api/logs/clear", "POST");
+      loadLogs();
+    });
+
+    // Billing
+    on($("#btnChangePlan"), "click", () => navigate("view-billing"));
+    on($("#btnUpgrade"), "click", () => navigate("view-billing"));
+
+    // CSV Export
+    on($("#btnExportCSV"), "click", () => {
+      window.open("/api/contacts/export", "_blank");
+    });
+
+    // Automation tabs
+    $$("#automationTabs .tab-btn").forEach((btn) => {
+      on(btn, "click", () => {
+        $$("#automationTabs .tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const tab = btn.dataset.tab;
+        if (tab === "all") renderRules(rules);
+        else if (tab === "active") renderRules(rules.filter((r) => r.is_active !== false));
+        else if (tab === "paused") renderRules(rules.filter((r) => r.is_active === false));
+      });
+    });
+  }
+
+  // ── Utilities ──
+  function esc(s) { const d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML; }
+
+  function timeAgo(ts) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return "now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    return `${Math.floor(diff / 86400)}d`;
+  }
+
+  function shortDate(ts) {
+    if (!ts) return "—";
+    try { return new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short" }); }
+    catch { return ts; }
+  }
+
+  // ── Init ──
+  function init() {
+    initNav();
+    initSidebar();
+    initModals();
+    loadDashboard();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();

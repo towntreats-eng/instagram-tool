@@ -220,3 +220,94 @@ Every dashboard page rebuilt against §5, with §4's six features placed:
 - DM automation analytics gaps — creatorflow.so/blog/instagram-dm-automation-analytics-guide
 - India INR pricing comparison — tryunlockdm.com/blog/instagram-dm-automation-india-2026
 - India creator tool problems — creatorlanehq.com/blog/best-instagram-dm-automation-tools-india
+
+---
+
+# Appendix A — Feature audit vs ManyChat (25 Sept 2026)
+
+Run after Instagram connect went live. The question was not "what else can we
+build" — it was **"what are we shipping that creates chaos?"**
+
+## A.1 What we found in our own app
+
+Two features were not just noise. They were **not real**, and a customer would
+have found out within thirty seconds.
+
+| Feature | What it looked like | What it actually was |
+|---|---|---|
+| **Inbox** | A full DM inbox with threads from Sarah Jenkins, Mike Ross, Priya Sharma | `const inboxThreadsData = [...]` — a hardcoded array. No inbox API exists. |
+| **AI Assist** | "Generate Complete Flow with AI" | A `setTimeout` and an if-else ladder: `if (offer.includes("canva")) mainWord = "CANVA"`. No model, no API call. |
+
+Shipping these to a paying customer is worse than chaos — it is a trust
+failure on day one, and it is the *exact* complaint pattern we documented
+against ManyChat (LEAK 6: features that don't work consistently).
+
+**Both removed from the navigation.** The code stays in the repo, dormant, so a
+real inbox and a real AI step can be built later and switched back on. Nothing
+in the product now points at either.
+
+A third was real but misplaced:
+
+| **Flow Tester** | Worked fine | But it was a *destination*. Testing belongs on the automation you are testing — the card already has a "Test it" button. |
+
+## A.2 Navigation: 10 → 7
+
+Before: Home · Contacts · Automation · AI Assist · Inbox · Flow Tester ·
+Broadcast · Analytics · Plan & billing · Settings
+
+After: **Home · Contacts · Automations · Broadcast · Analytics · Plan & billing
+· Settings**
+
+Ten destinations for a tool whose whole job is "comment → DM" was the chaos.
+
+## A.3 Feature-by-feature against ManyChat
+
+| Capability | ManyChat | ConverFlow | Call |
+|---|---|---|---|
+| Comment-to-DM | ✓ | ✓ | **Parity — this is the job** |
+| DM keyword replies | ✓ | ✓ | Parity |
+| Story mention trigger | ✓ | ✓ (Growth+) | Parity |
+| Visual flow builder | 40+ node canvas | One-step composer + card view | **Deliberately different** |
+| Broadcasts | ✓ | ✓ (Growth+) | Parity |
+| Live inbox | ✓ real | ✗ removed | **Gap, honestly marked** |
+| AI flow generation | ✓ real | ✗ removed | **Gap, honestly marked** |
+| WhatsApp / Messenger / SMS / TikTok | ✓ | ✗ | Won't build — this is their "unused-channel tax" |
+| Contacts CRM | ✓ | ✓ | Parity |
+| Revenue funnel analytics | ✗ | ✓ | **We win** |
+| Reply-speed metric | ✗ | ✓ | **We win** |
+| Live send-safety headroom | ✗ | ✓ | **We win** |
+| Connection diagnostics | ✗ (silent failures) | ✓ Connection Doctor | **We win** |
+| Flat pricing | ✗ per active contact | ✓ | **We win** |
+| UPI / INR / GST | ✗ | ✓ | **We win** |
+
+Two honest gaps, six wins, parity on the core. That is a defensible position —
+and far better than claiming two features we hadn't built.
+
+## A.4 One step to an auto-DM
+
+The old path was a **4-step wizard** (pick post → keyword → message → publish).
+The new path is one screen with every field pre-filled:
+
+1. **When someone comments** — `PRICE`, with one-tap suggestions and "any comment"
+2. **Send them this DM** — pre-written, `{name}` merges their Instagram name
+3. **Link** — optional
+4. **On which post** — "Every reel" is pre-selected; recent reels are one click
+
+Everything else (public reply, tags) sits behind **Advanced**, pre-filled.
+
+> **Shortest working path: open → type one word → press "Turn it on".**
+> Verified: 3 automations → 4, live immediately.
+
+The 4-step wizard still exists in the code but nothing points at it.
+
+## A.5 Bugs this audit surfaced
+
+| Bug | Impact |
+|---|---|
+| `/api/wizard/publish` and the toggle gate still used the retired `BillingManager` | An **Agency (unlimited)** workspace was blocked from creating an automation, with an upsell for **₹299/month — a plan that no longer exists**. The one-step button was dead on arrival. |
+| `trigger_scope` was wired to the post picker | Typing `PRICE` silently saved a **catch-all `*` rule**. The user would think they'd set a keyword and every comment would fire. |
+| `BillingManager` still imported | Retired entirely so it cannot be wired back in. |
+
+Both gate bugs are the same root cause: a pricing rewrite that left the old
+single-plan logic in the enforcement path. Worth remembering — **the gate is
+where stale pricing hides**, not the pricing page.
