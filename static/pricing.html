@@ -3,28 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pricing — ConverFlow</title>
-<meta name="description" content="Simple, transparent pricing for Instagram automation. Start free for 15 days.">
+<title>Pricing — ConverFlow (Transparent INR Plans)</title>
+<meta name="description" content="Simple, honest pricing for Instagram automation. Start free for 15 days. Powered by Razorpay with UPI and Card checkout.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/marketing.css">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2309090b'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
 <style>
-.plan-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 32px; text-align: center; transition: border-color 200ms; }
-.plan-card:hover { border-color: #333; }
-.plan-card.featured { border-color: #fff; }
-.plan-card.featured::before { content: 'Most Popular'; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; padding: 3px 14px; border-radius: 10px; }
-.plan-card { position: relative; }
-.plan-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-.plan-price { font-size: 38px; font-weight: 800; color: #fff; letter-spacing: -1px; }
-.plan-price .curr { font-size: 18px; font-weight: 600; vertical-align: super; }
-.plan-price .per { font-size: 14px; font-weight: 400; color: #999; }
-.plan-desc { font-size: 13px; color: #999; margin: 6px 0 20px; }
-.plan-features { list-style: none; text-align: left; margin: 0 0 24px; }
-.plan-features li { font-size: 13px; color: #ccc; padding: 7px 0; display: flex; align-items: center; gap: 8px; }
-.plan-features li::before { content: '✓'; color: #4ade80; font-weight: 700; }
-.plan-features li.no::before { content: '—'; color: #555; }
-.plan-features li.no { color: #555; }
+.table-comp { width: 100%; border-collapse: collapse; margin-top: 24px; }
+.table-comp th { font-size: 13px; font-weight: 700; text-align: left; padding: 12px 16px; border-bottom: 2px solid var(--border); background: var(--subtle); }
+.table-comp td { font-size: 13px; padding: 12px 16px; border-bottom: 1px solid var(--border-light); }
+.table-comp tr:hover td { background: var(--subtle); }
 </style>
 </head>
 <body>
@@ -32,134 +22,168 @@
 <header class="nav" id="nav">
   <div class="wrap nav-inner">
     <a href="/" class="brand">
-      <span class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+      <span class="brand-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
       ConverFlow
     </a>
     <nav class="nav-links">
       <a href="/#features">Features</a>
       <a href="/#how">How it works</a>
       <a href="/pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
     </nav>
     <div class="nav-cta">
       <a href="/login" class="btn btn-ghost btn-sm">Log in</a>
-      <a href="/signup" class="btn btn-white btn-sm">Start free</a>
+      <a href="/signup" class="btn btn-black btn-sm">Start free</a>
     </div>
   </div>
 </header>
 
-<section class="hero" style="padding-top:120px;padding-bottom:40px">
+<section class="hero" style="padding-top:130px;padding-bottom:50px">
   <div class="wrap">
-    <span class="eyebrow">Pricing</span>
-    <h1>Simple, transparent pricing</h1>
-    <p class="lead">Start with a 15-day free trial. Upgrade when you're ready. Cancel anytime.</p>
+    <span class="eyebrow">HONEST & TRANSPARENT PRICING</span>
+    <h1>Straightforward plans for every creator</h1>
+    <p class="lead">Start with a 15-day free trial. Upgrade seamlessly with UPI or card via Razorpay. No hidden charges.</p>
   </div>
 </section>
 
 <section class="section-tight">
   <div class="wrap">
-    <div id="plansGrid" class="price-grid" data-cols="4" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
-      <!-- Plans loaded dynamically -->
-      <div style="text-align:center;padding:40px;color:#999">Loading plans...</div>
+    <div class="price-grid" id="plansGrid">
+      <!-- Starter -->
+      <div class="price-card">
+        <div class="price-name">Starter</div>
+        <div class="price-val">₹499</div>
+        <div class="price-period">per month · billed monthly</div>
+        <ul class="price-features">
+          <li><span>✓</span> 3 Active Automation Rules</li>
+          <li><span>✓</span> Up to 500 DMs / month</li>
+          <li><span>✓</span> 250 Contacts CRM</li>
+          <li><span>✓</span> Comment-to-DM Trigger</li>
+          <li><span>✓</span> Public Comment Reply</li>
+        </ul>
+        <a href="/signup?plan=starter" class="btn btn-white btn-lg">Start Free Trial</a>
+      </div>
+
+      <!-- Growth (Featured) -->
+      <div class="price-card featured">
+        <span class="price-tag">Most Popular</span>
+        <div class="price-name">Growth</div>
+        <div class="price-val">₹1,499</div>
+        <div class="price-period">per month · billed monthly</div>
+        <ul class="price-features">
+          <li><span>✓</span> Unlimited Automation Rules</li>
+          <li><span>✓</span> 3,000 DMs / month</li>
+          <li><span>✓</span> 2,000 Contacts CRM</li>
+          <li><span>✓</span> DM Keyword Replies</li>
+          <li><span>✓</span> Live Flow Simulator</li>
+          <li><span>✓</span> CSV Data Export</li>
+        </ul>
+        <a href="/signup?plan=growth" class="btn btn-black btn-lg">Start 15-Day Free Trial</a>
+      </div>
+
+      <!-- Scale -->
+      <div class="price-card">
+        <div class="price-name">Scale</div>
+        <div class="price-val">₹3,999</div>
+        <div class="price-period">per month · billed monthly</div>
+        <ul class="price-features">
+          <li><span>✓</span> Unlimited Automations</li>
+          <li><span>✓</span> 15,000 DMs / month</li>
+          <li><span>✓</span> Unlimited Contacts CRM</li>
+          <li><span>✓</span> Dedicated Priority Webhooks</li>
+          <li><span>✓</span> Broadcast Engine</li>
+          <li><span>✓</span> Priority WhatsApp / Email Support</li>
+        </ul>
+        <a href="/signup?plan=scale" class="btn btn-white btn-lg">Start Free Trial</a>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Comparison -->
+<!-- Comparison Table -->
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><h2>Compare plans</h2></div>
-    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r)">
-      <table class="cmp" id="comparisonTable">
+    <div class="section-head">
+      <span class="eyebrow">DETAILED COMPARISON</span>
+      <h2>Compare All Plan Features</h2>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="table-comp">
         <thead>
           <tr>
             <th>Feature</th>
-            <th id="cmpH1">Free</th>
-            <th id="cmpH2">Pro</th>
-            <th id="cmpH3">Business</th>
+            <th>Free Trial (15 Days)</th>
+            <th>Starter (₹499)</th>
+            <th>Growth (₹1,499)</th>
+            <th>Scale (₹3,999)</th>
           </tr>
         </thead>
-        <tbody id="cmpBody">
-          <tr><td colspan="4" style="text-align:center;padding:30px;color:#999">Loading comparison...</td></tr>
+        <tbody>
+          <tr>
+            <td>Active Automations</td>
+            <td>1</td>
+            <td>3</td>
+            <td>Unlimited</td>
+            <td>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Monthly DMs</td>
+            <td>50</td>
+            <td>500</td>
+            <td>3,000</td>
+            <td>15,000</td>
+          </tr>
+          <tr>
+            <td>CRM Contact Capacity</td>
+            <td>25</td>
+            <td>250</td>
+            <td>2,000</td>
+            <td>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Official Meta Graph API</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+          </tr>
+          <tr>
+            <td>Live Phone Simulator</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+          </tr>
+          <tr>
+            <td>Razorpay UPI & Cards</td>
+            <td>—</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+          </tr>
+          <tr>
+            <td>Support SLA</td>
+            <td>Community</td>
+            <td>Email (48h)</td>
+            <td>Email (12h)</td>
+            <td>Priority WhatsApp</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="section">
-  <div class="wrap">
-    <div class="cta-band">
-      <h2>Ready to automate?</h2>
-      <p>15-day free trial. No credit card needed.</p>
-      <div class="cta-actions">
-        <a href="/signup" class="btn btn-white btn-lg">Get started free</a>
-      </div>
-    </div>
-  </div>
-</section>
-
 <footer class="footer">
-  <div class="wrap foot-bottom">
-    <span>&copy; 2026 ConverFlow by Satnam Web Services.</span>
-    <span>All prices in INR. GST extra where applicable.</span>
+  <div class="wrap footer-inner">
+    <div class="footer-copy">© 2026 ConverFlow. All rights reserved.</div>
+    <div class="footer-links">
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms of Service</a>
+      <a href="/login">Login</a>
+    </div>
   </div>
 </footer>
 
-<script>
-(async () => {
-  try {
-    const res = await fetch('/api/plans');
-    const data = await res.json();
-    const plans = data.plans || [];
-    if (!plans.length) return;
-
-    const grid = document.getElementById('plansGrid');
-    grid.innerHTML = plans.map((p, i) => {
-      const featured = i === 1 || p.featured;
-      const lim = p.limits || {};
-      const fmt = v => v === -1 ? 'Unlimited' : v;
-      return `
-        <div class="plan-card${featured ? ' featured' : ''}">
-          <div class="plan-name">${p.name}</div>
-          <div class="plan-price"><span class="curr">₹</span>${p.price_monthly || 0}<span class="per">/mo</span></div>
-          <div class="plan-desc">${p.description || ''}</div>
-          <ul class="plan-features">
-            <li>${fmt(lim.automations || 1)} automations</li>
-            <li>${fmt(lim.contacts || 25)} contacts</li>
-            <li>${fmt(lim.dms_per_month || 50)} DMs/month</li>
-            <li${lim.broadcast ? '' : ' class="no"'}>Broadcast DMs</li>
-            <li${lim.priority_support ? '' : ' class="no"'}>Priority support</li>
-          </ul>
-          <a href="/signup" class="btn ${featured ? 'btn-white' : 'btn-outline-light'} btn-block">Start free trial</a>
-        </div>`;
-    }).join('');
-
-    // Comparison table
-    if (plans.length >= 2) {
-      const headers = plans.slice(0, 3);
-      headers.forEach((p, i) => {
-        const h = document.getElementById(`cmpH${i+1}`);
-        if (h) h.textContent = p.name;
-      });
-      const features = ['automations', 'contacts', 'dms_per_month', 'broadcast', 'priority_support', 'api_access'];
-      const labels = { automations: 'Automations', contacts: 'Contacts', dms_per_month: 'DMs / month', broadcast: 'Broadcast', priority_support: 'Priority Support', api_access: 'API Access' };
-      const tbody = document.getElementById('cmpBody');
-      tbody.innerHTML = features.map(f => {
-        const cells = headers.map(p => {
-          const v = (p.limits || {})[f];
-          if (v === true) return '✓';
-          if (v === false || v === undefined) return '—';
-          if (v === -1) return '∞';
-          return v;
-        });
-        return `<tr><td>${labels[f] || f}</td>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
-      }).join('');
-    }
-  } catch (e) {
-    console.error('Failed to load plans:', e);
-  }
-})();
-</script>
 </body>
 </html>

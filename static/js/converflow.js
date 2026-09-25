@@ -1,9 +1,9 @@
 /**
- * ConverFlow — Noir Dashboard JS
+ * ConverFlow — Systematic Dashboard JS
  * =============================================================
- * Clean, minimal JavaScript for the redesigned SaaS dashboard.
- * Handles: navigation, API calls, modals, automations CRUD,
- *          contacts table, billing/Razorpay, toasts.
+ * Handles: navigation, breadcrumbs, API calls, modals,
+ *          automations CRUD, Live Simulator, contacts CRM,
+ *          billing with Razorpay INR checkout, toasts.
  * =============================================================
  */
 
@@ -26,16 +26,19 @@
     const c = $("#toastContainer");
     if (!c) return;
     const icons = {
-      success: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>',
-      error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
-      warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-      info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+      success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>',
+      error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+      warn: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
     };
     const t = document.createElement("div");
     t.className = `toast ${type}`;
     t.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span>${msg}</span>`;
     c.appendChild(t);
-    setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 300); }, 4000);
+    setTimeout(() => {
+      t.style.opacity = "0";
+      setTimeout(() => t.remove(), 300);
+    }, 4000);
   }
 
   // ── API Helper ──
@@ -52,15 +55,32 @@
   }
 
   // ── Navigation ──
+  const viewTitles = {
+    "view-home": "Dashboard",
+    "view-automations": "Automations",
+    "view-simulator": "Live Simulator",
+    "view-contacts": "Contacts CRM",
+    "view-broadcast": "Broadcast",
+    "view-analytics": "Analytics",
+    "view-settings": "Settings & Meta API",
+    "view-billing": "Billing & Razorpay",
+  };
+
   function navigate(viewId) {
     $$(".content-view").forEach((v) => v.classList.remove("active"));
     const target = $(`#${viewId}`);
     if (target) target.classList.add("active");
+
     $$(".nav-item").forEach((n) => n.classList.remove("active"));
     const navLink = $(`.nav-item[data-view="${viewId}"]`);
     if (navLink) navLink.classList.add("active");
+
     currentView = viewId;
     window.location.hash = viewId.replace("view-", "");
+
+    // Update topbar breadcrumb
+    const bc = $("#breadcrumbActive");
+    if (bc) bc.textContent = viewTitles[viewId] || "Console";
 
     // Load data for the view
     if (viewId === "view-home") loadDashboard();
@@ -76,18 +96,22 @@
       on(link, "click", (e) => {
         e.preventDefault();
         navigate(link.dataset.view);
-        // Close mobile sidebar
         $("#sidebar")?.classList.remove("mobile-open");
         $("#mobileOverlay")?.classList.remove("open");
       });
     });
-    // Quick actions
+
+    // Quick action clicks
     $$(".quick-action[data-goto]").forEach((el) => {
       on(el, "click", () => navigate(el.dataset.goto));
     });
+
+    // Header simulator button
+    on($("#btnHeaderSimulator"), "click", () => navigate("view-simulator"));
+
     // Hash routing
     const hash = window.location.hash.replace("#", "");
-    if (hash) navigate("view-" + hash);
+    if (hash && $(`#view-${hash}`)) navigate("view-" + hash);
   }
 
   // ── Sidebar ──
@@ -118,50 +142,59 @@
     setText("statRules", s.active_reels_count || 0);
     setText("statComments", s.comments_replied || 0);
 
-    // Sidebar
-    setText("sidebarAccountName", b.workspace?.name || b.workspace?.business || "Workspace");
+    // Sidebar Account & Badges
+    const acctName = s.meta_account || b.workspace?.name || "satnamwebservices";
+    setText("sidebarAccountName", acctName);
+    setText("headerAccountName", `@${acctName}`);
     const avatar = $("#accountAvatarLetter");
-    if (avatar) avatar.textContent = (b.workspace?.name || "W")[0].toUpperCase();
+    if (avatar) avatar.textContent = acctName[0].toUpperCase();
+
     const badge = $("#sidebarPlanBadge");
     if (badge) {
       badge.textContent = b.label || (b.is_pro ? "PRO" : "FREE");
-      badge.classList.toggle("pro", !!b.is_pro);
     }
 
     // Limits
     const used = b.usage?.contacts || 0;
     const max = b.limits?.contacts || 25;
     setText("limitsCount", `${used} / ${max === -1 ? "∞" : max}`);
-    const pct = max === -1 ? 0 : Math.round((used / max) * 100);
+    const pct = max === -1 ? 0 : Math.min(100, Math.round((used / max) * 100));
     setText("limitsPercent", `${pct}%`);
-    const gauge = $("#limitsGauge");
-    if (gauge) {
-      gauge.classList.toggle("low", pct > 60 && pct < 90);
-      gauge.classList.toggle("full", pct >= 90);
-    }
     setText("navContactCount", used);
 
     // Connection checks
     setCheck("checkMeta", s.meta_connected);
-    setCheck("checkIG", !!s.meta_account);
-    if (s.meta_account) setText("igAccountLabel", `@${s.meta_account}`);
+    setCheck("checkIG", !!s.meta_account || s.meta_connected);
+    if (s.meta_account) setText("igAccountLabel", `Connected as @${s.meta_account}`);
     setCheck("checkWatcher", s.watcher_status === "running" || s.meta_connected);
     setCheck("checkRule", (s.active_reels_count || 0) > 0);
+    setText("ruleHealthSubtitle", `${s.active_reels_count || 0} active automation rule${(s.active_reels_count || 0) === 1 ? "" : "s"}`);
+
+    // Checklist cards
+    if (s.meta_connected) $("#stepIgCheck")?.classList.add("done");
+    if ((s.active_reels_count || 0) > 0) $("#stepRuleCheck")?.classList.add("done");
+
+    // Header Status Dot
+    const dot = $("#headerStatusDot");
+    if (dot) {
+      dot.className = s.meta_connected ? "status-pill-dot" : "status-pill-dot offline";
+    }
 
     // Greeting
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-    setText("greetingText", `${greeting}. ${s.active_reels_count || 0} automation${(s.active_reels_count || 0) !== 1 ? "s" : ""} running.`);
+    setText("greetingText", `${greeting} — Instagram channel @${acctName} is active with ${s.active_reels_count || 0} active rules.`);
 
-    // Activity feed
+    // Load logs and rule count
     loadLogs();
+    loadRules(false);
   }
 
   function setCheck(id, ok) {
     const el = $(`#${id}`);
     if (!el) return;
-    el.className = `check-icon ${ok ? "pass" : "fail"}`;
-    el.textContent = ok ? "✓" : "✕";
+    el.className = `check-icon ${ok ? "ok" : "wait"}`;
+    el.textContent = ok ? "✓" : "—";
   }
 
   function setText(id, text) {
@@ -176,108 +209,236 @@
     if (!feed) return;
     const logs = (data.logs || []).slice(0, 30);
     if (!logs.length) {
-      feed.innerHTML = '<div class="empty-state"><div class="empty-state-title">No activity yet</div><div class="empty-state-text">Events appear here when automations run.</div></div>';
+      feed.innerHTML = '<div class="empty-state"><div class="empty-state-title">No activity recorded yet</div><div class="empty-state-text">Events appear here when automations process comments and DMs.</div></div>';
       return;
     }
     feed.innerHTML = logs.map((l) => {
-      const cls = (l.level || "").toLowerCase().includes("error") ? "error" : (l.level || "").toLowerCase().includes("warn") ? "warn" : "success";
-      return `<div class="feed-item"><div class="feed-dot ${cls}"></div><div class="feed-text">${esc(l.message || l.text || "")}</div><div class="feed-time">${timeAgo(l.timestamp || l.time)}</div></div>`;
+      const type = (l.type || "INFO").toUpperCase();
+      const dotStyle = type === "SUCCESS" ? "background:#16a34a" : type === "ERROR" ? "background:#dc2626" : "background:#09090b";
+      return `
+        <div class="feed-item">
+          <div class="feed-msg">
+            <span class="feed-dot" style="${dotStyle}"></span>
+            <span style="font-weight:600;font-size:11px;font-family:var(--font-mono)">${type}</span>
+            <span>${esc(l.message || l.text || "")}</span>
+          </div>
+          <span class="feed-time">${timeAgo(l.timestamp || l.time)}</span>
+        </div>
+      `;
     }).join("");
   }
 
-  // ── Automations ──
-  async function loadRules() {
-    const data = await api("/api/automations");
+  // ── Automations CRUD ──
+  async function loadRules(render = true) {
+    const data = await api("/api/rules");
     if (!data.success) return;
     rules = data.rules || [];
-    renderRules(rules);
+    setText("navRuleCount", rules.length);
+    if (render) renderRules(rules);
   }
 
   function renderRules(list) {
     const container = $("#rulesList");
     if (!container) return;
     if (!list.length) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div class="empty-state-title">No automations yet</div><div class="empty-state-text">Create your first rule to automate Instagram DMs.</div><button class="btn btn-primary" onclick="document.getElementById('btnNewRule').click()">Create first automation</button></div>`;
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div class="empty-state-title">No automation rules found</div>
+          <div class="empty-state-text">Create a rule that listens for keywords on your Reels and sends an instant DM.</div>
+          <button class="btn btn-primary" id="btnNewRuleEmptyInner">Create First Rule</button>
+        </div>
+      `;
+      on($("#btnNewRuleEmptyInner"), "click", openRuleModal);
       return;
     }
+
     container.innerHTML = list.map((r) => {
-      const active = r.is_active !== false;
-      const kws = (r.trigger_keywords || []).map((k) => `<span class="tag">${esc(k)}</span>`).join("");
+      const isActive = r.is_active !== false;
+      const typeLabel = r.type === "dm_keyword" ? "DM Keyword" : "Comment → DM";
+      const kw = Array.isArray(r.keywords) ? r.keywords.join(", ") : (r.keyword || r.keywords || "*");
+      const replyPreview = r.dm_message || r.response_text || "Automated response";
+
       return `
-        <div class="rule-card">
-          <div class="status-dot ${active ? "active" : "off"}"></div>
+        <div class="rule-card" data-id="${r.id}">
           <div class="rule-info">
-            <div class="rule-name">${esc(r.name || "Untitled Rule")}</div>
-            <div class="rule-meta">${esc(r.type || "comment_to_dm")} · ${r.trigger_keywords?.length || 0} keywords</div>
-            <div class="rule-keywords">${kws}</div>
+            <span class="rule-type-badge">${typeLabel}</span>
+            <div>
+              <div class="rule-title">${esc(r.name || r.title || "Keyword Trigger")}</div>
+              <div class="rule-trigger-summary">
+                Keywords: <strong>${esc(kw)}</strong> · DM: "${esc(replyPreview.slice(0, 50))}${replyPreview.length > 50 ? '...' : ''}"
+              </div>
+            </div>
           </div>
           <div class="rule-actions">
-            <label class="toggle"><input type="checkbox" ${active ? "checked" : ""} onchange="window.CF.toggleRule('${r.id}', this.checked)"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
-            <button class="btn btn-ghost btn-sm" onclick="window.CF.editRule('${r.id}')">Edit</button>
-            <button class="btn btn-ghost btn-sm text-red" onclick="window.CF.deleteRule('${r.id}')">Delete</button>
+            <span class="badge ${isActive ? 'badge-active' : 'badge-paused'}">${isActive ? 'Active' : 'Paused'}</span>
+            <label class="switch">
+              <input type="checkbox" class="rule-toggle" data-id="${r.id}" ${isActive ? "checked" : ""}>
+              <span class="slider"></span>
+            </label>
+            <button class="btn btn-secondary btn-sm btn-edit-rule" data-id="${r.id}">Edit</button>
+            <button class="btn btn-danger btn-sm btn-del-rule" data-id="${r.id}">Delete</button>
           </div>
-        </div>`;
+        </div>
+      `;
     }).join("");
+
+    // Toggle listener
+    $$(".rule-toggle", container).forEach((cb) => {
+      on(cb, "change", async () => {
+        const id = cb.dataset.id;
+        const res = await api(`/api/rules/${id}/toggle`, "POST");
+        if (res.success) {
+          toast(res.is_active ? "Rule enabled" : "Rule paused", "info");
+          loadDashboard();
+        } else {
+          toast(res.error || "Toggle failed", "error");
+          cb.checked = !cb.checked;
+        }
+      });
+    });
+
+    // Edit listener
+    $$(".btn-edit-rule", container).forEach((btn) => {
+      on(btn, "click", () => {
+        const r = rules.find((x) => String(x.id) === String(btn.dataset.id));
+        if (r) openRuleModal(r);
+      });
+    });
+
+    // Delete listener
+    $$(".btn-del-rule", container).forEach((btn) => {
+      on(btn, "click", async () => {
+        if (!confirm("Are you sure you want to delete this rule?")) return;
+        const res = await api(`/api/rules/${btn.dataset.id}`, "DELETE");
+        if (res.success) {
+          toast("Rule deleted", "info");
+          loadRules();
+          loadDashboard();
+        } else {
+          toast(res.error || "Delete failed", "error");
+        }
+      });
+    });
   }
 
-  // Rule CRUD
   function openRuleModal(rule = null) {
-    editingRuleId = rule?.id || null;
-    setText("ruleModalTitle", rule ? "Edit Rule" : "New Automation Rule");
-    $("#ruleInputName").value = rule?.name || "";
-    $("#ruleInputType").value = rule?.type || "comment_to_dm";
-    $("#ruleInputKeywords").value = (rule?.trigger_keywords || []).join(", ");
-    $("#ruleInputCommentReply").value = rule?.public_comment_reply || "";
-    $("#ruleInputDM").value = rule?.dm_message || rule?.opening_dm || "";
-    $("#ruleInputBtnText").value = rule?.button_text || "";
-    $("#ruleInputLink").value = rule?.delivery_link || "";
+    editingRuleId = rule ? rule.id : null;
+    setText("ruleModalTitle", rule ? "Edit Automation Rule" : "Create Automation Rule");
+    $("#ruleInputName").value = rule ? (rule.name || rule.title || "") : "";
+    $("#ruleInputType").value = rule ? (rule.type || "comment_to_dm") : "comment_to_dm";
+    $("#ruleInputKeywords").value = rule ? (Array.isArray(rule.keywords) ? rule.keywords.join(", ") : (rule.keyword || rule.keywords || "")) : "LINK, INFO";
+    $("#ruleInputCommentReply").value = rule ? (rule.comment_reply || "") : "Sent you the details in your DM! 🚀";
+    $("#ruleInputDM").value = rule ? (rule.dm_message || rule.response_text || "") : "Hey {name}! Here is the direct link you requested:";
+    $("#ruleInputBtnText").value = rule ? (rule.button_text || "") : "Access Resource";
+    $("#ruleInputLink").value = rule ? (rule.link_url || rule.link || "") : "";
     $("#modalRule")?.classList.add("open");
   }
 
   async function saveRule() {
-    const payload = {
-      name: $("#ruleInputName")?.value?.trim(),
-      type: $("#ruleInputType")?.value,
-      trigger_keywords: ($("#ruleInputKeywords")?.value || "").split(",").map((k) => k.trim()).filter(Boolean),
-      public_comment_reply: $("#ruleInputCommentReply")?.value?.trim(),
-      dm_message: $("#ruleInputDM")?.value?.trim(),
-      button_text: $("#ruleInputBtnText")?.value?.trim(),
-      delivery_link: $("#ruleInputLink")?.value?.trim(),
+    const name = $("#ruleInputName")?.value?.trim();
+    if (!name) return toast("Please give your rule a name", "error");
+    const keywords = $("#ruleInputKeywords")?.value?.split(",").map((k) => k.trim()).filter(Boolean);
+    const body = {
+      name,
+      type: $("#ruleInputType")?.value || "comment_to_dm",
+      keywords: keywords.length ? keywords : ["*"],
+      comment_reply: $("#ruleInputCommentReply")?.value?.trim() || "",
+      dm_message: $("#ruleInputDM")?.value?.trim() || "",
+      button_text: $("#ruleInputBtnText")?.value?.trim() || "",
+      link_url: $("#ruleInputLink")?.value?.trim() || "",
       is_active: true,
     };
-    if (!payload.name) return toast("Rule name is required", "error");
-    if (!payload.dm_message) return toast("DM message is required", "error");
 
-    if (editingRuleId) payload.id = editingRuleId;
-    const data = await api("/api/automations/save", "POST", payload);
-    if (data.success) {
-      toast(editingRuleId ? "Rule updated" : "Rule created", "success");
+    let res;
+    if (editingRuleId) {
+      res = await api(`/api/rules/${editingRuleId}`, "PUT", body);
+    } else {
+      res = await api("/api/rules", "POST", body);
+    }
+
+    if (res.success) {
+      toast(editingRuleId ? "Rule updated successfully" : "Rule created and activated", "success");
       closeModal("modalRule");
       loadRules();
+      loadDashboard();
     } else {
-      toast(data.error || "Failed to save rule", "error");
+      toast(res.error || "Save failed", "error");
     }
   }
 
-  window.CF = {
-    toggleRule: async (id, active) => {
-      await api("/api/automations/toggle", "POST", { id, is_active: active });
-      toast(active ? "Rule activated" : "Rule paused", active ? "success" : "warn");
-      loadRules();
-    },
-    editRule: (id) => {
-      const rule = rules.find((r) => r.id === id);
-      if (rule) openRuleModal(rule);
-    },
-    deleteRule: async (id) => {
-      if (!confirm("Delete this automation rule?")) return;
-      const data = await api("/api/automations/delete", "POST", { id });
-      if (data.success) { toast("Rule deleted", "success"); loadRules(); }
-      else toast(data.error || "Failed to delete", "error");
-    },
-  };
+  // ── Live Simulator (Human Touch) ──
+  function initSimulator() {
+    on($("#btnRunSimulation"), "click", () => {
+      const user = $("#simUsername")?.value?.trim() || "rahul_sharma";
+      const comment = $("#simComment")?.value?.trim() || "LINK";
+      const chat = $("#phoneChat");
+      const log = $("#simResultLog");
+      if (!chat) return;
 
-  // ── Contacts ──
+      // Find matching rule
+      const commentUpper = comment.toUpperCase();
+      let matchedRule = null;
+      for (const r of rules) {
+        if (r.is_active === false) continue;
+        const kws = Array.isArray(r.keywords) ? r.keywords : [r.keyword || "*"];
+        for (const k of kws) {
+          if (k === "*" || commentUpper.includes(k.toUpperCase().trim())) {
+            matchedRule = r;
+            break;
+          }
+        }
+        if (matchedRule) break;
+      }
+
+      // Render in phone mockup
+      const dmText = matchedRule ? (matchedRule.dm_message || `Hey @${user}! Here is your link:`) : `Hey @${user}! Thanks for reaching out. Let us know how we can help you today!`;
+      const btnText = matchedRule?.button_text || "Get Access";
+      const btnLink = matchedRule?.link_url || "#";
+
+      chat.innerHTML = `
+        <div class="chat-bubble user">${esc(comment)}</div>
+        <div class="chat-bubble bot">
+          ${esc(dmText)}
+          ${btnText ? `<a href="${btnLink}" class="chat-bubble-btn" target="_blank">${esc(btnText)}</a>` : ""}
+        </div>
+      `;
+
+      if (log) {
+        if (matchedRule) {
+          log.innerHTML = `
+            <div class="feed-item">
+              <div class="feed-msg">
+                <span class="feed-dot" style="background:#16a34a"></span>
+                <span>Matched rule: <strong>${esc(matchedRule.name)}</strong> for keyword "${esc(comment)}".</span>
+              </div>
+              <span class="badge badge-active">PASS</span>
+            </div>
+            <div class="feed-item">
+              <div class="feed-msg">
+                <span class="feed-dot"></span>
+                <span>Public comment reply queued: "${esc(matchedRule.comment_reply || 'Check your DM!')}"</span>
+              </div>
+            </div>
+          `;
+        } else {
+          log.innerHTML = `
+            <div class="feed-item">
+              <div class="feed-msg">
+                <span class="feed-dot" style="background:#d97706"></span>
+                <span>No active rule matched keyword "${esc(comment)}". Using default fallback message.</span>
+              </div>
+              <span class="badge badge-warning">FALLBACK</span>
+            </div>
+          `;
+        }
+      }
+
+      toast("Simulation executed", "success");
+    });
+  }
+
+  // ── Contacts CRM ──
   async function loadContacts() {
     const data = await api("/api/contacts");
     if (!data.success) return;
@@ -285,173 +446,158 @@
     const tbody = $("#contactsTableBody");
     if (!tbody) return;
     if (!contacts.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:40px">No contacts yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:40px">No contacts yet. When users comment on your Instagram posts, they will be catalogued here.</td></tr>';
       return;
     }
-    tbody.innerHTML = contacts.map((c) => {
-      const tags = (c.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join(" ");
-      return `<tr>
-        <td><strong>@${esc(c.username || "")}</strong></td>
-        <td>${esc(c.name || "")}</td>
-        <td class="text-muted">${esc(c.source || "")}</td>
-        <td>${tags}</td>
-        <td class="text-muted">${shortDate(c.created_at || c.first_seen)}</td>
-        <td><button class="btn btn-ghost btn-xs" onclick="window.CF.deleteContact('${c.username}')">×</button></td>
-      </tr>`;
-    }).join("");
+    tbody.innerHTML = contacts.map((c) => `
+      <tr>
+        <td style="font-weight:600">@${esc(c.username || c.handle || "user")}</td>
+        <td>${esc(c.name || c.full_name || "—")}</td>
+        <td><span class="badge badge-neutral">${esc(c.source || "Reel Comment")}</span></td>
+        <td><span class="badge badge-active">Captured</span></td>
+        <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">${shortDate(c.created_at || c.date)}</td>
+      </tr>
+    `).join("");
   }
-
-  window.CF.deleteContact = async (username) => {
-    if (!confirm(`Remove contact @${username}?`)) return;
-    await api("/api/contacts/delete", "POST", { username });
-    toast("Contact removed", "success");
-    loadContacts();
-  };
 
   // ── Analytics ──
   async function loadAnalytics() {
-    const data = await api("/api/insights/summary");
+    const data = await api("/api/analytics");
     if (!data.success) return;
-    const s = data.summary || {};
-    setText("analyticsDms", s.total_dms || 0);
-    setText("analyticsLeads", s.total_contacts || 0);
-    const rate = s.total_dms > 0 ? Math.round((s.total_contacts / s.total_dms) * 100) : 0;
-    setText("analyticsConversion", `${rate}%`);
+    const a = data.analytics || {};
+    setText("analyticsDms", a.total_dms || 0);
+    setText("analyticsLeads", a.total_leads || 0);
+    setText("analyticsConversion", a.conversion_rate || "0%");
+    setText("analyticsResponse", a.avg_latency || "< 1.2s");
   }
 
   // ── Settings ──
   async function loadSettings() {
-    const data = await api("/api/meta/config");
+    const data = await api("/api/status");
     if (!data.success) return;
-    const cfg = data.config || {};
-
-    const connected = cfg.enabled && cfg.connected_account_username;
-    setText("settingsIGTitle", connected ? `@${cfg.connected_account_username}` : "Not connected");
-    setText("settingsIGSubtitle", connected ? "Connected via Meta Graph API" : "Add your access token to connect");
-
-    // Connection checks
-    setSettingsCheck("sCheckMeta", cfg.enabled, cfg.enabled ? "Connected" : "Not configured");
-    setSettingsCheck("sCheckIG", !!cfg.connected_account_username, cfg.connected_account_username ? `@${cfg.connected_account_username}` : "Pending");
-    setSettingsCheck("sCheckBusiness", connected, connected ? "Verified" : "Pending");
-
-    const statusData = await api("/api/status");
-    const watcher = statusData?.stats?.watcher_status === "running" || cfg.enabled;
-    setSettingsCheck("sCheckWatcher", watcher, watcher ? "Active" : "Inactive");
-
-    const steps = [cfg.enabled, !!cfg.connected_account_username, connected, watcher].filter(Boolean).length;
-    setText("connectionStepCount", `${4 - steps} steps left`);
-
-    if (cfg.access_token_masked) {
-      const tokenInput = $("#inputAccessToken");
-      if (tokenInput) tokenInput.placeholder = cfg.access_token_masked;
-    }
-  }
-
-  function setSettingsCheck(id, ok, label) {
-    const icon = $(`#${id}`);
-    if (icon) { icon.className = `check-icon ${ok ? "pass" : "fail"}`; icon.textContent = ok ? "✓" : "✕"; }
-    const status = $(`#${id}Status`);
-    if (status) {
-      status.textContent = label;
-      status.className = `badge ${ok ? "badge-green" : "badge-red"}`;
+    const s = data.stats || {};
+    if (s.meta_account) {
+      setText("settingsIGTitle", `@${s.meta_account}`);
+      setText("settingsIGSubtitle", `Connected Instagram Account · ${s.active_reels_count || 0} active automations`);
     }
   }
 
   async function connectToken(token) {
-    if (!token) return toast("Please paste an access token", "error");
-    const result = await api("/api/meta/test", "POST", { access_token: token });
-    if (result.success) {
-      await api("/api/meta/save", "POST", { access_token: token, enabled: true });
-      toast("Instagram connected successfully!", "success");
+    if (!token) return toast("Please enter an access token", "error");
+    const res = await api("/api/meta/token", "POST", { access_token: token });
+    if (res.success) {
+      toast("Instagram token connected!", "success");
       closeModal("modalToken");
-      loadSettings();
       loadDashboard();
+      loadSettings();
     } else {
-      toast(result.error || result.message || "Connection failed", "error");
+      toast(res.error || "Failed to connect token", "error");
     }
   }
 
-  // ── Billing ──
+  // ── Billing & Razorpay ──
   async function loadBilling() {
-    const data = await api("/api/billing/status");
-    if (!data.success) return;
-    const b = data.billing || {};
-    const plans = data.plans || [];
+    const [subRes, plansRes] = await Promise.all([
+      api("/api/subscription"),
+      api("/api/plans"),
+    ]);
 
-    setText("currentPlanName", b.label || b.plan_name || "Free");
-    setText("currentPlanExpiry", b.expired ? "Plan expired" : b.days_left !== undefined ? `${b.days_left} days remaining` : "Active");
+    if (subRes.success && subRes.subscription) {
+      const sub = subRes.subscription;
+      setText("currentPlanName", sub.plan_name || "Free Trial");
+      setText("currentPlanExpiry", sub.expiry_text || (sub.days_left ? `${sub.days_left} days remaining` : "Active"));
+      if (sub.limits) {
+        setText("billingAutomations", `${sub.usage?.automations || 0} / ${sub.limits.automations === -1 ? '∞' : sub.limits.automations}`);
+        setText("billingContacts", `${sub.usage?.contacts || 0} / ${sub.limits.contacts === -1 ? '∞' : sub.limits.contacts}`);
+        setText("billingDms", `${sub.usage?.dms || 0} / ${sub.limits.dms_per_month === -1 ? '∞' : sub.limits.dms_per_month}`);
+      }
+    }
 
-    const limits = b.limits || {};
-    const usage = b.usage || {};
-    setText("billingAutomations", `${usage.automations || 0} / ${limits.automations === -1 ? "∞" : limits.automations || 1}`);
-    setText("billingContacts", `${usage.contacts || 0} / ${limits.contacts === -1 ? "∞" : limits.contacts || 25}`);
-    setText("billingDms", `${usage.dms_this_month || 0} / ${limits.dms_per_month === -1 ? "∞" : limits.dms_per_month || 50}`);
-
-    // Plans grid
-    const grid = $("#plansGrid");
-    if (grid && plans.length) {
-      grid.innerHTML = plans.map((p) => {
-        const isCurrent = p.id === b.plan_id;
-        const featured = p.featured || p.recommended;
-        return `
-          <div class="plan-card${featured ? " featured" : ""}">
-            <div class="plan-name">${esc(p.name)}</div>
-            <div class="plan-price"><span class="currency">₹</span>${p.price_monthly || 0}<span class="period">/mo</span></div>
-            <ul class="plan-features">
-              <li>${(p.limits?.automations ?? 1) === -1 ? "Unlimited" : p.limits?.automations || 1} automations</li>
-              <li>${(p.limits?.contacts ?? 25) === -1 ? "Unlimited" : p.limits?.contacts || 25} contacts</li>
-              <li>${(p.limits?.dms_per_month ?? 50) === -1 ? "Unlimited" : p.limits?.dms_per_month || 50} DMs/month</li>
-            </ul>
-            <button class="btn ${isCurrent ? "btn-secondary" : "btn-primary"} btn-block" ${isCurrent ? "disabled" : ""} onclick="window.CF.checkout('${p.id}')">${isCurrent ? "Current Plan" : "Choose Plan"}</button>
-          </div>`;
-      }).join("");
+    if (plansRes.success && plansRes.plans) {
+      renderPlans(plansRes.plans);
     }
 
     // Payment history
-    const user = b.workspace?.id;
-    if (user) {
-      const userData = await api(`/api/users/${user}`);
-      const payments = userData?.user?.payments || [];
-      const tbody = $("#paymentHistoryBody");
-      if (tbody && payments.length) {
-        tbody.innerHTML = payments.map((p) => `
-          <tr>
-            <td>${shortDate(p.date)}</td>
-            <td>${esc(p.plan || "—")}</td>
-            <td>₹${p.amount || 0}</td>
-            <td><span class="badge badge-green">${p.status || "paid"}</span></td>
-            <td>${esc(p.method || "—")}</td>
-          </tr>`).join("");
-      }
-    }
+    loadPaymentHistory();
   }
 
-  // Razorpay checkout
-  window.CF.checkout = async (planId) => {
-    const gw = await api("/api/billing/gateway");
-    if (!gw.ready) {
-      toast("Payment gateway not configured. Contact admin.", "warn");
-      // Fallback: direct upgrade
-      const res = await api("/api/billing/upgrade", "POST", { plan_id: planId });
-      if (res.success) { toast("Plan upgraded!", "success"); loadBilling(); loadDashboard(); }
+  function renderPlans(plans) {
+    const container = $("#plansGrid");
+    if (!container) return;
+    container.innerHTML = plans.map((p) => {
+      const isCurrent = p.is_current;
+      const isFeatured = p.featured || p.id === "growth" || p.id === "pro";
+      const priceStr = p.price_monthly ? `₹${p.price_monthly}` : "Free";
+
+      return `
+        <div class="plan-card ${isFeatured ? 'featured' : ''}">
+          ${isFeatured ? '<span class="plan-badge-featured">Most Popular</span>' : ''}
+          <div class="plan-name">${esc(p.name)}</div>
+          <div class="plan-price">${priceStr}</div>
+          <div class="plan-period">${p.price_monthly ? 'per month + GST' : 'no credit card needed'}</div>
+          <ul class="plan-features">
+            <li class="plan-feature-item"><span class="plan-feature-check">✓</span> ${p.automations_limit === -1 ? 'Unlimited' : p.automations_limit} Automations</li>
+            <li class="plan-feature-item"><span class="plan-feature-check">✓</span> ${p.contacts_limit === -1 ? 'Unlimited' : p.contacts_limit} Contacts CRM</li>
+            <li class="plan-feature-item"><span class="plan-feature-check">✓</span> ${p.dms_limit === -1 ? 'Unlimited' : p.dms_limit} Monthly DMs</li>
+            <li class="plan-feature-item"><span class="plan-feature-check">✓</span> Instant Webhook Response</li>
+            <li class="plan-feature-item"><span class="plan-feature-check">✓</span> Priority Support</li>
+          </ul>
+          <button class="btn ${isFeatured ? 'btn-primary' : 'btn-secondary'} btn-lg" onclick="window.upgradeTo('${p.id}')">
+            ${isCurrent ? 'Current Plan' : (p.price_monthly ? `Pay ${priceStr} with Razorpay` : 'Select Free')}
+          </button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function loadPaymentHistory() {
+    const res = await api("/api/billing/history");
+    const tbody = $("#paymentHistoryBody");
+    if (!tbody) return;
+    if (!res.success || !res.payments || !res.payments.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:30px">No payment transactions recorded yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = res.payments.map((p) => `
+      <tr>
+        <td style="font-family:var(--font-mono);font-size:12px">${shortDate(p.date)}</td>
+        <td style="font-weight:600">${esc(p.plan)}</td>
+        <td style="font-family:var(--font-mono)">₹${p.amount}</td>
+        <td><span class="badge badge-active">${esc(p.status || 'Paid')}</span></td>
+        <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${esc(p.id)}</td>
+      </tr>
+    `).join("");
+  }
+
+  // Razorpay Checkout handler
+  window.upgradeTo = async function (planId) {
+    const coupon = $("#inputCoupon")?.value?.trim() || null;
+    toast("Creating checkout order...", "info");
+
+    const order = await api("/api/billing/checkout", "POST", { plan_id: planId, coupon });
+    if (!order.success) {
+      return toast(order.error || "Could not create checkout order", "error");
+    }
+
+    if (order.free) {
+      toast("Plan updated successfully!", "success");
+      loadBilling();
+      loadDashboard();
       return;
     }
 
-    const coupon = $("#inputCoupon")?.value?.trim() || undefined;
-    const order = await api("/api/billing/checkout", "POST", { plan_id: planId, coupon });
-    if (!order.success) return toast(order.error || "Checkout failed", "error");
-    if (order.free) { toast("Plan activated!", "success"); loadBilling(); loadDashboard(); return; }
-
+    // Launch Razorpay standard modal
     const options = {
       key: order.order.key_id,
       amount: order.order.amount,
       currency: order.order.currency || "INR",
-      name: order.brand || "ConverFlow",
-      description: `${order.plan.name} Plan`,
+      name: "ConverFlow",
+      description: `${order.plan.name} Subscription`,
       order_id: order.order.order_id,
       prefill: order.prefill || {},
-      theme: { color: "#000000" },
+      theme: { color: "#09090b" },
       handler: async (response) => {
+        toast("Verifying payment signature...", "info");
         const verify = await api("/api/billing/verify", "POST", {
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
@@ -461,11 +607,11 @@
           amount: order.amount_inr,
         });
         if (verify.success) {
-          toast("Payment successful! Plan upgraded.", "success");
+          toast("Payment verified! Plan upgraded.", "success");
           loadBilling();
           loadDashboard();
         } else {
-          toast(verify.error || "Verification failed", "error");
+          toast(verify.error || "Payment verification failed", "error");
         }
       },
     };
@@ -480,7 +626,7 @@
     }
   };
 
-  // Coupon preview
+  // Coupon apply
   on($("#btnApplyCoupon"), "click", async () => {
     const code = $("#inputCoupon")?.value?.trim();
     if (!code) return;
@@ -492,7 +638,7 @@
     }
   });
 
-  // ── Modals ──
+  // ── Modals & Actions ──
   function closeModal(id) {
     $(`#${id}`)?.classList.remove("open");
   }
@@ -517,10 +663,10 @@
       const token = $("#inputAccessToken")?.value?.trim();
       if (!token) return toast("Enter an access token", "error");
       const res = await api("/api/meta/test", "POST", { access_token: token });
-      toast(res.success ? "Connection successful!" : (res.error || "Failed"), res.success ? "success" : "error");
+      toast(res.success ? "Instagram token verified successfully!" : (res.error || "Token test failed"), res.success ? "success" : "error");
     });
 
-    // Close modals on overlay click
+    // Close on overlay
     $$(".modal-overlay").forEach((overlay) => {
       on(overlay, "click", (e) => { if (e.target === overlay) overlay.classList.remove("open"); });
     });
@@ -531,9 +677,10 @@
     on($("#btnClearLogs"), "click", async () => {
       await api("/api/logs/clear", "POST");
       loadLogs();
+      toast("Logs cleared", "info");
     });
 
-    // Billing
+    // Billing buttons
     on($("#btnChangePlan"), "click", () => navigate("view-billing"));
     on($("#btnUpgrade"), "click", () => navigate("view-billing"));
 
@@ -556,16 +703,20 @@
   }
 
   // ── Utilities ──
-  function esc(s) { const d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML; }
+  function esc(s) {
+    const d = document.createElement("div");
+    d.textContent = s || "";
+    return d.innerHTML;
+  }
 
   function timeAgo(ts) {
     if (!ts) return "";
     const d = new Date(ts);
     const diff = (Date.now() - d.getTime()) / 1000;
-    if (diff < 60) return "now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-    return `${Math.floor(diff / 86400)}d`;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   }
 
   function shortDate(ts) {
@@ -579,9 +730,13 @@
     initNav();
     initSidebar();
     initModals();
+    initSimulator();
     loadDashboard();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();

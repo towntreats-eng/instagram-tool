@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ConverFlow — Instagram Automation Dashboard</title>
-  <meta name="description" content="ConverFlow: Automate Instagram DMs, comments, and lead capture with powerful automation flows.">
+  <title>ConverFlow — Instagram Automation Console</title>
+  <meta name="description" content="ConverFlow: Systematic Instagram comment-to-DM automation for creators and businesses.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2309090b'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
 </head>
 <body>
 
@@ -18,8 +18,8 @@
     <div class="mobile-brand">
       <span class="mobile-brand-title">ConverFlow</span>
     </div>
-    <button class="mobile-menu-btn" id="btnMobileMenu" aria-label="Menu">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <button class="btn btn-secondary btn-sm" id="btnMobileMenu" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
   </header>
   <div class="mobile-overlay" id="mobileOverlay"></div>
@@ -33,58 +33,62 @@
         <!-- Brand -->
         <div class="sidebar-logo">
           <div class="sidebar-logo-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           </div>
           <span class="sidebar-logo-text">ConverFlow</span>
         </div>
 
-        <!-- Account Box -->
+        <!-- Account Workspace Box -->
         <div class="account-box" id="accountBox">
           <div class="account-avatar" id="accountAvatarLetter">S</div>
           <div class="account-name-group">
-            <span class="account-name" id="sidebarAccountName">Workspace</span>
+            <span class="account-name" id="sidebarAccountName">satnamwebservices</span>
+            <span class="account-subtext" id="sidebarAccountSub">Instagram Connected</span>
           </div>
           <span class="badge-plan" id="sidebarPlanBadge">FREE</span>
         </div>
 
-        <!-- Main Nav -->
+        <!-- Nav Section: Operations -->
+        <div class="nav-section-label">Operations</div>
         <nav class="sidebar-nav" id="mainNav">
           <a href="#dashboard" class="nav-item active" data-view="view-home">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
             <span>Dashboard</span>
           </a>
           <a href="#automations" class="nav-item" data-view="view-automations">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
             <span>Automations</span>
+            <span class="nav-badge" id="navRuleCount">0</span>
           </a>
-          <a href="#inbox" class="nav-item" data-view="view-inbox">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg></span>
-            <span>Inbox</span>
+          <a href="#simulator" class="nav-item" data-view="view-simulator">
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>
+            <span>Live Simulator</span>
           </a>
           <a href="#contacts" class="nav-item" data-view="view-contacts">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-            <span>Contacts</span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <span>Contacts & Leads</span>
             <span class="nav-badge" id="navContactCount">0</span>
           </a>
           <a href="#broadcast" class="nav-item" data-view="view-broadcast">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a4 4 0 0 1 0 7"/><path d="M19 5.5a8 8 0 0 1 0 13"/></svg></span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a4 4 0 0 1 0 7"/><path d="M19 5.5a8 8 0 0 1 0 13"/></svg></span>
             <span>Broadcast</span>
           </a>
           <a href="#analytics" class="nav-item" data-view="view-analytics">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><path d="M7 20V10M12 20V4M17 20v-7"/></svg></span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><path d="M7 20V10M12 20V4M17 20v-7"/></svg></span>
             <span>Analytics</span>
           </a>
         </nav>
 
-        <div class="nav-section-label">Account</div>
+        <!-- Nav Section: System -->
+        <div class="nav-section-label">System</div>
         <nav class="sidebar-nav">
           <a href="#settings" class="nav-item" data-view="view-settings">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-            <span>Settings</span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+            <span>Settings & Meta API</span>
           </a>
           <a href="#billing" class="nav-item" data-view="view-billing">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg></span>
-            <span>Billing</span>
+            <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg></span>
+            <span>Billing & Razorpay</span>
           </a>
         </nav>
       </div>
@@ -97,49 +101,98 @@
               <span id="limitsPercent">0%</span>
             </div>
             <div>
-              <div class="sidebar-limits-label">Contacts</div>
+              <div class="sidebar-limits-label">Monthly Leads</div>
               <div class="sidebar-limits-count" id="limitsCount">0 / 25</div>
             </div>
           </div>
-          <button class="btn-sidebar-upgrade" id="btnUpgrade">Upgrade plan</button>
+          <button class="btn-sidebar-upgrade" id="btnUpgrade">Upgrade with Razorpay</button>
         </div>
-        <a href="#" class="sidebar-footer-link" id="linkProfile">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span class="sidebar-footer-text">Help & Guides</span>
-        </a>
-        <button class="btn-collapse" id="btnCollapse" title="Collapse sidebar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5"/><path d="M18 17l-5-5 5-5"/></svg>
-        </button>
+        <div class="sidebar-footer-links">
+          <a href="/admin" class="sidebar-footer-link" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span class="sidebar-footer-text">Admin Panel</span>
+          </a>
+          <button class="btn-collapse" id="btnCollapse" title="Toggle sidebar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5"/><path d="M18 17l-5-5 5-5"/></svg>
+          </button>
+        </div>
       </div>
     </aside>
 
     <!-- ============ MAIN CONTENT ============ -->
     <div class="main-wrapper">
 
-      <!-- ========== HOME / DASHBOARD ========== -->
+      <!-- Systematic Top Bar -->
+      <header class="top-header">
+        <div class="breadcrumb">
+          <span class="breadcrumb-item">ConverFlow</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-item active" id="breadcrumbActive">Dashboard</span>
+        </div>
+        <div class="top-header-right">
+          <div class="status-pill-ig" id="headerStatusPill">
+            <span class="status-pill-dot" id="headerStatusDot"></span>
+            <span id="headerAccountName">@satnamwebservices</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnHeaderSimulator">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Test Flow
+          </button>
+        </div>
+      </header>
+
+      <!-- ========== 1. HOME / DASHBOARD VIEW ========== -->
       <section class="content-view active" id="view-home">
         <div class="page-header">
-          <h1 class="page-title">Dashboard</h1>
-          <p class="page-subtitle" id="greetingText">Overview of your Instagram automation</p>
+          <h1 class="page-title">Overview</h1>
+          <p class="page-subtitle" id="greetingText">Real-time automation telemetry & Instagram channel status</p>
         </div>
 
-        <!-- Stats Grid -->
+        <!-- Human Touch: Onboarding Flow Card -->
+        <div class="onboarding-card">
+          <div class="onboarding-title">Getting Started Checklist</div>
+          <div class="onboarding-desc">Follow these four systematic steps to turn comments into verified leads:</div>
+          <div class="onboarding-steps">
+            <div class="onboarding-step done" id="stepIgCheck">
+              <span class="onboarding-check">✓</span>
+              <span>1. Instagram Connected</span>
+            </div>
+            <div class="onboarding-step" id="stepRuleCheck">
+              <span class="onboarding-check">2</span>
+              <span>2. Set Keyword Rule</span>
+            </div>
+            <div class="onboarding-step" id="stepSimCheck">
+              <span class="onboarding-check">3</span>
+              <span>3. Test in Simulator</span>
+            </div>
+            <div class="onboarding-step" id="stepLiveCheck">
+              <span class="onboarding-check">4</span>
+              <span>4. Publish Reel / Post</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat Grid -->
         <div class="stat-grid" id="statsGrid">
           <div class="stat-card">
-            <div class="stat-label">DMs Sent</div>
+            <div class="stat-label">DMs Delivered</div>
             <div class="stat-value" id="statDms">0</div>
+            <div class="stat-meta">Direct message conversion</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Contacts</div>
+            <div class="stat-label">Leads Captured</div>
             <div class="stat-value" id="statContacts">0</div>
+            <div class="stat-meta">Saved in contact CRM</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Active Rules</div>
             <div class="stat-value" id="statRules">0</div>
+            <div class="stat-meta">Listening for keywords</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Comments Processed</div>
+            <div class="stat-label">Comments Checked</div>
             <div class="stat-value" id="statComments">0</div>
+            <div class="stat-meta">Processed via webhook</div>
           </div>
         </div>
 
@@ -147,11 +200,20 @@
         <div class="quick-actions">
           <div class="quick-action" data-goto="view-automations">
             <div class="quick-action-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
             </div>
             <div>
-              <div class="quick-action-label">Create Automation</div>
-              <div class="quick-action-desc">Set up comment-to-DM or keyword triggers</div>
+              <div class="quick-action-label">Create Keyword Rule</div>
+              <div class="quick-action-desc">Trigger automated DM when user types 'LINK'</div>
+            </div>
+          </div>
+          <div class="quick-action" data-goto="view-simulator">
+            <div class="quick-action-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div>
+              <div class="quick-action-label">Test in Live Simulator</div>
+              <div class="quick-action-desc">Preview comment & DM flow in phone mockup</div>
             </div>
           </div>
           <div class="quick-action" data-goto="view-contacts">
@@ -159,54 +221,51 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <div>
-              <div class="quick-action-label">View Contacts</div>
-              <div class="quick-action-desc">Browse and manage your lead CRM</div>
-            </div>
-          </div>
-          <div class="quick-action" data-goto="view-settings">
-            <div class="quick-action-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
-            </div>
-            <div>
-              <div class="quick-action-label">Connect Instagram</div>
-              <div class="quick-action-desc">Link your account via Meta API</div>
+              <div class="quick-action-label">View CRM Contacts</div>
+              <div class="quick-action-desc">Inspect captured Instagram leads and usernames</div>
             </div>
           </div>
         </div>
 
-        <!-- Connection Status -->
+        <!-- Channel Health & Verification -->
         <div class="card mb-24" id="connectionCard">
           <div class="card-header">
-            <div class="card-title">Connection Status</div>
-            <button class="btn btn-ghost btn-sm" id="btnRefreshStatus">Refresh</button>
+            <div>
+              <div class="card-title">Channel Health & Meta Status</div>
+              <div class="card-subtitle mt-4">Verified direct integration via Graph API</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshStatus">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Re-check
+            </button>
           </div>
           <div class="check-steps" id="connectionSteps">
             <div class="check-step">
-              <div class="check-icon wait" id="checkMeta">—</div>
+              <div class="check-icon ok" id="checkMeta">✓</div>
               <div>
-                <div class="check-label">Meta API Connected</div>
-                <div class="check-sublabel">Graph API access for DMs and comments</div>
+                <div class="check-label">Meta Graph API Handshake</div>
+                <div class="check-sublabel">Authenticated & ready to reply to Instagram DMs</div>
               </div>
             </div>
             <div class="check-step">
-              <div class="check-icon wait" id="checkIG">—</div>
+              <div class="check-icon ok" id="checkIG">✓</div>
               <div>
-                <div class="check-label">Instagram Account Linked</div>
-                <div class="check-sublabel" id="igAccountLabel">Not connected</div>
+                <div class="check-label">Instagram Business Account</div>
+                <div class="check-sublabel" id="igAccountLabel">Connected as @satnamwebservices</div>
               </div>
             </div>
             <div class="check-step">
-              <div class="check-icon wait" id="checkWatcher">—</div>
+              <div class="check-icon ok" id="checkWatcher">✓</div>
               <div>
-                <div class="check-label">Webhook Active</div>
-                <div class="check-sublabel">Real-time comment & DM processing</div>
+                <div class="check-label">Webhook Dispatcher</div>
+                <div class="check-sublabel">Real-time event processing active on Railway</div>
               </div>
             </div>
             <div class="check-step">
               <div class="check-icon wait" id="checkRule">—</div>
               <div>
-                <div class="check-label">Automation Rule Active</div>
-                <div class="check-sublabel">At least one rule is running</div>
+                <div class="check-label">Active Keyword Rules</div>
+                <div class="check-sublabel" id="ruleHealthSubtitle">Checking rules...</div>
               </div>
             </div>
           </div>
@@ -215,28 +274,31 @@
         <!-- Activity Feed -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Recent Activity</div>
-            <button class="btn btn-ghost btn-sm" id="btnClearLogs">Clear</button>
+            <div>
+              <div class="card-title">Live Activity Log</div>
+              <div class="card-subtitle mt-4">Audit trail of webhook events and DM triggers</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnClearLogs">Clear Log</button>
           </div>
           <div class="feed" id="activityFeed">
             <div class="empty-state">
-              <div class="empty-state-title">No activity yet</div>
-              <div class="empty-state-text">Events will appear here when automations process comments and DMs.</div>
+              <div class="empty-state-title">No activity recorded yet</div>
+              <div class="empty-state-text">When users comment on your Instagram posts, real-time triggers and outbound DMs will log here.</div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ========== AUTOMATIONS ========== -->
+      <!-- ========== 2. AUTOMATIONS VIEW ========== -->
       <section class="content-view" id="view-automations">
         <div class="page-header flex items-center justify-between">
           <div>
             <h1 class="page-title">Automations</h1>
-            <p class="page-subtitle">Manage your comment-to-DM and keyword trigger rules</p>
+            <p class="page-subtitle">Configure trigger rules, keyword matching, and automated DM responses</p>
           </div>
           <button class="btn btn-primary" id="btnNewRule">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            New Rule
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Create Rule
           </button>
         </div>
 
@@ -248,42 +310,89 @@
 
         <div id="rulesList" class="flex flex-col gap-12">
           <div class="empty-state">
-            <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-            <div class="empty-state-title">No automations yet</div>
-            <div class="empty-state-text">Create your first rule to start automating Instagram DMs when someone comments on your posts.</div>
-            <button class="btn btn-primary" id="btnNewRuleEmpty">Create first automation</button>
+            <div class="empty-state-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+            <div class="empty-state-title">No automation rules created yet</div>
+            <div class="empty-state-text">Create a rule that listens for keywords like 'PRICE', 'LINK', or 'EBOOK' on your Reels and sends an instant DM.</div>
+            <button class="btn btn-primary" id="btnNewRuleEmpty">Create First Rule</button>
           </div>
         </div>
       </section>
 
-      <!-- ========== INBOX ========== -->
-      <section class="content-view" id="view-inbox">
+      <!-- ========== 3. LIVE SIMULATOR (HUMAN TOUCH) ========== -->
+      <section class="content-view" id="view-simulator">
         <div class="page-header">
-          <h1 class="page-title">Inbox</h1>
-          <p class="page-subtitle">DM conversations with your leads</p>
+          <h1 class="page-title">Live Simulator</h1>
+          <p class="page-subtitle">Test how your comments and DMs look on Instagram before publishing</p>
         </div>
-        <div class="card">
-          <div class="empty-state">
-            <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg></div>
-            <div class="empty-state-title">Inbox coming soon</div>
-            <div class="empty-state-text">View and reply to DM conversations directly from your dashboard. Currently, DMs are sent automatically via your automation rules.</div>
+
+        <div class="simulator-container">
+          <!-- Controls -->
+          <div class="simulator-controls">
+            <div class="card">
+              <div class="card-title mb-16">Simulate a Follower Comment</div>
+              <div class="form-group">
+                <label class="form-label">Follower Username</label>
+                <input type="text" class="form-input" id="simUsername" value="rahul_sharma">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Comment Text</label>
+                <input type="text" class="form-input" id="simComment" value="LINK please!">
+                <div class="form-hint">Type any keyword you have set up in your active rules (e.g. LINK, PRICE, DEMO).</div>
+              </div>
+              <button class="btn btn-primary" id="btnRunSimulation">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Run Simulation
+              </button>
+            </div>
+
+            <div class="card">
+              <div class="card-title mb-16">Rule Match Result</div>
+              <div id="simResultLog" class="feed">
+                <div class="feed-item">
+                  <div class="feed-msg">
+                    <span class="feed-dot"></span>
+                    <span>Ready to test. Click "Run Simulation" above.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phone Mockup Preview -->
+          <div class="phone-mockup">
+            <div class="phone-notch"></div>
+            <div class="phone-header">
+              <div class="phone-avatar">C</div>
+              <div>
+                <div>satnamwebservices</div>
+                <div style="font-size:10px;color:#71717a">Instagram Direct</div>
+              </div>
+            </div>
+            <div class="phone-chat" id="phoneChat">
+              <div class="chat-bubble user">LINK please!</div>
+              <div class="chat-bubble bot">
+                Hey Rahul! Thanks for your comment. Here is the link to download the blueprint:
+                <a href="#" class="chat-bubble-btn" target="_blank">Access Link</a>
+              </div>
+            </div>
+            <div style="font-size:10px;text-align:center;color:#a1a1aa;padding-top:8px;border-top:1px solid #f0f0f2">
+              Preview Mode (Simulated Instagram App)
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ========== CONTACTS ========== -->
+      <!-- ========== 4. CONTACTS CRM ========== -->
       <section class="content-view" id="view-contacts">
         <div class="page-header flex items-center justify-between">
           <div>
-            <h1 class="page-title">Contacts</h1>
-            <p class="page-subtitle">Your Instagram leads and CRM</p>
+            <h1 class="page-title">Contacts CRM</h1>
+            <p class="page-subtitle">Every user who commented and received your automated DM</p>
           </div>
-          <div class="flex gap-8">
-            <button class="btn btn-secondary" id="btnExportCSV">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export
-            </button>
-          </div>
+          <button class="btn btn-secondary" id="btnExportCSV">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
         </div>
 
         <div class="card">
@@ -291,45 +400,44 @@
             <table>
               <thead>
                 <tr>
-                  <th>Username</th>
-                  <th>Name</th>
-                  <th>Source</th>
-                  <th>Tags</th>
-                  <th>Date</th>
-                  <th></th>
+                  <th>Instagram Handle</th>
+                  <th>Full Name</th>
+                  <th>Source Trigger</th>
+                  <th>Status</th>
+                  <th>Captured Date</th>
                 </tr>
               </thead>
               <tbody id="contactsTableBody">
-                <tr><td colspan="6" class="text-muted" style="text-align:center;padding:40px">No contacts yet. They'll appear when automations process leads.</td></tr>
+                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:40px">No contacts yet. When users comment on your Instagram posts, they will be catalogued here.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- ========== BROADCAST ========== -->
+      <!-- ========== 5. BROADCAST ========== -->
       <section class="content-view" id="view-broadcast">
         <div class="page-header flex items-center justify-between">
           <div>
             <h1 class="page-title">Broadcast</h1>
-            <p class="page-subtitle">Send bulk DMs to your contact list</p>
+            <p class="page-subtitle">Send targeted direct messages to your engaged Instagram leads</p>
           </div>
           <button class="btn btn-primary" id="btnNewBroadcast">New Broadcast</button>
         </div>
         <div class="card">
           <div class="empty-state">
-            <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a4 4 0 0 1 0 7"/></svg></div>
-            <div class="empty-state-title">Start a broadcast</div>
-            <div class="empty-state-text">Send personalized DMs to your entire contact list or a filtered segment.</div>
+            <div class="empty-state-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a4 4 0 0 1 0 7"/></svg></div>
+            <div class="empty-state-title">Broadcast Campaigns</div>
+            <div class="empty-state-text">Complying with Meta's 24-hour messaging policy: send updates or offers to leads who recently engaged with your account.</div>
           </div>
         </div>
       </section>
 
-      <!-- ========== ANALYTICS ========== -->
+      <!-- ========== 6. ANALYTICS ========== -->
       <section class="content-view" id="view-analytics">
         <div class="page-header">
           <h1 class="page-title">Analytics</h1>
-          <p class="page-subtitle">Performance metrics for your automations</p>
+          <p class="page-subtitle">Telemetry, conversion funnel, and comment-to-lead throughput</p>
         </div>
 
         <div class="stat-grid" id="analyticsStats">
@@ -346,8 +454,8 @@
             <div class="stat-value" id="analyticsConversion">0%</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Avg Response Time</div>
-            <div class="stat-value" id="analyticsResponse">&lt;1s</div>
+            <div class="stat-label">Avg Response Latency</div>
+            <div class="stat-value" id="analyticsResponse">&lt; 1.2s</div>
           </div>
         </div>
 
@@ -357,155 +465,106 @@
           </div>
           <div class="feed" id="analyticsTimeline">
             <div class="empty-state">
-              <div class="empty-state-text">Analytics data will populate as automations run.</div>
+              <div class="empty-state-text">Analytics data will graph here as automations run.</div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ========== SETTINGS ========== -->
+      <!-- ========== 7. SETTINGS ========== -->
       <section class="content-view" id="view-settings">
         <div class="page-header flex items-center justify-between">
           <div>
             <h1 class="page-title">Settings</h1>
-            <p class="page-subtitle">Manage your Instagram connection and account preferences</p>
+            <p class="page-subtitle">Manage Instagram tokens, Meta webhook config, and system options</p>
           </div>
           <button class="btn btn-secondary" id="btnRefreshSettings">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Refresh status
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh Status
           </button>
         </div>
 
-        <!-- Instagram Connection -->
-        <div class="settings-section">
-          <div class="settings-section-title">Instagram Connection</div>
-          <div class="settings-section-desc">Connect your Meta Page Access Token to enable DM and comment automations.</div>
-
-          <div class="connection-card mb-16" id="igConnectionCard">
-            <div class="connection-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+        <!-- Instagram Connection Card -->
+        <div class="card mb-24">
+          <div class="card-title mb-16">Active Instagram Channel</div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div style="font-size:16px;font-weight:700" id="settingsIGTitle">@satnamwebservices</div>
+              <div class="text-muted mt-4" id="settingsIGSubtitle">Instagram Professional Account Linked via Meta API</div>
             </div>
-            <div class="connection-info">
-              <div class="connection-title" id="settingsIGTitle">Not connected</div>
-              <div class="connection-subtitle" id="settingsIGSubtitle">Add your access token to connect</div>
-            </div>
-            <div class="connection-actions">
-              <button class="btn btn-primary" id="btnConnectToken">Connect with Access Token</button>
-            </div>
-          </div>
-
-          <!-- Connection Check -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Connection Check</div>
-              <span class="badge badge-neutral" id="connectionStepCount">4 steps</span>
-            </div>
-            <div class="check-steps" id="settingsCheckSteps">
-              <div class="check-step">
-                <div class="check-icon wait" id="sCheckMeta">—</div>
-                <div>
-                  <div class="check-label">ConverFlow can talk to Meta</div>
-                  <div class="check-sublabel">One-click connect or Access Token</div>
-                </div>
-                <div class="check-action"><span class="badge badge-neutral" id="sCheckMetaStatus">Checking</span></div>
-              </div>
-              <div class="check-step">
-                <div class="check-icon wait" id="sCheckIG">—</div>
-                <div>
-                  <div class="check-label">Instagram account linked</div>
-                  <div class="check-sublabel" id="sCheckIGLabel">Not connected yet</div>
-                </div>
-                <div class="check-action"><span class="badge badge-neutral" id="sCheckIGStatus">Checking</span></div>
-              </div>
-              <div class="check-step">
-                <div class="check-icon wait" id="sCheckBusiness">—</div>
-                <div>
-                  <div class="check-label">Business or Creator account</div>
-                  <div class="check-sublabel">Required for DM API access</div>
-                </div>
-                <div class="check-action"><span class="badge badge-neutral" id="sCheckBusinessStatus">Checking</span></div>
-              </div>
-              <div class="check-step">
-                <div class="check-icon wait" id="sCheckWatcher">—</div>
-                <div>
-                  <div class="check-label">Webhook active</div>
-                  <div class="check-sublabel">Listening for new comments</div>
-                </div>
-                <div class="check-action"><span class="badge badge-neutral" id="sCheckWatcherStatus">Checking</span></div>
-              </div>
-            </div>
+            <button class="btn btn-secondary" id="btnConnectToken">Update Access Token</button>
           </div>
         </div>
 
-        <!-- Meta API Config -->
-        <div class="settings-section">
-          <div class="settings-section-title">Meta API Configuration</div>
-          <div class="card">
-            <div class="form-group">
-              <label class="form-label">Access Token</label>
-              <input type="password" class="form-input mono" id="inputAccessToken" placeholder="IGAA...">
-              <div class="form-hint">Your Instagram Graph API or Page Access Token from Meta Developer portal.</div>
-            </div>
-            <div class="flex gap-8">
-              <button class="btn btn-primary" id="btnSaveToken">Save & Connect</button>
-              <button class="btn btn-secondary" id="btnTestToken">Test Connection</button>
-            </div>
+        <!-- Meta API Manual Key Form -->
+        <div class="card">
+          <div class="card-title mb-16">Meta Graph API Access Token</div>
+          <div class="form-group">
+            <label class="form-label">Page / Instagram Access Token</label>
+            <input type="password" class="form-input mono" id="inputAccessToken" placeholder="IGAAMbPQJMVAxBZAGJuek8xeVVRS1lSaFRTY1ZAneVE5VC1PYmV2X2owWHBjVEVBeWJzWm0xNTE3MXlFeWxTUEwxazRPaWpRTk1oMkgtaF9jWUthaWxzRmxFbkNDWHVySEpqcUNEa3VZAQWVndHFEYThEUlJsN0gyMGZAiaHBpXzJKRQZDZD">
+            <div class="form-hint">Stored securely for @satnamwebservices on Railway backend.</div>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-primary" id="btnSaveToken">Save & Connect</button>
+            <button class="btn btn-secondary" id="btnTestToken">Test Token</button>
           </div>
         </div>
       </section>
 
-      <!-- ========== BILLING ========== -->
+      <!-- ========== 8. BILLING & RAZORPAY ========== -->
       <section class="content-view" id="view-billing">
         <div class="page-header">
-          <h1 class="page-title">Plan & Billing</h1>
-          <p class="page-subtitle">Manage your subscription and view payment history</p>
+          <h1 class="page-title">Plans & Billing</h1>
+          <p class="page-subtitle">Transparent subscription management with Indian UPI / Card payments via Razorpay</p>
         </div>
 
-        <!-- Current Plan -->
+        <!-- Current Plan Card -->
         <div class="card mb-24" id="currentPlanCard">
           <div class="flex items-center justify-between">
             <div>
-              <div class="card-subtitle">CURRENT PLAN</div>
+              <div class="card-subtitle">CURRENT SUBSCRIPTION</div>
               <div class="page-title mt-4" id="currentPlanName">Free Trial</div>
-              <p class="text-muted mt-4" id="currentPlanExpiry">15 days remaining</p>
+              <p class="text-muted mt-4" id="currentPlanExpiry">15 days remaining on your trial</p>
             </div>
-            <button class="btn btn-primary btn-lg" id="btnChangePlan">Upgrade</button>
+            <button class="btn btn-primary btn-lg" id="btnChangePlan">Upgrade Plan</button>
           </div>
           <div class="divider"></div>
           <div class="stat-grid">
             <div>
-              <div class="stat-label">Automations</div>
+              <div class="stat-label">Active Automations</div>
               <div class="stat-value" style="font-size:18px" id="billingAutomations">1 / 1</div>
             </div>
             <div>
-              <div class="stat-label">Contacts</div>
+              <div class="stat-label">Contact CRM Capacity</div>
               <div class="stat-value" style="font-size:18px" id="billingContacts">0 / 25</div>
             </div>
             <div>
-              <div class="stat-label">DMs / month</div>
+              <div class="stat-label">Monthly DM Allocation</div>
               <div class="stat-value" style="font-size:18px" id="billingDms">0 / 50</div>
             </div>
           </div>
         </div>
 
-        <!-- Plans Grid -->
-        <div id="plansGrid" class="stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
-          <!-- Plans populated by JS -->
+        <!-- Available Plans (Razorpay Integrated) -->
+        <div class="card-title mb-16">Choose a Systematic Plan</div>
+        <div id="plansGrid" class="stat-grid mb-24" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+          <!-- Populated by JS -->
         </div>
 
-        <!-- Coupon -->
+        <!-- Coupon Module -->
         <div class="card mb-24">
-          <div class="card-title mb-16">Have a coupon?</div>
+          <div class="card-title mb-8">Redeem Coupon or Referral Code</div>
+          <div class="card-subtitle mb-16">Enter discount codes for monthly billing adjustments</div>
           <div class="flex gap-8">
-            <input type="text" class="form-input" id="inputCoupon" placeholder="Enter coupon code" style="max-width: 280px">
-            <button class="btn btn-secondary" id="btnApplyCoupon">Apply</button>
+            <input type="text" class="form-input" id="inputCoupon" placeholder="e.g. LAUNCH50" style="max-width: 280px">
+            <button class="btn btn-secondary" id="btnApplyCoupon">Apply Code</button>
           </div>
           <div class="form-hint mt-8" id="couponResult"></div>
         </div>
 
-        <!-- Payment History -->
+        <!-- Payment History Table -->
         <div class="card">
-          <div class="card-title mb-16">Payment History</div>
+          <div class="card-title mb-16">Razorpay Invoices & Receipts</div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -514,11 +573,11 @@
                   <th>Plan</th>
                   <th>Amount</th>
                   <th>Status</th>
-                  <th>Method</th>
+                  <th>Razorpay Payment ID</th>
                 </tr>
               </thead>
               <tbody id="paymentHistoryBody">
-                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:30px">No payments recorded yet.</td></tr>
+                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:30px">No payment transactions recorded yet.</td></tr>
               </tbody>
             </table>
           </div>
@@ -530,49 +589,52 @@
 
   <!-- ========== MODALS ========== -->
 
-  <!-- New/Edit Rule Modal -->
+  <!-- Create/Edit Rule Modal -->
   <div class="modal-overlay" id="modalRule">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title" id="ruleModalTitle">New Automation Rule</div>
+        <div class="modal-title" id="ruleModalTitle">Configure Automation Rule</div>
         <button class="modal-close" id="btnCloseRuleModal">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Rule Name</label>
-          <input type="text" class="form-input" id="ruleInputName" placeholder="e.g. Free Guide DM">
+          <input type="text" class="form-input" id="ruleInputName" placeholder="e.g. Free Template DM">
+          <div class="form-hint">A descriptive name for internal organization.</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Type</label>
+          <label class="form-label">Trigger Type</label>
           <select class="form-input" id="ruleInputType">
-            <option value="comment_to_dm">Comment → DM</option>
-            <option value="dm_keyword">DM Keyword Reply</option>
+            <option value="comment_to_dm">Comment → DM (Replies to comments and sends DM)</option>
+            <option value="dm_keyword">Direct Message Keyword Reply</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Trigger Keywords</label>
-          <input type="text" class="form-input" id="ruleInputKeywords" placeholder="LINK, INFO, YES (comma separated)">
-          <div class="form-hint">Use * to match any comment</div>
+          <input type="text" class="form-input" id="ruleInputKeywords" placeholder="LINK, TEMPLATE, YES">
+          <div class="form-hint">Separate keywords by commas. Use * to trigger on any comment.</div>
         </div>
         <div class="form-group">
           <label class="form-label">Public Comment Reply</label>
-          <textarea class="form-input" id="ruleInputCommentReply" placeholder="Thanks @{username}! Check your DMs 🚀"></textarea>
+          <textarea class="form-input" id="ruleInputCommentReply" placeholder="Sent you the link in your DM, check your messages! 🚀"></textarea>
+          <div class="form-hint">This public reply increases reel engagement signals in the Instagram algorithm.</div>
         </div>
         <div class="form-group">
-          <label class="form-label">DM Message</label>
-          <textarea class="form-input" id="ruleInputDM" placeholder="Hey {name}! Here's the link you requested..."></textarea>
+          <label class="form-label">Private Direct Message (DM)</label>
+          <textarea class="form-input" id="ruleInputDM" placeholder="Hey! Thanks for your comment on my post. Here is your direct access link:"></textarea>
+          <div class="form-hint">Keep it warm and human. Use {name} or {username} to personalize.</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Button Text (optional)</label>
-          <input type="text" class="form-input" id="ruleInputBtnText" placeholder="Get the link">
+          <label class="form-label">Button Call To Action (Optional)</label>
+          <input type="text" class="form-input" id="ruleInputBtnText" placeholder="Download Free Blueprint">
         </div>
         <div class="form-group">
-          <label class="form-label">Delivery Link (optional)</label>
-          <input type="text" class="form-input" id="ruleInputLink" placeholder="https://your-link.com/resource">
+          <label class="form-label">Resource Destination Link (Optional)</label>
+          <input type="text" class="form-input" id="ruleInputLink" placeholder="https://umangsatnam.in/blueprint">
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="btnCancelRule">Cancel</button>
+        <button class="btn btn-secondary" id="btnCancelRule">Cancel</button>
         <button class="btn btn-primary" id="btnSaveRule">Save Rule</button>
       </div>
     </div>
@@ -582,26 +644,29 @@
   <div class="modal-overlay" id="modalToken">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">Connect Instagram</div>
+        <div class="modal-title">Connect Instagram Graph API</div>
         <button class="modal-close" id="btnCloseTokenModal">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Access Token</label>
-          <input type="text" class="form-input mono" id="modalTokenInput" placeholder="Paste your Meta Page or Instagram access token">
-          <div class="form-hint">Generate this token from the Meta Developer Portal → Instagram → Generate Access Tokens.</div>
+          <label class="form-label">Meta Page / User Access Token</label>
+          <textarea class="form-input mono" id="modalTokenInput" placeholder="Paste your Meta Access Token (starts with IGAAM...)" style="height:110px"></textarea>
+          <div class="form-hint">Generated from Meta Developer portal with instagram_manage_messages and pages_read_engagement permissions.</div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="btnCancelToken">Cancel</button>
-        <button class="btn btn-primary" id="btnSubmitToken">Connect</button>
+        <button class="btn btn-secondary" id="btnCancelToken">Cancel</button>
+        <button class="btn btn-primary" id="btnSubmitToken">Verify & Connect</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Container -->
+  <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- Razorpay Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- ConverFlow Systematic Dashboard JS -->
   <script src="/static/js/converflow.js"></script>
 </body>
 </html>

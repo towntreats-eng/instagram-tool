@@ -3,18 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign up — ConverFlow</title>
+<title>Sign up — ConverFlow (15-Day Free Trial)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/marketing.css">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2309090b'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<style>
+.form-group { margin-bottom: 18px; text-align: left; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: #09090b; margin-bottom: 6px; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #09090b; transition: all 120ms; }
+.form-input:focus { border-color: #09090b; box-shadow: 0 0 0 1px #09090b; }
+.btn-block { width: 100%; }
+.auth-footer { margin-top: 24px; font-size: 13px; color: #71717a; text-align: center; }
+.auth-footer a { color: #09090b; font-weight: 600; text-decoration: underline; }
+#signupError { font-size: 13px; color: #dc2626; margin-top: 12px; display: none; text-align: center; }
+.trial-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 10px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; border-radius: 20px; margin-bottom: 14px; }
+</style>
 </head>
 <body>
 
 <header class="nav">
   <div class="wrap nav-inner">
     <a href="/" class="brand">
-      <span class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+      <span class="brand-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
       ConverFlow
     </a>
     <div class="nav-cta">
@@ -25,27 +36,31 @@
 
 <div class="auth-wrap">
   <div class="auth-card">
-    <h1>Start free trial</h1>
-    <p class="lead" style="color:var(--text-2)">15 days free. No credit card needed.</p>
+    <div class="auth-header">
+      <div class="trial-badge">✓ 15-DAY FULL TRIAL INCLUDED</div>
+      <div class="auth-title">Create your workspace</div>
+      <div class="auth-subtitle">No credit card required. Connect Instagram in under 2 minutes.</div>
+    </div>
 
     <form id="signupForm" onsubmit="return handleSignup(event)">
       <div class="form-group">
-        <label class="form-label">Business Name</label>
-        <input type="text" class="form-input" id="signupName" placeholder="Your brand or business name" required>
+        <label class="form-label">Workspace / Brand Name</label>
+        <input type="text" class="form-input" id="signupName" placeholder="e.g. Satnam Web Services" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-input" id="signupEmail" placeholder="you@example.com" required>
+        <label class="form-label">Work Email</label>
+        <input type="email" class="form-input" id="signupEmail" placeholder="you@company.com" required>
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="signupPassword" placeholder="Min 8 characters" required minlength="8">
+        <input type="password" class="form-input" id="signupPassword" placeholder="Minimum 8 characters" required minlength="8">
       </div>
-      <button type="submit" class="btn btn-white btn-lg btn-block" style="margin-top:8px">Create account</button>
+      <button type="submit" class="btn btn-black btn-lg btn-block" id="btnSignup">Create Free Account</button>
+      <div id="signupError"></div>
     </form>
 
     <div class="auth-footer">
-      Already have an account? <a href="/login">Log in</a>
+      Already have an account? <a href="/login">Sign in</a>
     </div>
   </div>
 </div>
@@ -53,9 +68,15 @@
 <script>
 async function handleSignup(e) {
   e.preventDefault();
-  const name = document.getElementById('signupName').value;
-  const email = document.getElementById('signupEmail').value;
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
+  const btn = document.getElementById('btnSignup');
+  const err = document.getElementById('signupError');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Setting up workspace...';
+
   try {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
@@ -64,12 +85,18 @@ async function handleSignup(e) {
     });
     const data = await res.json();
     if (data.success) {
-      window.location.href = '/app';
+      window.location.href = '/dashboard';
     } else {
-      alert(data.error || 'Signup failed. Try again.');
+      err.textContent = data.error || 'Failed to create account';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Create Free Account';
     }
-  } catch (err) {
-    window.location.href = '/app';
+  } catch (ex) {
+    err.textContent = 'Network error. Please try again.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Create Free Account';
   }
 }
 </script>
