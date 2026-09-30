@@ -21,7 +21,8 @@ SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 TEMPLATES_FILE = os.path.join(DATA_DIR, "templates.json")
 
 ISO = "%Y-%m-%dT%H:%M:%S"
-SECRET_FIELDS = {("meta_app", "app_secret"), ("billing", "razorpay_key_secret")}
+SECRET_FIELDS = {("meta_app", "app_secret"), ("billing", "razorpay_key_secret"),
+                 ("billing", "razorpay_webhook_secret")}
 
 # Permissions the Connect-Instagram flow asks Instagram for.
 # These scopes work with the Instagram API via Instagram Login
@@ -72,6 +73,7 @@ class PlatformSettings:
                 "payment_mode": "manual",          # manual | razorpay
                 "razorpay_key_id": "",
                 "razorpay_key_secret": "",
+                "razorpay_webhook_secret": "",
                 "invoice_prefix": "CF",
             },
             "safety": {

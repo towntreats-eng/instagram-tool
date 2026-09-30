@@ -220,3 +220,120 @@ Every dashboard page rebuilt against §5, with §4's six features placed:
 - DM automation analytics gaps — creatorflow.so/blog/instagram-dm-automation-analytics-guide
 - India INR pricing comparison — tryunlockdm.com/blog/instagram-dm-automation-india-2026
 - India creator tool problems — creatorlanehq.com/blog/best-instagram-dm-automation-tools-india
+
+---
+
+## Appendix B — The ink system, and becoming a real SaaS
+
+### Why we stopped looking like a copy
+
+The root cause was in the CSS, not in the layout. Our design tokens read:
+
+```css
+--mc-green: #00824b;   /* mc = ManyChat. That hex IS their brand green. */
+```
+
+Every card, every button, every active nav pill inherited a competitor's
+brand colour. No amount of rearranging components fixes that.
+
+So the palette is now a single ink scale — `--ink-000` through `--ink-950`
+— and exactly one hue survives, `--danger: #b42318`, reserved for
+destructive actions and failures. Across all three stylesheets the only
+non-grey values that remain are that red and its two tints. That is
+checkable in one command, and it should stay checkable:
+
+```bash
+grep -oE '#[0-9a-fA-F]{6}' static/css/*.css | # any new colour shows up here
+```
+
+The old `--mc-*` names are kept as aliases pointing at the ink scale, so
+roughly 4,600 lines of existing rules re-skinned without touching markup.
+They should be retired as files are next edited, not in one sweep.
+
+### Three rules the new system runs on
+
+1. **Structure by hairline, not by shadow.** Cards are ruled, not floating.
+   Only things that genuinely sit above the page — menus, modals, toasts —
+   get a shadow. This is the cheapest and largest visual difference from
+   every green-on-white automation tool.
+2. **Hierarchy by type and space**, because there is no hue left to carry it.
+   Uppercase micro-labels, tabular figures, tight tracking on display sizes.
+3. **State by form, not by colour.** Filled dot = live, ring = paused,
+   hatched = not measured, red = failed. This survives a colour-blind user,
+   a bad monitor, and a printout — and it is why the "Ordered" funnel stage
+   reads as *unmeasured* rather than as *zero*.
+
+The left rail is ink and the canvas is white. That single inversion is what
+makes the product recognisable at a glance as ours.
+
+### The flow, instead of scattered settings
+
+The sidebar was ten flat destinations. It is now eight in three named groups:
+
+| Group | Items | The question it answers |
+|---|---|---|
+| **Run** | Home, Automation, Inbox | What is happening right now? |
+| **Grow** | Broadcast, Contacts, Analytics | How do I make it bigger? |
+| **Account** | Plan & billing, Settings | What am I paying, and is it connected? |
+
+Two entries were removed from the rail. *AI Assist* was a separate
+destination for something that belongs inside the composer. *Flow Tester*
+is a step in building an automation, not a place you visit — it is still
+reachable from the automation itself. Mobile carries five.
+
+### Payments
+
+Razorpay, over plain REST, in `core/razorpay_client.py`. No SDK: the three
+calls we make are short enough that anyone can audit the money path in one
+file.
+
+Three rules the code keeps:
+
+1. **The browser never names a price.** It sends a plan id; the server
+   prices it from the live catalogue and applies the coupon. A merchant
+   cannot type themselves onto Agency from the console.
+2. **A plan changes only after the signature verifies** against our secret,
+   server-side. `POST /api/billing/verify` recomputes the HMAC and refuses
+   anything that does not match, with a message that tells the customer
+   plainly that nothing has been charged.
+3. **The webhook and the browser callback are both idempotent.** Whichever
+   arrives second finds the payment id already recorded and does nothing.
+   The webhook exists for the case that actually loses money: a customer
+   who paid and then closed the tab.
+
+Without keys configured, checkout returns `manual_fallback: true` and the
+UI drops back to the manual upgrade path, so the product still works while
+the gateway is being set up.
+
+**What Umang still has to do:** paste live keys into Admin → Platform
+settings → Billing, press *Test keys* (it opens a ₹1 order and throws it
+away), then add the webhook URL shown on that screen to Razorpay and
+subscribe it to `payment.captured` and `order.paid`.
+
+### Bugs this pass surfaced
+
+- **The Automations KPI strip was three-quarters fiction.** "Reels Protected
+  1 / 1 · Free Tier", "142 DMs · 99.8%", "28.4% Avg Conversion" were literal
+  HTML, shown to an Agency workspace with unlimited automations, directly
+  contradicting the "2 / ∞" chip on the same screen. All four cards now come
+  from `/api/billing/status` and `/api/insights`, and where a thing is not
+  measurable they say so rather than printing a flattering guess.
+- **`BillingManager` was still gating activation** with a ₹299 plan that no
+  longer exists, so the one-step publish button was dead for paying
+  customers. Both gates now go through `user_manager.can_activate_automation()`;
+  the class is retired.
+- **"1 active automations"** on the Free plan, in two separate renderers.
+- **The "MOST POPULAR" badge wrapped to two lines** and crashed into the plan
+  name on the pricing grid.
+- **`.hint` and `.btn-ghost` had no CSS rules at all** — the admin billing
+  panel rendered helper text at body size with a chromeless button.
+
+### What is still open
+
+- `dm_engine` has no `replied_at` stamp, so reply speed is still an estimate
+  flagged `estimated: true`. Until that lands we should not claim a measured
+  median anywhere.
+- The Inbox ships with demo threads. Real inbox data or an honest empty
+  state, before anyone pays.
+- The admin "Signups per month" axis repeats tick labels on small integer
+  ranges.

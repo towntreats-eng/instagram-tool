@@ -415,7 +415,8 @@ class UserManager:
         return user
 
     def set_plan(self, user_id: str, plan_id: str, record_payment: bool = True,
-                 amount: Optional[int] = None, coupon: Optional[str] = None) -> Optional[Dict[str, Any]]:
+                 amount: Optional[int] = None, coupon: Optional[str] = None,
+                 method: str = "manual", reference: str = "") -> Optional[Dict[str, Any]]:
         user = self.get(user_id)
         if not user:
             return None
@@ -440,7 +441,8 @@ class UserManager:
                     "date": _now(),
                     "amount": price if amount is None else amount,
                     "plan": plan_id,
-                    "method": "manual",
+                    "method": method,
+                    "reference": reference,
                     "coupon": coupon,
                     "status": "paid",
                 })

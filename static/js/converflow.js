@@ -30,12 +30,12 @@
       t = document.createElement("div");
       t.id = "cfToast";
       t.style.cssText = "position:fixed;bottom:22px;left:50%;transform:translate(-50%,140%);z-index:999;" +
-        "background:#0b0f14;color:#fff;padding:12px 20px;border-radius:999px;font-size:13.5px;font-weight:700;" +
-        "box-shadow:0 18px 44px rgba(11,15,20,.22);transition:transform .3s cubic-bezier(.2,.8,.2,1);font-family:inherit";
+        "background:#0a0a0b;color:#fff;padding:12px 20px;border-radius:999px;font-size:13.5px;font-weight:700;" +
+        "box-shadow:0 18px 44px rgba(10, 10, 11,.22);transition:transform .3s cubic-bezier(.2,.8,.2,1);font-family:inherit";
       document.body.appendChild(t);
     }
     t.textContent = msg;
-    t.style.background = bad ? "#e5484d" : "#0b0f14";
+    t.style.background = bad ? "#b42318" : "#0a0a0b";
     t.style.transform = "translate(-50%,0)";
     clearTimeout(t._timer);
     t._timer = setTimeout(function () { t.style.transform = "translate(-50%,140%)"; }, 2800);
@@ -63,7 +63,7 @@
     } else if (!out.platform_ready) {
       card.className = "connect-card";
       card.innerHTML =
-        '<div class="connect-badge" style="background:#eef1f4;color:#8b95a3"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
+        '<div class="connect-badge" style="background:#f1f1f3;color:#94949b"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
         '<div class="connect-copy"><h3>Connect your Instagram account</h3>' +
         '<p>Connect with your Meta Page Access Token, or use browser sign-in below.</p></div>' +
         '<div class="connect-actions">' +
@@ -172,11 +172,11 @@
           '<div class="price"><b>' + inr(p.price_monthly) + '</b><span>/mo</span></div>' +
           '<ul>' +
             '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-              limitLabel(p.limits.automations) + ' automations</li>' +
+              limitLabel(p.limits.automations) + plural(p.limits.automations, ' automation</li>', ' automations</li>') +
             '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-              limitLabel(p.limits.contacts) + ' contacts</li>' +
+              limitLabel(p.limits.contacts) + plural(p.limits.contacts, ' contact</li>', ' contacts</li>') +
             '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-              limitLabel(p.limits.dms_per_month) + ' DMs / month</li>' +
+              limitLabel(p.limits.dms_per_month) + plural(p.limits.dms_per_month, ' DM / month</li>', ' DMs / month</li>') +
             (p.features.broadcast ? '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Broadcast engine</li>' : "") +
             (p.features.ai_assist ? '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>AI flow generator</li>' : "") +
           '</ul>' +
@@ -189,16 +189,99 @@
     }
   }
 
+
+  // --- Checkout ---------------------------------------------------------------
+  // The browser never names a price. It names a plan; the server prices it,
+  // opens the order, and refuses to move the plan until the signature checks out.
+  var rzpLoading = null;
+  function loadRazorpay() {
+    if (window.Razorpay) return Promise.resolve(true);
+    if (rzpLoading) return rzpLoading;
+    rzpLoading = new Promise(function (resolve) {
+      var sc = document.createElement("script");
+      sc.src = "https://checkout.razorpay.com/v1/checkout.js";
+      sc.onload = function () { resolve(true); };
+      sc.onerror = function () { resolve(false); };
+      document.head.appendChild(sc);
+    });
+    return rzpLoading;
+  }
+
+  async function payForPlan(planId, button, coupon) {
+    var label = button ? button.textContent : "";
+    function done(txt) { if (button) { button.disabled = false; button.textContent = txt || label; } }
+    if (button) { button.disabled = true; button.textContent = "Opening checkout…"; }
+
+    var out = await api("/api/billing/checkout", {
+      method: "POST", body: JSON.stringify({ plan_id: planId, coupon: coupon || null })
+    });
+
+    // Free plan, or a coupon that covered the whole thing — already switched.
+    if (out.success && out.switched) {
+      done(); flash("You're on the " + out.billing.plan_name + " plan");
+      refreshPlanSurfaces(); return true;
+    }
+
+    if (!out.success) {
+      if (out.manual_fallback) {
+        var man = await api("/api/billing/upgrade", {
+          method: "POST", body: JSON.stringify({ plan_id: planId, coupon: coupon || null })
+        });
+        done();
+        if (!man.success) { flash(man.error || "Could not switch plan", true); return false; }
+        flash("You're on the " + man.billing.plan_name + " plan");
+        refreshPlanSurfaces(); return true;
+      }
+      done(); flash(out.error || "Could not start checkout", true); return false;
+    }
+
+    var loaded = await loadRazorpay();
+    if (!loaded) { done(); flash("Couldn't reach the payment window. Check your connection.", true); return false; }
+
+    var order = out.order;
+    var rzp = new window.Razorpay({
+      key: order.key_id,
+      amount: order.amount,
+      currency: order.currency,
+      order_id: order.order_id,
+      name: (STATE.brand && STATE.brand.name) || "ConverFlow",
+      description: order.plan_name + " — monthly",
+      theme: { color: "#0a0a0b" },
+      modal: { ondismiss: function () { done("Payment cancelled"); setTimeout(function () { done(); }, 1800); } },
+      handler: async function (resp) {
+        if (button) button.textContent = "Confirming…";
+        var v = await api("/api/billing/verify", {
+          method: "POST",
+          body: JSON.stringify({
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_signature: resp.razorpay_signature,
+            plan_id: order.plan_id,
+            coupon: order.coupon || null
+          })
+        });
+        done();
+        if (!v.success) { flash(v.error || "We could not confirm that payment", true); return; }
+        flash("Payment received — you're on " + v.billing.plan_name);
+        refreshPlanSurfaces();
+      }
+    });
+    rzp.open();
+    return true;
+  }
+
+  function refreshPlanSurfaces() {
+    try { renderBilling(); } catch (e) {}
+    try { fillUpgradeModal(); } catch (e) {}
+    try { renderSettingsPlan(); } catch (e) {}
+  }
+
   document.addEventListener("click", async function (ev) {
     var pick = ev.target.closest("[data-pick]");
     if (pick) {
       var planId = pick.dataset.pick;
       var coupon = ($("#couponCode") && $("#couponCode").value.trim()) || null;
-      pick.disabled = true; pick.textContent = "Switching…";
-      var out = await api("/api/billing/upgrade", { method: "POST", body: JSON.stringify({ plan_id: planId, coupon: coupon }) });
-      if (!out.success) { flash(out.error || "Could not switch plan", true); pick.disabled = false; return; }
-      flash("You're on the " + out.billing.plan_name + " plan");
-      renderBilling();
+      await payForPlan(planId, pick, coupon);
       return;
     }
     if (ev.target.closest("#couponApply")) {
@@ -221,8 +304,8 @@
     if (badge) {
       badge.textContent = b.badge || b.plan_name;
       badge.style.cssText = b.state === "expired"
-        ? "background:#fef1f1;color:#e5484d"
-        : b.is_paid ? "background:#e8f5ee;color:#00824b" : "";
+        ? "background:#fdf3f2;color:#b42318"
+        : b.is_paid ? "background:#f2f2f4;color:#101014" : "";
     }
     var count = $("#sidebarLimitCount");
     if (count && b.usage && b.usage.contacts) {
@@ -236,7 +319,7 @@
     var mob = document.querySelector(".mobile-badge-free");
     if (mob) {
       mob.textContent = b.badge || b.plan_name;
-      if (b.is_paid) mob.style.cssText = "background:#e8f5ee;color:#00824b";
+      if (b.is_paid) mob.style.cssText = "background:#f2f2f4;color:#101014";
     }
   }
 
@@ -244,7 +327,7 @@
   function bcLog(level, text) {
     var box = $("#bcLog");
     if (!box) return;
-    var colour = { SUCCESS: "#00824b", ERROR: "#e5484d", WARN: "#b45309" }[level] || "#5b6673";
+    var colour = { SUCCESS: "#101014", ERROR: "#b42318", WARN: "#3a3a41" }[level] || "#62626a";
     var row = document.createElement("div");
     row.style.cssText = "color:" + colour + ";line-height:1.5;flex-shrink:0";
     row.textContent = "› " + text;
@@ -568,7 +651,7 @@
       if (to == null) return null;
       var from = current ? current.limits[key] : null;
       if (from != null && rank(to) <= rank(from)) return null;   // not an upgrade
-      return [limitLabel(to) + " " + label,
+      return [limitLabel(to) + " " + (Number(to) === 1 ? label.replace(/s$/, "") : label),
               from != null ? "Up from " + limitLabel(from) + "." : ""];
     };
     var rows = [limitLine("automations", "automations"),
@@ -594,16 +677,11 @@
       return;
     }
     if (confirm && STATE.upgradeTarget) {
-      confirm.disabled = true;
-      var out = await api("/api/billing/upgrade", {
-        method: "POST", body: JSON.stringify({ plan_id: STATE.upgradeTarget })
-      });
-      confirm.disabled = false;
-      if (!out.success) { flash(out.error || "Could not switch plan", true); return; }
-      flash("You're on the " + out.billing.plan_name + " plan");
-      var modal = document.getElementById("upgradeModal");
-      if (modal) modal.classList.remove("active", "show");
-      renderBilling(); fillUpgradeModal(); renderSettingsPlan();
+      var paid = await payForPlan(STATE.upgradeTarget, confirm, null);
+      if (paid) {
+        var modal = document.getElementById("upgradeModal");
+        if (modal) modal.classList.remove("active", "show");
+      }
     }
   });
 
@@ -615,7 +693,7 @@
     var badge = $("#setPlanBadge");
     if (badge) {
       badge.textContent = b.badge || b.plan_name;
-      if (b.is_paid) badge.style.cssText = "background:#e8f5ee;color:#00824b";
+      if (b.is_paid) badge.style.cssText = "background:#f2f2f4;color:#101014";
     }
     var limits = b.limits || {};
     var autos = limits.automations === -1 ? "unlimited automations"
@@ -708,13 +786,72 @@
       chip.textContent = n === 0 ? "ALL CLEAR" : n + (n === 1 ? " STEP LEFT" : " STEPS LEFT");
       chip.style.cssText = n === 0
         ? "background:var(--mc-green-light);color:var(--mc-green)"
-        : "background:#fef2f2;color:#c2262b";
+        : "background:#fdf3f2;color:#b42318";
     }
   }
 
   // ================================================================ routing
+
+  // --- Automations KPI strip -------------------------------------------------
+  // Four numbers, all of them measured. The pill next to each one is context,
+  // never a compliment: if we have not measured a thing we leave it blank and
+  // say what would make it measurable.
+  // "1 automations" is the kind of small wrongness that makes a product feel unfinished.
+  function plural(value, one, many) {
+    return Number(value) === 1 ? one : many;   // -1 (unlimited) takes the plural
+  }
+
+  async function renderAutomationKpis() {
+    if (!$("#kpiActiveFlows")) return;
+    var out = await api("/api/billing/status");
+    var b = (out && out.billing) || {};
+    var usage = b.usage || {};
+    var ins = await api("/api/insights");
+    var stages = {};
+    ((ins && ins.funnel && ins.funnel.stages) || []).forEach(function (st) { stages[st.key] = st; });
+
+    function put(id, value, pill, sub) {
+      var v = $("#" + id), p = $("#" + id + "Pill"), sb = $("#" + id + "Sub");
+      if (v) v.textContent = value;
+      if (p) { p.textContent = pill || ""; p.style.visibility = pill ? "visible" : "hidden"; }
+      if (sb && sub) sb.textContent = sub;
+    }
+
+    // 1. Live automations, against the plan's real cap
+    var au = usage.automations || {};
+    var cap = au.unlimited ? "∞" : (au.limit != null ? au.limit : "—");
+    put("kpiActiveFlows", String(au.used != null ? au.used : "—"),
+        au.unlimited ? "Unlimited" : (au.used || 0) + " of " + cap,
+        au.unlimited ? "Your plan has no automation cap"
+                     : "Your " + (b.plan_name || "plan") + " plan allows " + cap);
+
+    // 2. DMs this month, against the plan's monthly allowance
+    var dm = usage.dms_per_month || {};
+    put("kpiDmsSent", (dm.used != null ? Number(dm.used).toLocaleString("en-IN") : "—"),
+        dm.unlimited ? "Unlimited" : (dm.percent != null ? dm.percent + "% used" : ""),
+        dm.unlimited ? "No monthly cap on your plan"
+                     : "of " + Number(dm.limit || 0).toLocaleString("en-IN") + " this month");
+
+    // 3 and 4 come from the funnel, and the funnel counts PEOPLE, not messages
+    var trig = stages.triggered, rep = stages.replied, clk = stages.clicked;
+    if (rep && rep.known) {
+      var pct = trig && trig.value ? Math.round((rep.value / trig.value) * 100) : null;
+      put("kpiReplied", String(rep.value), pct != null ? pct + "% of triggers" : "",
+          trig ? trig.value + " people triggered an automation" : "");
+    } else {
+      put("kpiReplied", "—", "", "Not measurable yet");
+    }
+    if (clk && clk.known) {
+      var cp = rep && rep.value ? Math.round((clk.value / rep.value) * 100) : null;
+      put("kpiClicked", String(clk.value), cp != null ? cp + "% of replies" : "", null);
+    } else {
+      put("kpiClicked", "—", "", 'Tag a contact "Link Requested" to count it');
+    }
+  }
+
   var RENDER = {
     "view-home": renderHome,
+    "view-automations": renderAutomationKpis,
     "view-billing": renderBilling,
     "view-broadcast": renderBroadcast,
     "view-analytics": renderAnalytics,
@@ -742,6 +879,7 @@
   function boot() {
     renderConnect();
     renderHome();
+    renderAutomationKpis();
     fillUpgradeModal();
     api("/api/billing/status").then(function (out) {
       if (out && out.billing) { STATE.billing = out.billing; STATE.plans = out.plans || []; syncSidebar(out.billing); }

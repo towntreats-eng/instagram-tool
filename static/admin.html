@@ -454,8 +454,18 @@
               </div>
               <div class="field"><label>Razorpay Key ID</label><input class="input" name="razorpay_key_id" placeholder="rzp_live_..."></div>
               <div class="field"><label>Razorpay Key Secret</label><input class="input" name="razorpay_key_secret" placeholder="••••••••"></div>
+              <div class="field"><label>Razorpay Webhook Secret</label><input class="input" name="razorpay_webhook_secret" placeholder="Set this in Razorpay → Webhooks"></div>
+              <div class="field">
+                <label>Webhook URL — paste this into Razorpay</label>
+                <input class="input" id="rzpWebhookUrl" readonly value="/api/razorpay/webhook">
+                <div class="hint">Subscribe to <b>payment.captured</b> and <b>order.paid</b>. Without it, a payment where the customer closed the tab mid-way never lands on their plan.</div>
+              </div>
               <div class="field"><label>Invoice prefix</label><input class="input" name="invoice_prefix"></div>
-              <button class="btn btn-green btn-block" type="submit">Save billing</button>
+              <div class="field-row">
+                <button class="btn btn-green btn-block" type="submit">Save billing</button>
+                <button class="btn btn-ghost btn-block" type="button" id="btnTestRazorpay">Test keys</button>
+              </div>
+              <div class="hint" id="rzpTestResult"></div>
             </form></div>
           </div>
         </div>

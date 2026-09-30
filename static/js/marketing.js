@@ -138,10 +138,18 @@
   var CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   var CROSS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
 
+  // [one, many] — "1 active automations" reads like a bug, because it is one.
   var LIMIT_LABELS = {
-    automations: "active automations", contacts: "contacts", dms_per_month: "DMs a month",
-    ig_accounts: "Instagram account", team_seats: "team seat"
+    automations: ["active automation", "active automations"],
+    contacts: ["contact", "contacts"],
+    dms_per_month: ["DM a month", "DMs a month"],
+    ig_accounts: ["Instagram account", "Instagram accounts"],
+    team_seats: ["team seat", "team seats"]
   };
+  function limitLabel(key, value) {
+    var pair = LIMIT_LABELS[key] || [key, key];
+    return pair[Number(value) === 1 ? 0 : 1];   // -1 (unlimited) takes the plural
+  }
   var FEATURE_LABELS = {
     comment_to_dm: "Comment-to-DM automations", dm_keyword: "DM keyword auto-replies",
     wildcard_trigger: "Wildcard (any comment) trigger", story_mention: "Story mention trigger",
@@ -154,7 +162,7 @@
   function planCard(p) {
     var lines = [];
     ["automations", "contacts", "dms_per_month"].forEach(function (k) {
-      if (p.limits[k] != null) lines.push(cap(p.limits[k]) + " " + LIMIT_LABELS[k]);
+      if (p.limits[k] != null) lines.push(cap(p.limits[k]) + " " + limitLabel(k, p.limits[k]));
     });
     Object.keys(p.features || {}).forEach(function (k) {
       if (p.features[k] && ["broadcast", "ai_assist", "story_mention", "priority_support", "white_label"].indexOf(k) >= 0) {
@@ -186,7 +194,8 @@
     }).join("") + "</tr></thead>";
 
     var limitRows = Object.keys(LIMIT_LABELS).map(function (k) {
-      return "<tr><td>" + esc(LIMIT_LABELS[k].charAt(0).toUpperCase() + LIMIT_LABELS[k].slice(1)) + "</td>" +
+      var head = LIMIT_LABELS[k][1];
+      return "<tr><td>" + esc(head.charAt(0).toUpperCase() + head.slice(1)) + "</td>" +
         plans.map(function (p) {
           return '<td class="yes">' + cap(p.limits[k]) + "</td>";
         }).join("") + "</tr>";

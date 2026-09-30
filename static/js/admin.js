@@ -23,7 +23,7 @@
   function initials(name) {
     return String(name || "?").trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join("").toUpperCase();
   }
-  var AV = ["#00824b", "#0084ff", "#7c5cff", "#e5484d", "#b45309", "#0d9488", "#db2777", "#4f46e5"];
+  var AV = ["#0a0a0b", "#1f1f22", "#2e2e35", "#3a3a41", "#47474f", "#55555e", "#62626a", "#6e6e77"];
   function avatarColor(seed) {
     var h = 0, s = String(seed || "");
     for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -124,11 +124,11 @@
     // gradient def
     var defs = el("defs", {});
     var lg = el("linearGradient", { id: "gGreen", x1: "0", y1: "0", x2: "0", y2: "1" });
-    lg.appendChild(el("stop", { offset: "0%", "stop-color": "#12b981" }));
-    lg.appendChild(el("stop", { offset: "100%", "stop-color": "#00824b" }));
+    lg.appendChild(el("stop", { offset: "0%", "stop-color": "#5a5a63" }));
+    lg.appendChild(el("stop", { offset: "100%", "stop-color": "#101014" }));
     var lb = el("linearGradient", { id: "gBlue", x1: "0", y1: "0", x2: "0", y2: "1" });
-    lb.appendChild(el("stop", { offset: "0%", "stop-color": "#4dabff" }));
-    lb.appendChild(el("stop", { offset: "100%", "stop-color": "#0084ff" }));
+    lb.appendChild(el("stop", { offset: "0%", "stop-color": "#7d7d86" }));
+    lb.appendChild(el("stop", { offset: "100%", "stop-color": "#101014" }));
     defs.appendChild(lg); defs.appendChild(lb);
     svg.insertBefore(defs, svg.firstChild);
   }
@@ -153,9 +153,9 @@
       offset += len;
     });
     svg.appendChild(el("text", { x: cx, y: cy - 2, "text-anchor": "middle",
-      style: "font-size:24px;font-weight:800;fill:#0b0f14;letter-spacing:-.03em" }, String(total)));
+      style: "font-size:24px;font-weight:800;fill:#0a0a0b;letter-spacing:-.03em" }, String(total)));
     svg.appendChild(el("text", { x: cx, y: cy + 16, "text-anchor": "middle",
-      style: "font-size:11px;font-weight:700;fill:#8b95a3" }, "workspaces"));
+      style: "font-size:11px;font-weight:700;fill:#94949b" }, "workspaces"));
 
     if (legendEl) {
       legendEl.innerHTML = slices.map(function (s) {
@@ -211,9 +211,9 @@
     trend.className = "badge " + (delta >= 0 ? "badge-pro" : "badge-suspended");
 
     donut($("#chartDonut"), $("#donutLegend"), [
-      { label: "Pro", value: m.pro_users, color: "#00824b" },
-      { label: "Free trial", value: m.trial_users, color: "#0084ff" },
-      { label: "Expired", value: m.expired_users, color: "#cbd3db" }
+      { label: "Pro", value: m.pro_users, color: "#0a0a0b" },
+      { label: "Free trial", value: m.trial_users, color: "#6e6e77" },
+      { label: "Expired", value: m.expired_users, color: "#d4d4d8" }
     ]);
 
     $("#recentPayments").innerHTML = (d.recent_payments || []).slice(0, 6).map(function (p) {
@@ -1079,3 +1079,27 @@
     showView(TITLES[hash] ? hash : "overview");
   })();
 })();
+
+  // Razorpay: prove the keys work before a customer finds out they don't.
+  document.addEventListener("click", async function (ev) {
+    var btn = ev.target.closest("#btnTestRazorpay");
+    if (!btn) return;
+    var out = document.getElementById("rzpTestResult");
+    btn.disabled = true; btn.textContent = "Testing…";
+    try {
+      var r = await fetch("/api/admin/razorpay/test", { method: "POST" }).then(function (x) { return x.json(); });
+      if (out) {
+        out.textContent = r.message || (r.success ? "Keys work." : "Keys did not work.");
+        out.style.color = r.success ? "var(--ink)" : "var(--coral)";
+      }
+    } catch (e) {
+      if (out) { out.textContent = "Could not reach the server."; out.style.color = "var(--coral)"; }
+    }
+    btn.disabled = false; btn.textContent = "Test keys";
+  });
+
+  // The webhook URL is only useful with the real origin in front of it.
+  document.addEventListener("DOMContentLoaded", function () {
+    var f = document.getElementById("rzpWebhookUrl");
+    if (f) f.value = window.location.origin + "/api/razorpay/webhook";
+  });

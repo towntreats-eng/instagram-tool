@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import threading
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, StreamingResponse, Response, PlainTextResponse
@@ -14,7 +15,6 @@ from core.spintax import SpintaxEngine
 from core.automation_engine import AutomationEngine
 from core.contacts_manager import ContactsManager
 from core.comment_watcher import CommentWatcher
-from core.billing import BillingManager
 from core.post_provider import PostProvider
 from core.meta_api import MetaAPIClient
 from core.user_manager import UserManager
@@ -23,6 +23,7 @@ from core.plans_manager import PlansManager, FEATURE_KEYS, LIMIT_KEYS, UNLIMITED
 from core.platform_settings import PlatformSettings
 from core.meta_oauth import MetaOAuth
 from core.insights import Insights
+from core.razorpay_client import RazorpayClient
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -42,10 +43,10 @@ app.add_middleware(
 campaign_manager = CampaignManager()
 automation_engine = AutomationEngine()
 contacts_manager = ContactsManager()
-billing_manager = BillingManager()
 meta_client = MetaAPIClient()
 plans_manager = PlansManager()
 platform_settings = PlatformSettings()
+razorpay = RazorpayClient(platform_settings)
 user_manager = UserManager(plans=plans_manager)
 admin_store = AdminStore()
 meta_oauth = MetaOAuth(platform_settings)
@@ -199,10 +200,22 @@ async def get_status():
     stats = campaign_manager.get_stats()
     stats["watcher_status"] = comment_watcher.status
     stats["active_reels_count"] = active_count
-    stats["billing"] = billing_manager.get_billing_status(active_count)
+    stats["billing"] = _billing_payload()
     stats["meta_connected"] = bool(meta_client.config.get("enabled"))
     stats["meta_account"] = meta_client.config.get("connected_account_username", "")
     return {"success": True, "stats": stats}
+
+def _can_activate(active_count: int):
+    """One gate for every 'can this automation go live?' question.
+
+    Reads the workspace's live plan limits, so an Agency workspace is never
+    told to upgrade and nobody is quoted a plan that no longer exists.
+    """
+    user = current_workspace()
+    if not user:
+        return True, "No workspace signed in"
+    return user_manager.can_activate_automation(user, active_count)
+
 
 # --- Billing & Plan Endpoints ---
 
@@ -421,13 +434,13 @@ async def publish_wizard_automation(req: WizardPublishRequest):
     active_count = sum(1 for r in automation_engine.get_all() if r.get("is_active") and r.get("type") == "comment_to_dm")
 
     # Check limits
-    allowed, limit_msg = billing_manager.can_activate_reel(active_count)
+    allowed, limit_msg = _can_activate(active_count)
     if not allowed:
         return {
             "success": False,
             "upgrade_required": True,
             "message": limit_msg,
-            "price": billing_manager.PRO_PRICE_INR
+            "plans": plans_manager.all_plans(public_only=True)
         }
 
     # Format public comment reply using spintax from the multiple variations
@@ -519,13 +532,13 @@ async def toggle_automation(rule_id: str):
     if not is_currently_active and rule.get("type") == "comment_to_dm":
         # Attempting to activate: check limit
         active_count = sum(1 for r in automation_engine.get_all() if r.get("is_active") and r.get("type") == "comment_to_dm")
-        allowed, limit_msg = billing_manager.can_activate_reel(active_count)
+        allowed, limit_msg = _can_activate(active_count)
         if not allowed:
             return {
                 "success": False,
                 "upgrade_required": True,
                 "message": limit_msg,
-                "price": billing_manager.PRO_PRICE_INR
+                "plans": plans_manager.all_plans(public_only=True)
             }
 
     new_state = automation_engine.toggle_active(rule_id)
@@ -1405,3 +1418,167 @@ async def get_insights():
         "health": insights.health(connected, watcher),
         "plan": (user_manager.plan_state(user) if user else None),
     }
+
+
+# ===========================================================================
+#  PAYMENTS — Razorpay
+#  Three rules this code keeps:
+#  1. The price is decided on the server, from the live plan catalogue.
+#     The browser sends a plan id, never an amount.
+#  2. A plan changes only after the signature verifies against our secret.
+#  3. Webhook and browser callback are both idempotent — whichever arrives
+#     second finds the payment already recorded and does nothing.
+# ===========================================================================
+
+def _already_paid(user: Dict[str, Any], payment_id: str) -> bool:
+    return any(p.get("reference") == payment_id for p in (user.get("payments") or []))
+
+
+@app.get("/api/billing/gateway")
+async def billing_gateway():
+    """What the checkout button needs to know before it renders."""
+    return {
+        "success": True,
+        "ready": razorpay.ready(),
+        "mode": razorpay.mode(),
+        "key_id": razorpay.key_id if razorpay.ready() else "",
+        "currency": platform_settings.section("billing").get("currency", "INR"),
+    }
+
+
+@app.post("/api/billing/checkout")
+async def billing_checkout(req: dict = None):
+    """Price the plan, apply any coupon, and open a Razorpay order."""
+    user = current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+
+    body = req or {}
+    plan_id = body.get("plan_id")
+    coupon = (body.get("coupon") or "").strip()
+    plan = plans_manager.get_plan(plan_id)
+    if not plan:
+        return {"success": False, "error": "That plan no longer exists."}
+
+    amount = plan.get("price_monthly", 0)
+    if coupon:
+        quote = plans_manager.apply_offer(coupon, plan_id)
+        if not quote.get("valid"):
+            return {"success": False, "error": quote.get("error")}
+        amount = quote["final_price"]
+
+    # Nothing to charge — switch straight away rather than opening a ₹0 checkout.
+    if amount <= 0:
+        if coupon:
+            plans_manager.redeem(coupon)
+        user_manager.set_plan(user["id"], plan_id, amount=0, coupon=coupon or None,
+                              method="coupon" if coupon else "free")
+        admin_store.log("SUCCESS", "billing", f"{user['email']} moved to {plan['name']} at no charge")
+        return {"success": True, "paid": False, "switched": True, "billing": _billing_payload()}
+
+    if not razorpay.ready():
+        # Keys aren't in yet. Say so plainly and let the caller fall back.
+        return {"success": False, "manual_fallback": True,
+                "error": "Online payment isn't switched on for this account yet."}
+
+    ok, order = razorpay.create_order(
+        amount,
+        f"cf_{user['id'][:8]}_{plan_id}"[:40],
+        {"workspace": user["id"], "email": user.get("email", ""),
+         "plan": plan_id, "coupon": coupon},
+    )
+    if not ok:
+        return {"success": False, "error": str(order)}
+
+    return {"success": True, "order": {
+        "order_id": order["id"],
+        "amount": order["amount"],
+        "currency": order["currency"],
+        "key_id": razorpay.key_id,
+        "plan_id": plan_id,
+        "plan_name": plan["name"],
+        "coupon": coupon,
+        "amount_inr": amount,
+    }}
+
+
+@app.post("/api/billing/verify")
+async def billing_verify(req: dict = None):
+    """Browser says it paid. We check that against our own secret before believing it."""
+    user = current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+    body = req or {}
+    order_id = body.get("razorpay_order_id", "")
+    payment_id = body.get("razorpay_payment_id", "")
+    signature = body.get("razorpay_signature", "")
+    plan_id = body.get("plan_id", "")
+    coupon = (body.get("coupon") or "").strip()
+
+    ok, message = razorpay.verify_payment(order_id, payment_id, signature)
+    if not ok:
+        admin_store.log("ERROR", "billing", f"Signature check failed for {user['email']} ({payment_id})")
+        return {"success": False, "error": message}
+
+    if _already_paid(user, payment_id):
+        return {"success": True, "billing": _billing_payload(), "note": "Already recorded."}
+
+    plan = plans_manager.get_plan(plan_id)
+    amount = plan.get("price_monthly", 0) if plan else 0
+    if coupon:
+        quote = plans_manager.apply_offer(coupon, plan_id)
+        if quote.get("valid"):
+            amount = quote["final_price"]
+            plans_manager.redeem(coupon)
+
+    user_manager.set_plan(user["id"], plan_id, amount=amount, coupon=coupon or None,
+                          method="razorpay", reference=payment_id)
+    campaign_manager.add_log("SUCCESS", f"Payment received — {plan['name'] if plan else plan_id} is live.")
+    admin_store.log("SUCCESS", "billing", f"{user['email']} paid Rs.{amount} for {plan_id} ({payment_id})")
+    return {"success": True, "billing": _billing_payload()}
+
+
+@app.post("/api/razorpay/webhook")
+async def razorpay_webhook(request: Request):
+    """Razorpay's own word for it. Covers the case where the browser closed mid-payment."""
+    raw = await request.body()
+    signature = request.headers.get("x-razorpay-signature", "")
+    if not razorpay.verify_webhook(raw, signature):
+        admin_store.log("ERROR", "billing", "Rejected a webhook with a bad signature")
+        raise HTTPException(status_code=400, detail="Bad signature")
+
+    try:
+        event = json.loads(raw.decode())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Bad payload")
+
+    kind = event.get("event", "")
+    if kind not in ("payment.captured", "order.paid"):
+        return {"success": True, "ignored": kind}
+
+    entity = (event.get("payload", {}).get("payment", {}) or {}).get("entity", {})
+    notes = entity.get("notes") or {}
+    workspace_id = notes.get("workspace")
+    plan_id = notes.get("plan")
+    payment_id = entity.get("id", "")
+    if not (workspace_id and plan_id and payment_id):
+        return {"success": True, "ignored": "no workspace in notes"}
+
+    user = user_manager.get(workspace_id)
+    if not user:
+        return {"success": True, "ignored": "unknown workspace"}
+    if _already_paid(user, payment_id):
+        return {"success": True, "note": "already recorded"}
+
+    user_manager.set_plan(workspace_id, plan_id,
+                          amount=int(entity.get("amount", 0)) // 100,
+                          coupon=notes.get("coupon") or None,
+                          method="razorpay", reference=payment_id)
+    admin_store.log("SUCCESS", "billing", f"Webhook confirmed {payment_id} for {user.get('email')}")
+    return {"success": True}
+
+
+@app.post("/api/admin/razorpay/test")
+async def admin_razorpay_test():
+    ok, message = razorpay.test_keys()
+    return {"success": ok, "message": message, "mode": razorpay.mode()}

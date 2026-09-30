@@ -763,12 +763,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
           appendPhoneBubble("bot", botHtml, true);
         } else {
-          appendPhoneBubble("bot", `<p style="color:#94a3b8;"><em>${escapeHtml(data.message)}</em></p>`, true);
+          appendPhoneBubble("bot", `<p style="color:#9a9aa3;"><em>${escapeHtml(data.message)}</em></p>`, true);
         }
       }, 400);
 
     } catch (err) {
-      appendPhoneBubble("bot", `<p style="color:#f87171;">Error connecting to simulator: ${err.message}</p>`, true);
+      appendPhoneBubble("bot", `<p style="color:#c9776f;">Error connecting to simulator: ${err.message}</p>`, true);
     }
   }
 
@@ -974,7 +974,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const colors = ["#00824b", "#2563eb", "#9333ea", "#ea580c", "#0d9488", "#dc2626"];
+    const colors = ["#0a0a0b", "#2e2e35", "#47474f", "#62626a", "#8a8a93", "#b0b0b8"];
 
     contactsTableBody.innerHTML = filtered.map((c, idx) => {
       const initials = (c.name ? c.name.split(" ").map(w => w[0]).join("") : c.username.slice(0, 2)).toUpperCase();
@@ -1024,7 +1024,7 @@ document.addEventListener("DOMContentLoaded", () => {
       handle: "sarah_growth",
       name: "Sarah Jenkins",
       avatar: "SG",
-      color: "#00824b",
+      color: "#101014",
       time: "2m",
       status: "Active now · Follows you",
       leadStatus: "Hot Lead",
@@ -1045,7 +1045,7 @@ document.addEventListener("DOMContentLoaded", () => {
       handle: "rahul_marketing",
       name: "Rahul Sharma",
       avatar: "RM",
-      color: "#2563eb",
+      color: "#232329",
       time: "14m",
       status: "Active 14m ago · Follows you",
       leadStatus: "Client",
@@ -1065,7 +1065,7 @@ document.addEventListener("DOMContentLoaded", () => {
       handle: "mike_dev",
       name: "Michael Ross",
       avatar: "MD",
-      color: "#9333ea",
+      color: "#3a3a41",
       time: "1h",
       status: "Active 1h ago",
       leadStatus: "Developer",
@@ -1085,7 +1085,7 @@ document.addEventListener("DOMContentLoaded", () => {
       handle: "clara_design",
       name: "Clara Dupont",
       avatar: "CD",
-      color: "#ea580c",
+      color: "#62626a",
       time: "3h",
       status: "Active 3h ago",
       leadStatus: "Designer",
@@ -1171,7 +1171,7 @@ document.addEventListener("DOMContentLoaded", () => {
       handle: handle,
       name: handle.replace(/_/g, " "),
       avatar: handle.slice(0, 2).toUpperCase(),
-      color: "#00824b",
+      color: "#101014",
       time: "Now",
       status: "Active now",
       leadStatus: "Hot Lead",
@@ -1778,8 +1778,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (metaStatusSub) metaStatusSub.innerText = `Connected via Facebook Page (${cfg.connected_account_name || 'Instagram Page'}). 0-second Webhooks Active!`;
         if (metaBadge) {
           metaBadge.innerText = "ONLINE (GRAPH API)";
-          metaBadge.style.background = "rgba(16, 185, 129, 0.2)";
-          metaBadge.style.color = "#34d399";
+          metaBadge.style.background = "rgba(90, 90, 99, 0.2)";
+          metaBadge.style.color = "#7e7e87";
         }
         
         // Also update account card in sidebar if not already logged in via browser
@@ -1793,8 +1793,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (metaStatusSub) metaStatusSub.innerText = "Enter your Facebook Page Access Token to connect your Instagram account.";
         if (metaBadge) {
           metaBadge.innerText = "OFFLINE";
-          metaBadge.style.background = "rgba(148, 163, 184, 0.2)";
-          metaBadge.style.color = "#94a3b8";
+          metaBadge.style.background = "rgba(154, 154, 163, 0.2)";
+          metaBadge.style.color = "#9a9aa3";
         }
       }
     } catch (e) {
@@ -2077,8 +2077,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (trialPlanSub) trialPlanSub.innerText = "Unlimited Reels, Any Post trigger, and Advanced features unlocked!";
         if (btnOpenUpgrade) btnOpenUpgrade.style.display = "none";
         if (trialBanner) {
-          trialBanner.style.background = "linear-gradient(90deg, rgba(0, 132, 255, 0.18), rgba(168, 85, 247, 0.18))";
-          trialBanner.style.borderColor = "rgba(0, 132, 255, 0.4)";
+          trialBanner.style.background = "linear-gradient(90deg, rgba(16, 16, 20, 0.18), rgba(128, 128, 128, 0.18))";
+          trialBanner.style.borderColor = "rgba(16, 16, 20, 0.4)";
         }
         if (maxAllowedReelsText) maxAllowedReelsText.innerText = "∞";
       } else {
