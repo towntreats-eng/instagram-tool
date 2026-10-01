@@ -168,12 +168,46 @@ class MetaAPIClient:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def send_instagram_dm(self, recipient_ig_id: str, message_text: str, button_text: Optional[str] = None, button_url: Optional[str] = None) -> Dict[str, Any]:
+    def check_user_follows(self, recipient_ig_id: str, access_token: Optional[str] = None) -> bool:
+        """
+        Queries Meta Graph API to verify if the commenter follows the business account.
+        Field: is_user_follow_business (boolean)
+        Returns False if user is not following or unconfirmed.
+        """
+        token = access_token or self.config.get("access_token")
+        if not token or not recipient_ig_id:
+            return False
+
+        page_id = self.config.get("page_id")
+        provider = self.config.get("provider")
+        is_ig_login = not page_id or provider == "instagram_login" or token.startswith("IG")
+
+        urls = [
+            f"https://graph.facebook.com/v21.0/{recipient_ig_id}?fields=is_user_follow_business&access_token={token}",
+            f"https://graph.instagram.com/v21.0/{recipient_ig_id}?fields=is_user_follow_business&access_token={token}"
+        ] if not is_ig_login else [
+            f"https://graph.instagram.com/v21.0/{recipient_ig_id}?fields=is_user_follow_business&access_token={token}",
+            f"https://graph.facebook.com/v21.0/{recipient_ig_id}?fields=is_user_follow_business&access_token={token}"
+        ]
+
+        for u in urls:
+            try:
+                resp = requests.get(u, timeout=5)
+                data = resp.json()
+                if "is_user_follow_business" in data:
+                    return bool(data.get("is_user_follow_business"))
+            except Exception:
+                continue
+
+        # If Graph API could not determine or is unverified, default to False to enforce gate
+        return False
+
+    def send_instagram_dm(self, recipient_ig_id: str, message_text: str, button_text: Optional[str] = None, button_url: Optional[str] = None, access_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Sends an official Instagram DM via Meta Messenger API / Instagram Graph API.
         Automatically detects whether to use graph.instagram.com (Instagram Login) or graph.facebook.com (Page token).
         """
-        token = self.config.get("access_token")
+        token = access_token or self.config.get("access_token")
         page_id = self.config.get("page_id")
         provider = self.config.get("provider")
 
@@ -241,11 +275,11 @@ class MetaAPIClient:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def reply_to_comment(self, comment_id: str, reply_text: str) -> Dict[str, Any]:
+    def reply_to_comment(self, comment_id: str, reply_text: str, access_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Replies publicly to an Instagram Reel / Post comment via Graph API.
         """
-        token = self.config.get("access_token")
+        token = access_token or self.config.get("access_token")
         if not token:
             return {"success": False, "error": "Token not configured."}
 

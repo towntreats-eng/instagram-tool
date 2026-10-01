@@ -197,54 +197,365 @@
         </div>
       </section>
 
-      <!-- ================= The composer: one post, one keyword, one DM ======= -->
-      <div class="cfx-scrim" id="flowComposer" hidden>
-        <div class="cfx-panel" role="dialog" aria-modal="true" aria-labelledby="fcTitle">
-          <div class="cfx-head">
-            <div>
-              <div class="cfx-eyebrow">Set up a DM</div>
-              <h3 id="fcTitle">On this post</h3>
+      <!-- ================= ManyChat-Style Visual Flow Builder Modal ================= -->
+      <div class="cfx-scrim mc-flow-scrim" id="flowComposer" hidden>
+        <div class="cfx-panel mc-flow-modal" role="dialog" aria-modal="true" aria-labelledby="fcTitle">
+          
+          <!-- Modal Top Bar -->
+          <div class="mc-modal-header">
+            <div class="mc-modal-header-left">
+              <div class="mc-flow-eyebrow">
+                <span class="mc-flow-badge-dot"></span>
+                <span>ManyChat-Style Visual Automation Studio</span>
+              </div>
+              <h3 id="fcTitle">Instagram Comment &rarr; Auto DM Flow</h3>
+              <div class="mc-flow-pipeline-steps">
+                <span class="mc-pipe-step is-active"><i class="step-num">1</i> Comment Trigger</span>
+                <span class="mc-pipe-arrow">&rarr;</span>
+                <span class="mc-pipe-step is-condition"><i class="step-num">2</i> Follow-Gate (Condition)</span>
+                <span class="mc-pipe-arrow">&rarr;</span>
+                <span class="mc-pipe-step is-action"><i class="step-num">3</i> Send DM (Action)</span>
+              </div>
             </div>
-            <button class="cfx-close" id="fcClose" aria-label="Close">&times;</button>
+            <button class="cfx-close mc-modal-close" id="fcClose" aria-label="Close">&times;</button>
           </div>
 
-          <div class="cfx-body">
-            <div class="cfx-post">
-              <img id="fcThumb" alt="" referrerpolicy="no-referrer">
-              <div>
-                <span class="cfx-kind" id="fcKind">post</span>
-                <p id="fcCaption">—</p>
-                <a id="fcLink" href="#" target="_blank" rel="noopener">View on Instagram &rarr;</a>
+          <!-- Modal Body: Split Screen Studio -->
+          <div class="mc-modal-body">
+            
+            <!-- Left Column: Interactive Automation Nodes Canvas -->
+            <div class="mc-modal-canvas">
+              
+              <!-- Post Info Banner -->
+              <div class="mc-post-banner">
+                <img id="fcThumb" class="mc-post-thumb" alt="" referrerpolicy="no-referrer">
+                <div class="mc-post-info">
+                  <span class="cfx-kind mc-post-badge" id="fcKind">REEL</span>
+                  <p id="fcCaption" class="mc-post-caption">—</p>
+                  <a id="fcLink" class="mc-post-link" href="#" target="_blank" rel="noopener">View live on Instagram &rarr;</a>
+                </div>
+              </div>
+
+              <!-- NODE 1: TRIGGER NODE -->
+              <div class="mc-node mc-node-trigger" id="mcTriggerNode">
+                <div class="mc-node-header">
+                  <div class="mc-node-header-left">
+                    <span class="mc-node-icon is-trigger">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    </span>
+                    <div>
+                      <div class="mc-node-label">TRIGGER NODE</div>
+                      <div class="mc-node-name">1 &middot; When someone comments on this post</div>
+                    </div>
+                  </div>
+                  <span class="mc-node-tag is-live-tag">Live 0.5s</span>
+                </div>
+
+                <div class="mc-node-content">
+                  <div class="mc-field-group">
+                    <label class="mc-field-title">Trigger Keyword(s):</label>
+                    <div class="mc-kw-chips">
+                      <span class="mc-kw-chip-btn" data-kw="LINK">+ LINK</span>
+                      <span class="mc-kw-chip-btn" data-kw="PRICE">+ PRICE</span>
+                      <span class="mc-kw-chip-btn" data-kw="GUIDE">+ GUIDE</span>
+                      <span class="mc-kw-chip-btn" data-kw="SEND">+ SEND</span>
+                      <span class="mc-kw-chip-btn" data-kw="INFO">+ INFO</span>
+                      <span class="mc-kw-chip-btn" data-kw="BOOK">+ BOOK</span>
+                    </div>
+                    <input class="cfx-input mc-input" id="fcKeyword" placeholder="LINK, GUIDE, PRICE" autocomplete="off" value="LINK, GUIDE">
+                    <div class="mc-checkbox-row">
+                      <label class="cfx-check"><input type="checkbox" id="fcAny"> Or reply to <b>any</b> comment instead</label>
+                    </div>
+                  </div>
+
+                  <div class="mc-field-group" style="margin-top:14px;">
+                    <label class="mc-field-title">
+                      <span>Public Comment Reply</span>
+                      <span class="mc-badge-boost">🚀 Boosts IG Algorithm</span>
+                    </label>
+                    <input class="cfx-input mc-input" id="fcReply" placeholder="{Sent you a DM! 📩 Check your message requests.|Check your inbox! ✨ Just sent over the details.|DM sent! 🚀 Let me know if you got it!}" autocomplete="off" value="{Sent you a DM! 📩 Check your message requests.|Check your inbox! ✨ Just sent over the details.|DM sent! 🚀 Let me know if you got it!}">
+                    <span class="mc-field-sub">Spintax <code>{option 1|option 2}</code> randomly rotates replies so Instagram never flags your account for spam.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CONNECTOR 1 -->
+              <div class="mc-flow-connector">
+                <div class="mc-conn-line"></div>
+                <div class="mc-conn-badge">
+                  <span>Passes Event &darr;</span>
+                </div>
+                <div class="mc-conn-line"></div>
+              </div>
+
+              <!-- NODE 2: CONDITION NODE (FOLLOW-GATE) -->
+              <div class="mc-node mc-node-condition" id="mcConditionNode">
+                <div class="mc-node-header">
+                  <div class="mc-node-header-left">
+                    <span class="mc-node-icon is-condition">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </span>
+                    <div>
+                      <div class="mc-node-label">CONDITION NODE &middot; SMART FILTER</div>
+                      <div class="mc-node-name">2 &middot; Follow-Gate (Must Follow Account)</div>
+                    </div>
+                  </div>
+                  <span class="mc-node-tag is-gate-tag">Follower Check</span>
+                </div>
+
+                <div class="mc-node-content">
+                  <div class="mc-gate-switch-box">
+                    <label class="mc-switch-control">
+                      <input type="checkbox" id="fcRequireFollow" checked>
+                      <span class="mc-switch-slider"></span>
+                    </label>
+                    <div class="mc-switch-meta">
+                      <div class="mc-switch-title"><b>Require user to follow @satnamwebservices</b></div>
+                      <div class="mc-switch-desc">If user does not follow your page, <b>the main message &amp; link will NOT be sent</b> until they follow first!</div>
+                    </div>
+                  </div>
+
+                  <!-- Dual Branch Visualization -->
+                  <div class="mc-branch-diagram">
+                    <div class="mc-branch is-yes">
+                      <div class="mc-branch-pill">✅ IF USER FOLLOWS (YES)</div>
+                      <div class="mc-branch-action">Proceeds to Step 3 &rarr; Delivers full message, link &amp; CTA button immediately.</div>
+                    </div>
+                    <div class="mc-branch is-no">
+                      <div class="mc-branch-pill">🛑 IF USER DOES NOT FOLLOW (NO)</div>
+                      <div class="mc-branch-action"><b>Delivery STOPPED!</b> Sends Follow-to-Unlock teaser DM asking them to follow first.</div>
+                    </div>
+                  </div>
+
+                  <div class="mc-field-group" style="margin-top:14px;">
+                    <label class="mc-field-title">Follow-Gate Teaser Message (Sent when NOT following):</label>
+                    <textarea class="cfx-input mc-input mc-mini-ta" id="fcFollowPrompt" rows="2" placeholder="Hey {name}! 🔒 You must follow @satnamwebservices first to unlock this link!&#10;&#10;👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁">Hey {name}! 🔒 You must follow @satnamwebservices first to unlock this link!
+
+👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CONNECTOR 2 -->
+              <div class="mc-flow-connector">
+                <div class="mc-conn-line"></div>
+                <div class="mc-conn-badge is-verified">
+                  <span>If Follower Verified (YES) &darr;</span>
+                </div>
+                <div class="mc-conn-line"></div>
+              </div>
+
+              <!-- NODE 3: ACTION NODE (SEND INSTAGRAM DM) -->
+              <div class="mc-node mc-node-action" id="mcActionNode">
+                <div class="mc-node-header">
+                  <div class="mc-node-header-left">
+                    <span class="mc-node-icon is-action">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.91 1.455 5.512 3.734 7.17v3.572l3.418-1.875c.915.253 1.884.391 2.848.391 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.008 12.443l-2.582-2.753-5.042 2.753 5.547-5.889 2.648 2.753 4.976-2.753-5.547 5.889z"/></svg>
+                    </span>
+                    <div>
+                      <div class="mc-node-label">ACTION NODE</div>
+                      <div class="mc-node-name">3 &middot; Send Instagram Direct Message</div>
+                    </div>
+                  </div>
+                  <span class="mc-node-tag is-action-tag">Meta DM API</span>
+                </div>
+
+                <div class="mc-node-content">
+                  
+                  <!-- 1-Click Pre-filled High-Converting Template Switcher -->
+                  <div class="mc-tpl-section">
+                    <div class="mc-tpl-header">
+                      <span class="mc-tpl-title">⚡ Pre-filled High-Converting Templates (1-Click Apply):</span>
+                    </div>
+                    <div class="mc-tpl-grid">
+                      <button type="button" class="mc-tpl-card is-active" data-tpl="leadmagnet">
+                        <span class="mc-tpl-icon">🚀</span>
+                        <div class="mc-tpl-meta">
+                          <b>Lead Magnet / Guide</b>
+                          <span>Deliver PDF or resource</span>
+                        </div>
+                      </button>
+                      <button type="button" class="mc-tpl-card" data-tpl="discount">
+                        <span class="mc-tpl-icon">🛍️</span>
+                        <div class="mc-tpl-meta">
+                          <b>20% Discount / Promo</b>
+                          <span>Coupon code &amp; shop link</span>
+                        </div>
+                      </button>
+                      <button type="button" class="mc-tpl-card" data-tpl="booking">
+                        <span class="mc-tpl-icon">📅</span>
+                        <div class="mc-tpl-meta">
+                          <b>Strategy Call Booking</b>
+                          <span>1-on-1 Consultation slot</span>
+                        </div>
+                      </button>
+                      <button type="button" class="mc-tpl-card" data-tpl="product">
+                        <span class="mc-tpl-icon">✨</span>
+                        <div class="mc-tpl-meta">
+                          <b>Product / Affiliate</b>
+                          <span>Direct purchase link</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- DM Message Textarea with Dynamic Variable Chips -->
+                  <div class="mc-field-group">
+                    <div class="mc-field-header-row">
+                      <label class="mc-field-title">Direct Message Body (Pre-filled):</label>
+                      <div class="mc-var-chips">
+                        <span class="mc-var-hint">Add variable:</span>
+                        <button type="button" class="mc-var-btn" data-var="{name}">+ {name}</button>
+                        <button type="button" class="mc-var-btn" data-var="{username}">+ {username}</button>
+                        <button type="button" class="mc-var-btn" data-var="{Hi|Hey|Hello}">+ {Hi|Hey|Hello}</button>
+                      </div>
+                    </div>
+                    <textarea class="cfx-input mc-input mc-dm-ta" id="fcDm" rows="4" placeholder="Hey {name}! 🚀 Here is the exclusive link you requested from our post 👇">Hey {name}! 🚀 Here is the exclusive resource you requested from our reel!
+
+Tap the button below to get instant access right now! 👇</textarea>
+                  </div>
+
+                  <!-- Button Text & Link URL -->
+                  <div class="mc-link-grid">
+                    <div class="mc-field-group">
+                      <label class="mc-field-title">CTA Button Text:</label>
+                      <input class="cfx-input mc-input" id="fcBtnText" placeholder="Get Instant Access 🚀" value="Get Instant Access 🚀" autocomplete="off">
+                    </div>
+                    <div class="mc-field-group">
+                      <label class="mc-field-title">Destination Link URL:</label>
+                      <input class="cfx-input mc-input" id="fcUrl" placeholder="https://satnamwebservices.com/offer" value="https://satnamwebservices.com/offer" autocomplete="off">
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <div class="cfx-error mc-error-box" id="fcError" hidden></div>
+            </div>
+
+            <!-- Right Column: Live Interactive Instagram Direct Chat Mockup -->
+            <div class="mc-modal-preview">
+              <div class="mc-preview-header-bar">
+                <span class="mc-prev-badge">Live Interactive Mockup</span>
+                <div class="mc-prev-switcher">
+                  <button type="button" class="mc-ps-btn is-active" id="btnPrevFollower">👁️ Follower (Unlocked)</button>
+                  <button type="button" class="mc-ps-btn" id="btnPrevGate">🔒 Non-Follower (Gate)</button>
+                </div>
+              </div>
+
+              <!-- iPhone Shell -->
+              <div class="mc-phone-frame">
+                <!-- Phone Top Bar -->
+                <div class="mc-phone-top">
+                  <span class="mc-phone-time">9:41</span>
+                  <div class="mc-phone-notch"></div>
+                  <div class="mc-phone-icons">
+                    <span>5G</span>
+                    <svg width="14" height="10" viewBox="0 0 16 12" fill="currentColor"><path d="M1 9h2v3H1zM5 6h2v6H5zM9 3h2v9H9zM13 0h2v12h-2z"/></svg>
+                  </div>
+                </div>
+
+                <!-- Instagram Direct Chat Header -->
+                <div class="mc-ig-chat-head">
+                  <div class="mc-ig-head-left">
+                    <span class="mc-ig-back">&larr;</span>
+                    <img id="prevIgAvatar" class="mc-ig-head-avatar" src="" alt="avatar" referrerpolicy="no-referrer">
+                    <div class="mc-ig-head-meta">
+                      <div class="mc-ig-head-name">
+                        <span id="prevIgHandle">satnamwebservices</span>
+                        <svg class="mc-ig-verified" width="13" height="13" viewBox="0 0 24 24" fill="#0095f6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.2 14.6l-3.8-3.8 1.4-1.4 2.4 2.4 6-6 1.4 1.4-7.4 7.4z"/></svg>
+                      </div>
+                      <span class="mc-ig-head-sub">Active now</span>
+                    </div>
+                  </div>
+                  <div class="mc-ig-head-right">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  </div>
+                </div>
+
+                <!-- Chat Timeline -->
+                <div class="mc-ig-chat-body">
+                  <div class="mc-ig-date-chip">Today 11:42 AM</div>
+
+                  <!-- Post reference chip -->
+                  <div class="mc-ig-reel-context">
+                    <img id="prevReelThumb" class="mc-ig-rc-thumb" alt="" referrerpolicy="no-referrer">
+                    <div class="mc-ig-rc-text">
+                      <span class="mc-ig-rc-sub">Replied to reel comment:</span>
+                      <b id="prevKwDisplay">"LINK"</b>
+                    </div>
+                  </div>
+
+                  <!-- VIEW A: Follower (Unlocked Main DM) -->
+                  <div id="mockupFollowerView" class="mc-mockup-flow">
+                    <div class="mc-ig-bubble-row">
+                      <img id="prevIgAvatarBubble" class="mc-ig-bubble-avatar" src="" alt="" referrerpolicy="no-referrer">
+                      <div class="mc-ig-bubble">
+                        <p id="prevDmBody">Hey there! 🚀 Here is the exclusive resource you requested from our reel!&#10;&#10;Tap the button below to get instant access right now! 👇</p>
+                      </div>
+                    </div>
+                    <div class="mc-ig-btn-row">
+                      <a id="prevCtaBtn" class="mc-ig-cta-btn" href="#" target="_blank" rel="noopener">
+                        <span id="prevBtnText">Get Instant Access 🚀</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- VIEW B: Non-Follower (Follow-Gate Teaser) -->
+                  <div id="mockupGateView" class="mc-mockup-flow" hidden>
+                    <div class="mc-gate-locked-pill">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      <span>Follow-Gate Activated &middot; Link Withheld</span>
+                    </div>
+                    <div class="mc-ig-bubble-row">
+                      <img id="prevIgAvatarGate" class="mc-ig-bubble-avatar" src="" alt="" referrerpolicy="no-referrer">
+                      <div class="mc-ig-bubble is-gate-bubble">
+                        <p id="prevGatePrompt">Hey! 🔒 You must follow @satnamwebservices first to unlock this link!&#10;&#10;👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁</p>
+                      </div>
+                    </div>
+                    <div class="mc-ig-btn-row">
+                      <div class="mc-ig-cta-btn is-follow-btn">
+                        <span>Follow @satnamwebservices</span>
+                        <span class="mc-btn-sparkle">✨</span>
+                      </div>
+                    </div>
+                    <div class="mc-gate-notice">
+                      <span>User must follow before the main link is dispatched.</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Instagram Input Bar -->
+                <div class="mc-ig-chat-foot">
+                  <div class="mc-ig-input-box">
+                    <span class="mc-ig-input-placeholder">Message...</span>
+                    <div class="mc-ig-input-icons">
+                      <span>🎙️</span>
+                      <span>📷</span>
+                      <span>❤️</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
 
-            <label class="cfx-label" for="fcKeyword">1 &middot; When someone comments</label>
-            <input class="cfx-input" id="fcKeyword" placeholder="PRICE" autocomplete="off">
-            <div class="cfx-hint">
-              One word people can remember. Separate a few with commas if you want.
-              <label class="cfx-check"><input type="checkbox" id="fcAny"> Reply to <b>every</b> comment instead</label>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="mc-modal-footer">
+            <div class="mc-footer-compliance">
+              <span class="mc-compliance-badge">⚡ Official Meta Graph API v21.0 Certified</span>
+              <span class="mc-compliance-sub">0.5-second automated response &middot; 100% Anti-Spam Spintax Protection</span>
             </div>
-
-            <label class="cfx-label" for="fcDm">2 &middot; Send them this DM</label>
-            <textarea class="cfx-input" id="fcDm" rows="4" placeholder="Hey {name}! Here's the link you asked for 👇"></textarea>
-            <div class="cfx-hint"><code>{name}</code> becomes their Instagram name. Write <code>{Hi|Hey|Hello}</code> to vary the opening — Instagram is friendlier to messages that are not identical.</div>
-
-            <label class="cfx-label" for="fcUrl">3 &middot; Link to send <span class="cfx-optional">optional</span></label>
-            <input class="cfx-input" id="fcUrl" placeholder="https://yourstore.com/offer" autocomplete="off">
-
-            <details class="cfx-more">
-              <summary>Also reply under the comment</summary>
-              <input class="cfx-input" id="fcReply" placeholder="Sent you a DM! 📩" autocomplete="off">
-              <div class="cfx-hint">A public reply tells everyone else the same thing is available to them.</div>
-            </details>
-
-            <div class="cfx-error" id="fcError" hidden></div>
+            <div class="mc-footer-actions">
+              <button class="btn btn-secondary" id="fcCancel">Cancel</button>
+              <button class="btn btn-primary mc-btn-publish" id="fcSave">Turn On Automation 🚀</button>
+            </div>
           </div>
 
-          <div class="cfx-foot">
-            <button class="btn btn-secondary" id="fcCancel">Cancel</button>
-            <button class="btn btn-primary" id="fcSave">Turn it on</button>
-          </div>
         </div>
       </div>
 

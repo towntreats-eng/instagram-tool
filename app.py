@@ -462,33 +462,69 @@ async def meta_webhook_event(request: Request):
                 for rule in automation_engine.get_all():
                     if not rule.get("is_active") or rule.get("type") != "comment_to_dm":
                         continue
+
+                    # Match post_media_id if set on the rule
+                    post_id = rule.get("post_media_id")
+                    if post_id and media_id and str(post_id) != str(media_id):
+                        continue
+
                     keywords = rule.get("trigger_keywords", ["*"])
                     if "*" in keywords or any(kw.lower() in text.lower() for kw in keywords):
-                        # Public comment reply
+                        # Workspace token for this rule
+                        rule_user = user_manager.get(rule.get("created_by", ""))
+                        user_token = ((rule_user or {}).get("instagram") or {}).get("access_token")
+
+                        # 1. Public comment reply (Boosts Instagram algorithmic engagement)
                         pub_reply = rule.get("public_comment_reply")
                         if pub_reply and comment_id:
                             actual_reply = SpintaxEngine.spin(pub_reply)
-                            meta_client.reply_to_comment(comment_id, actual_reply)
+                            meta_client.reply_to_comment(comment_id, actual_reply, access_token=user_token)
 
-                        # Instant direct message with variable replacement
+                        # 2. Follow-Gate check: "agar follow nai krta to msg nai jayega aage"
+                        require_follow = rule.get("require_follow", False)
+                        account_name = rule.get("connected_account_username") or "satnamwebservices"
+
+                        if require_follow and user_id:
+                            is_follower = meta_client.check_user_follows(user_id, access_token=user_token)
+                            if not is_follower:
+                                # User does not follow -> STOP MAIN MESSAGE & LINK!
+                                raw_gate = rule.get("follow_prompt_msg") or (
+                                    f"Hey @{username}! 🔒 You must follow @{account_name} to unlock this link!\n\n"
+                                    f"👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁"
+                                )
+                                gate_msg = raw_gate.replace("{name}", username).replace("{first_name}", username).replace("{username}", username)
+                                gate_msg = SpintaxEngine.spin(gate_msg)
+                                follow_url = f"https://instagram.com/{account_name}"
+                                meta_client.send_instagram_dm(
+                                    user_id,
+                                    gate_msg,
+                                    f"Follow @{account_name}",
+                                    follow_url,
+                                    access_token=user_token
+                                )
+                                campaign_manager.add_log("INFO", f"🔒 Follow-Gate: Commenter @{username} is not following. Main message withheld until they follow.")
+                                processed_count += 1
+                                break
+
+                        # 3. User is following (or Follow-Gate disabled) -> Dispatch Main DM & Link!
                         raw_dm = rule.get("opening_dm") or rule.get("dm_message", "")
                         dm_msg = raw_dm.replace("{name}", username).replace("{first_name}", username).replace("{username}", username)
                         dm_msg = SpintaxEngine.spin(dm_msg)
                         btn_text = rule.get("button_text")
                         deliv_link = rule.get("delivery_link")
                         if user_id:
-                            meta_client.send_instagram_dm(user_id, dm_msg, btn_text, deliv_link)
+                            meta_client.send_instagram_dm(user_id, dm_msg, btn_text, deliv_link, access_token=user_token)
 
                         # Record CRM lead
                         contacts_manager.upsert_contact(
                             username=username,
                             name=username,
                             source=f"Meta Webhook (Reel {media_id})",
-                            tags=rule.get("tags", ["Meta Lead"]),
+                            tags=rule.get("tags", ["Meta Lead", "Follower Verified" if require_follow else "Comment Lead"]),
                             interaction_text=text
                         )
                         processed_count += 1
-                        campaign_manager.add_log("SUCCESS", f"⚡ Meta Webhook: Automated reply sent to @{username} on Reel ({text})")
+                        campaign_manager.add_log("SUCCESS", f"⚡ Meta Webhook: Automated reply and DM sent to @{username} on Reel ({text})")
                         break
 
         # 2. Instagram Direct Messages (DM keyword triggers)
@@ -1848,6 +1884,8 @@ class PostFlowRequest(BaseModel):
     link_url: Optional[str] = ""
     button_text: Optional[str] = "Open the link"
     comment_reply: Optional[str] = ""
+    require_follow: Optional[bool] = True
+    follow_prompt_msg: Optional[str] = ""
     activate: bool = True
 
 
@@ -1883,6 +1921,7 @@ async def create_flow_from_post(req: PostFlowRequest):
     caption = (post.get("caption") or "").strip()
     short = (caption[:44] + "…") if len(caption) > 45 else (caption or "Untitled post")
     label = words[0].upper() if words else "any comment"
+    connected_ig = (user.get("instagram") or {}).get("username") or meta_client.config.get("connected_account_username", "satnamwebservices")
 
     rule = automation_engine.create({
         "name": f"\u201c{short}\u201d \u2192 DM on {label}",
@@ -1900,6 +1939,9 @@ async def create_flow_from_post(req: PostFlowRequest):
         "dm_message": req.dm_message.strip(),
         "button_text": (req.button_text or "").strip(),
         "delivery_link": (req.link_url or "").strip(),
+        "require_follow": bool(req.require_follow),
+        "follow_prompt_msg": (req.follow_prompt_msg or "").strip(),
+        "connected_account_username": connected_ig,
         "is_active": bool(req.activate),
         "created_by": user["id"],
     })

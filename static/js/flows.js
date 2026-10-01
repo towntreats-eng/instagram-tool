@@ -198,33 +198,166 @@
     if (sb) sb.textContent = sub || "";
   }
 
+  /* --------------------------------------------------------------- templates */
+  var TEMPLATES = {
+    leadmagnet: {
+      keywords: "LINK, GUIDE",
+      dm: "Hey {name}! 🚀 Here is the exclusive resource you requested from our reel!\n\nTap the button below to get instant access right now! 👇",
+      button: "Get Instant Access 🚀",
+      link: "https://satnamwebservices.com/resources",
+      reply: "{Sent you a DM! 📩 Check your message requests.|Check your inbox! ✨ Just sent over the details.|DM sent! 🚀 Let me know if you got it!}",
+      followPrompt: "Hey {name}! 🔒 You must follow @satnamwebservices first to unlock this link!\n\n👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁"
+    },
+    discount: {
+      keywords: "PRICE, DISCOUNT, CODE",
+      dm: "Hey {name}! 🎉 Thanks for commenting! Here is your exclusive 20% OFF discount coupon: WELCOME20\n\nTap below to shop with your discount applied:",
+      button: "Claim 20% Off 🛍️",
+      link: "https://satnamwebservices.com/shop",
+      reply: "{Sent you the discount code in DM! 🏷️|Check your message requests for the coupon code! 🎁}",
+      followPrompt: "Hey {name}! 🔒 You must follow @satnamwebservices first to unlock this 20% discount coupon!\n\n👉 Tap follow below and comment again to get your code 🎁"
+    },
+    booking: {
+      keywords: "CALL, AUDIT, BOOK",
+      dm: "Hey {name}! 👋 Ready to scale your brand? Let's get on a quick 15-minute 1-on-1 strategy session.\n\nGrab a free slot on my personal calendar below:",
+      button: "Book Free Strategy Call 📅",
+      link: "https://calendly.com/satnamwebservices/strategy",
+      reply: "{Just sent you the booking link in DM! 📅|Check your messages! Let's talk soon 🚀}",
+      followPrompt: "Hey {name}! 🔒 Please follow @satnamwebservices first to unlock the strategy consultation booking link!\n\n👉 Tap follow below and comment again to book 📅"
+    },
+    product: {
+      keywords: "INFO, DETAILS, LINK",
+      dm: "Hey {name}! ✨ Here is the exact link to what you saw in our reel.\n\nTap below to check out all the details before it sells out:",
+      button: "View Full Details ⚡",
+      link: "https://satnamwebservices.com/product",
+      reply: "{Sent the details to your DM! 📩|Check your inbox! ✨}",
+      followPrompt: "Hey {name}! 🔒 Please follow @satnamwebservices first to unlock this product link!\n\n👉 Follow us below, then comment again to receive it 🎁"
+    }
+  };
+
+  function applyTemplate(key) {
+    var t = TEMPLATES[key];
+    if (!t) return;
+    document.querySelectorAll(".mc-tpl-card").forEach(function (el) {
+      el.classList.toggle("is-active", el.dataset.tpl === key);
+    });
+    if ($("#fcKeyword")) $("#fcKeyword").value = t.keywords;
+    if ($("#fcDm")) $("#fcDm").value = t.dm;
+    if ($("#fcBtnText")) $("#fcBtnText").value = t.button;
+    if ($("#fcUrl")) $("#fcUrl").value = t.link;
+    if ($("#fcReply")) $("#fcReply").value = t.reply;
+    if ($("#fcFollowPrompt")) $("#fcFollowPrompt").value = t.followPrompt;
+    syncMockupPreview();
+  }
+
+  function syncMockupPreview() {
+    var p = STATE.profile || {};
+    var handle = p.username || "satnamwebservices";
+    var avatar = p.profile_picture_url || "";
+    var m = STATE.picked || {};
+
+    // Header sync
+    if ($("#prevIgHandle")) $("#prevIgHandle").textContent = handle;
+    ["#prevIgAvatar", "#prevIgAvatarBubble", "#prevIgAvatarGate"].forEach(function (sel) {
+      var el = $(sel);
+      if (el) {
+        if (avatar) { el.src = avatar; el.style.visibility = "visible"; }
+        else { el.removeAttribute("src"); el.style.visibility = "hidden"; }
+      }
+    });
+
+    // Reel snippet sync
+    var rThumb = $("#prevReelThumb");
+    if (rThumb) {
+      if (m.thumbnail) { rThumb.src = m.thumbnail; rThumb.style.display = "block"; }
+      else { rThumb.style.display = "none"; }
+    }
+    var kwVal = $("#fcKeyword") ? $("#fcKeyword").value.trim() : "";
+    var any = $("#fcAny") && $("#fcAny").checked;
+    if ($("#prevKwDisplay")) {
+      $("#prevKwDisplay").textContent = any ? '"Any comment"' : ('"' + (kwVal.split(",")[0] || "LINK").trim() + '"');
+    }
+
+    // Follower DM preview
+    var rawDm = $("#fcDm") ? $("#fcDm").value : "";
+    var sampleDm = rawDm.replace(/\{name\}|\{first_name\}|\{username\}/g, "Alex")
+                        .replace(/\{Hi\|Hey\|Hello\}/g, "Hey");
+    if ($("#prevDmBody")) $("#prevDmBody").textContent = sampleDm;
+
+    var btnText = $("#fcBtnText") ? $("#fcBtnText").value.trim() : "";
+    var btnUrl = $("#fcUrl") ? $("#fcUrl").value.trim() : "";
+    var ctaEl = $("#prevCtaBtn");
+    if (ctaEl) {
+      if (btnText) {
+        ctaEl.style.display = "inline-flex";
+        if ($("#prevBtnText")) $("#prevBtnText").textContent = btnText;
+        ctaEl.href = btnUrl || "#";
+      } else {
+        ctaEl.style.display = "none";
+      }
+    }
+
+    // Gate prompt preview
+    var gatePrompt = $("#fcFollowPrompt") ? $("#fcFollowPrompt").value : "";
+    var sampleGate = gatePrompt.replace(/\{name\}|\{first_name\}|\{username\}/g, "Alex");
+    if ($("#prevGatePrompt")) $("#prevGatePrompt").textContent = sampleGate;
+  }
+
   /* --------------------------------------------------------------- composer */
   function openComposer(mediaId) {
     var m = STATE.media.filter(function (x) { return x.id === mediaId; })[0];
     if (!m) return;
     STATE.picked = m;
 
+    var p = STATE.profile || {};
+    var handle = p.username || "satnamwebservices";
+
     $("#fcThumb").src = m.thumbnail || "";
     $("#fcThumb").style.visibility = m.thumbnail ? "visible" : "hidden";
-    $("#fcKind").textContent = m.kind;
+    $("#fcKind").textContent = (m.kind || "post").toUpperCase();
     $("#fcCaption").textContent = (m.caption || "No caption").slice(0, 160);
     var link = $("#fcLink");
     if (m.permalink) { link.href = m.permalink; link.hidden = false; } else { link.hidden = true; }
 
     var existing = m.automation;
     var r = existing && STATE.flows.filter(function (f) { return f.id === existing.rule_id; })[0];
-    $("#fcKeyword").value = r ? (r.trigger_keywords || []).join(", ") : "";
-    $("#fcAny").checked = !!(r && r.trigger_scope === "any");
-    $("#fcDm").value = r ? (r.opening_dm || r.dm_message || "") : "";
-    $("#fcUrl").value = r ? (r.delivery_link || "") : "";
-    $("#fcReply").value = r ? ((r.comment_replies || [])[0] || "") : "";
-    $("#fcTitle").textContent = r ? "Update this post's DM" : "On this post";
-    $("#fcSave").textContent = r ? "Save changes" : "Turn it on";
+
+    if (r) {
+      $("#fcKeyword").value = (r.trigger_keywords || []).join(", ");
+      $("#fcAny").checked = !!(r.trigger_scope === "any");
+      $("#fcDm").value = r.opening_dm || r.dm_message || "";
+      $("#fcBtnText").value = r.button_text || "Get Instant Access 🚀";
+      $("#fcUrl").value = r.delivery_link || "";
+      $("#fcReply").value = (r.comment_replies || [])[0] || r.public_comment_reply || "";
+      if ($("#fcRequireFollow")) $("#fcRequireFollow").checked = r.require_follow !== false;
+      if ($("#fcFollowPrompt")) $("#fcFollowPrompt").value = r.follow_prompt_msg ||
+        ("Hey {name}! 🔒 You must follow @" + handle + " first to unlock this link!\n\n👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁");
+      $("#fcTitle").textContent = "Update Comment &rarr; Auto DM Flow";
+      $("#fcSave").textContent = "Save Changes 🚀";
+    } else {
+      // PRE-FILLED WITH LEAD MAGNET TEMPLATE BY DEFAULT (Instant conversion ready!)
+      applyTemplate("leadmagnet");
+      if ($("#fcRequireFollow")) $("#fcRequireFollow").checked = true;
+      $("#fcTitle").textContent = "Instagram Comment &rarr; Auto DM Flow";
+      $("#fcSave").textContent = "Turn On Automation 🚀";
+    }
+
+    // Default to follower preview
+    setMockupView("follower");
+    syncMockupPreview();
     show($("#fcError"), false);
 
     show($("#flowComposer"), true);
-    setTimeout(function () { $("#fcKeyword").focus(); }, 40);
+    setTimeout(function () { $("#fcKeyword").focus(); }, 50);
   }
+
+  function setMockupView(view) {
+    var isFollower = view === "follower";
+    if ($("#btnPrevFollower")) $("#btnPrevFollower").classList.toggle("is-active", isFollower);
+    if ($("#btnPrevGate")) $("#btnPrevGate").classList.toggle("is-active", !isFollower);
+    show($("#mockupFollowerView"), isFollower);
+    show($("#mockupGateView"), !isFollower);
+  }
+
   function closeComposer() { show($("#flowComposer"), false); STATE.picked = null; }
 
   async function saveFlow() {
@@ -234,13 +367,18 @@
     var any = $("#fcAny").checked;
     var words = $("#fcKeyword").value.split(",").map(function (w) { return w.trim(); }).filter(Boolean);
     var dm = $("#fcDm").value.trim();
+    var btnText = $("#fcBtnText") ? $("#fcBtnText").value.trim() : "Get Instant Access 🚀";
+    var linkUrl = $("#fcUrl").value.trim();
+    var reply = $("#fcReply").value.trim();
+    var requireFollow = $("#fcRequireFollow") ? $("#fcRequireFollow").checked : true;
+    var followPrompt = $("#fcFollowPrompt") ? $("#fcFollowPrompt").value.trim() : "";
 
-    function fail(msg) { err.textContent = msg; show(err, true); btn.disabled = false; btn.textContent = "Turn it on"; }
+    function fail(msg) { err.textContent = msg; show(err, true); btn.disabled = false; btn.textContent = "Turn On Automation 🚀"; }
     show(err, false);
-    if (!any && !words.length) return fail("Type the word people should comment — or tick “reply to every comment”.");
-    if (!dm) return fail("Write the DM they should get.");
+    if (!any && !words.length) return fail("Type the word people should comment (e.g. LINK, PRICE) — or tick “reply to every comment”.");
+    if (!dm) return fail("Write the DM message they should get.");
 
-    btn.disabled = true; btn.textContent = "Turning on…";
+    btn.disabled = true; btn.textContent = "Publishing Flow…";
     // Replacing an existing flow on this post keeps one rule per post.
     if (m.automation && m.automation.rule_id) {
       await api("/api/flows/" + encodeURIComponent(m.automation.rule_id), { method: "DELETE" });
@@ -248,20 +386,28 @@
     var out = await api("/api/flows/from-post", {
       method: "POST",
       body: JSON.stringify({
-        media_id: m.id, keywords: words, any_comment: any, dm_message: dm,
-        link_url: $("#fcUrl").value.trim(), comment_reply: $("#fcReply").value.trim(), activate: true
+        media_id: m.id,
+        keywords: words,
+        any_comment: any,
+        dm_message: dm,
+        button_text: btnText,
+        link_url: linkUrl,
+        comment_reply: reply,
+        require_follow: requireFollow,
+        follow_prompt_msg: followPrompt,
+        activate: true
       })
     });
-    btn.disabled = false; btn.textContent = "Turn it on";
+    btn.disabled = false; btn.textContent = "Turn On Automation 🚀";
     if (!out.success) {
       if (out.upgrade_required && window.CF && window.CF.openUpgrade) {
         closeComposer(); window.CF.openUpgrade(out.message); return;
       }
-      return fail(out.message || out.error || "Could not save that.");
+      return fail(out.message || out.error || "Could not save that flow.");
     }
     closeComposer();
-    toast(any ? "Live — every comment on that post now gets a DM."
-              : "Live — a comment saying “" + words[0] + "” now gets a DM.");
+    toast(any ? "⚡ Flow live — every comment on that post now gets an instant auto-DM!"
+              : "⚡ Flow live — comment “" + (words[0] || "").toUpperCase() + "” now triggers instant auto-DM!");
     await loadMedia(true); await loadFlows(); paintTiles();
   }
 
@@ -273,6 +419,44 @@
     if (ev.target.closest("#fcClose") || ev.target.closest("#fcCancel")) { closeComposer(); return; }
     if (ev.target.id === "flowComposer") { closeComposer(); return; }
     if (ev.target.closest("#fcSave")) { saveFlow(); return; }
+
+    // Template switcher
+    var tplBtn = ev.target.closest(".mc-tpl-card");
+    if (tplBtn && tplBtn.dataset.tpl) {
+      applyTemplate(tplBtn.dataset.tpl);
+      return;
+    }
+
+    // Quick keyword chip
+    var kwChip = ev.target.closest(".mc-kw-chip-btn");
+    if (kwChip && kwChip.dataset.kw) {
+      var cur = $("#fcKeyword").value.trim();
+      var kw = kwChip.dataset.kw;
+      var list = cur.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!list.includes(kw)) list.push(kw);
+      $("#fcKeyword").value = list.join(", ");
+      syncMockupPreview();
+      return;
+    }
+
+    // Dynamic variable pill
+    var varBtn = ev.target.closest(".mc-var-btn");
+    if (varBtn && varBtn.dataset.var) {
+      var tag = varBtn.dataset.var;
+      var ta = $("#fcDm");
+      if (ta) {
+        var start = ta.selectionStart || ta.value.length;
+        var end = ta.selectionEnd || ta.value.length;
+        ta.value = ta.value.substring(0, start) + " " + tag + " " + ta.value.substring(end);
+        ta.focus();
+        syncMockupPreview();
+      }
+      return;
+    }
+
+    // Preview mode switcher
+    if (ev.target.closest("#btnPrevFollower")) { setMockupView("follower"); return; }
+    if (ev.target.closest("#btnPrevGate")) { setMockupView("gate"); return; }
 
     var conn = ev.target.closest("#btnIgConnect") || ev.target.closest("#btnReconnect");
     if (conn) {
@@ -346,7 +530,16 @@
   }
 
   window.CFAccount = { reload: loadAccount };
-  function boot() { loadAccount(); paintIdentity(); }
+  function boot() {
+    loadAccount();
+    paintIdentity();
+    ["fcDm", "fcBtnText", "fcUrl", "fcKeyword", "fcFollowPrompt"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener("input", syncMockupPreview);
+    });
+    var anyBox = document.getElementById("fcAny");
+    if (anyBox) anyBox.addEventListener("change", syncMockupPreview);
+  }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
