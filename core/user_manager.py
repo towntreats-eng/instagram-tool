@@ -75,20 +75,52 @@ class UserManager:
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         self._state = self._load()
 
-    # ------------------------------------------------------------------ io
     def _load(self) -> Dict[str, Any]:
         if store.exists(self.file_path):
             try:
                 state = store.read(self.file_path)
                 if isinstance(state, dict) and "users" in state:
+                    changed = False
                     if self._migrate(state["users"]):
+                        changed = True
+                    if self._ensure_admin(state["users"]):
+                        changed = True
+                    if changed:
                         self._write(state)
                     return state
-            except Exception:
-                pass
-        state = {"users": self._seed(), "updated_at": _now()}
+            except Exception as exc:
+                print(f"[UserManager] failed to load state: {exc}")
+        seed_users = self._seed()
+        state = {"users": seed_users, "updated_at": _now()}
         self._write(state)
         return state
+
+    def _ensure_admin(self, users: List[Dict[str, Any]]) -> bool:
+        email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+        password = os.environ.get("ADMIN_PASSWORD", "")
+        if not (email and password):
+            return False
+        existing = next((u for u in users if u.get("email", "").strip().lower() == email), None)
+        if not existing:
+            top_plan = self.plans.top_plan()["id"] if hasattr(self.plans, "top_plan") else "agency"
+            admin_user = self._blank_user(
+                name=os.environ.get("ADMIN_NAME", "Owner"),
+                email=email,
+                password=password,
+                role="admin",
+                plan=top_plan,
+            )
+            users.append(admin_user)
+            return True
+        else:
+            from core.auth import verify_password as check
+            ok, _ = check(password, existing.get("password_hash", ""))
+            if not ok or existing.get("role") != "admin":
+                existing["password_hash"] = hash_password(password)
+                existing["role"] = "admin"
+                existing["subscription_state"] = ACTIVE
+                return True
+        return False
 
     def _migrate(self, users: List[Dict[str, Any]]) -> bool:
         """Bring records written by earlier versions up to the current shape."""
@@ -142,34 +174,15 @@ class UserManager:
         )]
 
     def _blank_user(self, name: str, email: str, password: str,
-                    role: str = "owner", plan: str = "free") -> Dict[str, Any]:
-        return {
-            "id": f"usr_{uuid.uuid4().hex[:12]}",
-            "name": name,
-            "email": email,
-            "password_hash": hash_password(password),
-            "ig_handle": "",
-            "business": "",
-            "phone": "",
-            "role": role,
-            "plan": plan,
-            "subscription_state": ACTIVE if role == "admin" else FREE,
-            "status": "active",
-            "created_at": _now(),
-            "trial_start": None,
-            "pro_since": _now() if role == "admin" else None,
-            "renews_on": None,
-            "coupon": None,
-            "notes": "",
-            "instagram": {"connected": False},
-            "stats": {"contacts": 0, "automations": 0, "dms_sent": 0,
-                      "dms_this_month": 0, "last_active": _now()},
-            "payments": [],
-        }
-
-    def _blank_user(self, name: str, email: str, password: str,
+                    role: str = "owner", plan: Optional[str] = None,
                     ig_handle: str = "", business: str = "") -> Dict[str, Any]:
-        trial_plan = self.plans.default_paid_plan()
+        if plan is None:
+            trial_plan = self.plans.default_paid_plan() if hasattr(self.plans, "default_paid_plan") else {"id": "growth", "trial_days": 15}
+            plan = trial_plan.get("id", "growth")
+            sub_state = TRIALING if trial_plan.get("trial_days") else FREE
+        else:
+            sub_state = ACTIVE if role == "admin" else FREE
+
         return {
             "id": f"usr_{uuid.uuid4().hex[:12]}",
             "name": name.strip(),
@@ -178,13 +191,13 @@ class UserManager:
             "ig_handle": ig_handle.lstrip("@").strip(),
             "business": business.strip(),
             "phone": "",
-            "role": "owner",
-            "plan": trial_plan["id"],
-            "subscription_state": TRIALING if trial_plan.get("trial_days") else FREE,
+            "role": role,
+            "plan": plan,
+            "subscription_state": sub_state,
             "status": "active",
             "created_at": _now(),
-            "trial_start": _now(),
-            "pro_since": None,
+            "trial_start": _now() if sub_state == TRIALING else None,
+            "pro_since": _now() if role == "admin" else None,
             "renews_on": None,
             "coupon": None,
             "notes": "",
@@ -362,7 +375,15 @@ class UserManager:
             return False, "Password must be at least 6 characters."
         if self.get_by_email(email):
             return False, "An account with this email already exists."
-        user = self._blank_user(name, email, password, ig_handle, business)
+        is_first = len(self._state.get("users", [])) == 0
+        role = "admin" if is_first else "owner"
+        top_plan = self.plans.top_plan()["id"] if hasattr(self.plans, "top_plan") else "agency"
+        plan = top_plan if is_first else None
+        user = self._blank_user(
+            name=name, email=email, password=password,
+            role=role, plan=plan,
+            ig_handle=ig_handle, business=business
+        )
         self._state["users"].append(user)
         self._save()
         return True, user
