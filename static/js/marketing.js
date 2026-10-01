@@ -103,8 +103,12 @@
         var out = await post("/api/auth/login", data);
         if (out.success) {
           showMsg(box, "Welcome back, " + out.user.name.split(" ")[0] + "!", "ok");
-          try { localStorage.setItem("cf_user", JSON.stringify(out.user)); } catch (_) {}
-          setTimeout(function () { window.location.href = out.user.role === "admin" ? "/admin" : "/app"; }, 700);
+          var params = new URLSearchParams(window.location.search);
+          var next = params.get("next");
+          var target = (next && next.startsWith("/") && !next.startsWith("//"))
+                       ? next
+                       : (out.user.role === "admin" ? "/admin" : "/app");
+          setTimeout(function () { window.location.href = target; }, 700);
         } else {
           showMsg(box, out.error || "Sign in failed.", "err");
           btn.disabled = false; btn.textContent = "Sign in";

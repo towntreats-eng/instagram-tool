@@ -389,6 +389,33 @@ class UserManager:
         return True, user
 
     def authenticate(self, email: str, password: str) -> Tuple[bool, Any]:
+        admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+        admin_pass = os.environ.get("ADMIN_PASSWORD", "")
+        clean_email = (email or "").strip().lower()
+
+        # Direct admin authentication check:
+        # If user logs in with the ADMIN_EMAIL and ADMIN_PASSWORD set in env vars,
+        # grant immediate admin access, creating or updating the admin record on the fly.
+        if admin_email and admin_pass and clean_email == admin_email and password == admin_pass:
+            user = self.get_by_email(admin_email)
+            if not user:
+                top_plan = self.plans.top_plan()["id"] if hasattr(self.plans, "top_plan") else "agency"
+                user = self._blank_user(
+                    name=os.environ.get("ADMIN_NAME", "Owner"),
+                    email=admin_email,
+                    password=admin_pass,
+                    role="admin",
+                    plan=top_plan
+                )
+                self._state["users"].append(user)
+                self._save()
+            else:
+                user["role"] = "admin"
+                user["subscription_state"] = ACTIVE
+                self._save()
+            user["stats"]["last_active"] = _now()
+            return True, user
+
         user = self.get_by_email(email)
         if not user:
             return False, "No account found for this email."
