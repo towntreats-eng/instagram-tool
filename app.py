@@ -1560,6 +1560,9 @@ async def instagram_callback(code: Optional[str] = None, state: Optional[str] = 
     if not code or not state:
         return page("Something went wrong", "Instagram did not send an authorisation code. Try again from the dashboard.", False)
 
+    code = (code or "").replace("#_", "").split("#")[0].strip()
+    state = (state or "").replace("#_", "").split("#")[0].strip()
+
     ok, result = meta_oauth.complete(code, state)
     if not ok:
         admin_store.log("ERROR", "instagram", f"Connect failed: {result}")

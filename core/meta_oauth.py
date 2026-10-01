@@ -146,9 +146,10 @@ class MetaOAuth:
                 "instagram_business_content_publish",
             ]
 
+        redirect_uri = (self.app.get("redirect_uri") or "").strip().rstrip("/")
         params = {
-            "client_id": self.app["app_id"],
-            "redirect_uri": self.app["redirect_uri"],
+            "client_id": str(self.app.get("app_id", "")).strip(),
+            "redirect_uri": redirect_uri,
             "state": self.make_state(user_id),
             "scope": ",".join(scopes),
             "response_type": "code",
@@ -164,14 +165,26 @@ class MetaOAuth:
         Exchange the authorization code for a short-lived Instagram access token.
         Instagram's token endpoint requires a POST with form data (not GET).
         """
+        clean_code = (code or "").replace("#_", "").split("#")[0].strip()
+        redirect_uri = (self.app.get("redirect_uri") or "").strip().rstrip("/")
+        app_id = str(self.app.get("app_id", "")).strip()
+        app_secret = str(self.app.get("app_secret", "")).strip()
+
         data = {
-            "client_id": self.app["app_id"],
-            "client_secret": self.app["app_secret"],
+            "client_id": app_id,
+            "client_secret": app_secret,
             "grant_type": "authorization_code",
-            "redirect_uri": self.app["redirect_uri"],
-            "code": code,
+            "redirect_uri": redirect_uri,
+            "code": clean_code,
         }
         ok, result = _post_form("https://api.instagram.com/oauth/access_token", data)
+        if not ok:
+            # If Meta expects trailing slash matching what was entered in Meta dashboard
+            data["redirect_uri"] = redirect_uri + "/"
+            ok_slash, result_slash = _post_form("https://api.instagram.com/oauth/access_token", data)
+            if ok_slash and "access_token" in result_slash:
+                ok, result = ok_slash, result_slash
+
         if not ok or "access_token" not in result:
             error_msg = result.get("error_message") or result.get("error", {}).get("message", "")
             if not error_msg:
