@@ -2,10 +2,12 @@ import os
 import json
 import asyncio
 import threading
+import contextvars
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, StreamingResponse, Response, PlainTextResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, PlainTextResponse, RedirectResponse
+from fastapi import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -15,7 +17,6 @@ from core.spintax import SpintaxEngine
 from core.automation_engine import AutomationEngine
 from core.contacts_manager import ContactsManager
 from core.comment_watcher import CommentWatcher
-from core.post_provider import PostProvider
 from core.meta_api import MetaAPIClient
 from core.user_manager import UserManager
 from core.admin_store import AdminStore
@@ -24,11 +25,15 @@ from core.platform_settings import PlatformSettings
 from core.meta_oauth import MetaOAuth
 from core.insights import Insights
 from core.razorpay_client import RazorpayClient
+from core import instagram_account
+from core import auth as cf_auth
+from core import db as cf_db
+from core import store as cf_store
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-app = FastAPI(title="InstaDM ManyChat Suite", version="2.5.0")
+app = FastAPI(title="ConverFlow", version="4.0.0")
 
 # Enable CORS
 app.add_middleware(
@@ -38,6 +43,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _bind_request(request: Request, call_next):
+    """Makes the current request available to signed_in_user()."""
+    token = _request_ctx.set(request)
+    try:
+        return await call_next(request)
+    finally:
+        _request_ctx.reset(token)
+
+
+@app.on_event("startup")
+async def _startup():
+    ok, msg = cf_db.init()
+    print(f"[ConverFlow] storage: {'PostgreSQL' if ok else 'JSON files'} — {msg}")
 
 # Core instances
 campaign_manager = CampaignManager()
@@ -53,10 +74,54 @@ meta_oauth = MetaOAuth(platform_settings)
 insights = Insights(contacts_manager, automation_engine, campaign_manager)
 
 
+# The request currently being served. FastAPI hands the Request object to the
+# route; this context var lets the small helpers below read it without every
+# existing function having to grow a parameter.
+_request_ctx: contextvars.ContextVar = contextvars.ContextVar("cf_request", default=None)
+
+
+def _request() -> Optional[Request]:
+    return _request_ctx.get()
+
+
+def signed_in_user() -> Optional[Dict[str, Any]]:
+    """Whoever this request's session cookie belongs to. None if not signed in.
+
+    This used to return users[0] — the first account in the file — to everybody,
+    which meant one customer's dashboard showed another's data.
+    """
+    req = _request()
+    if req is None:
+        return None
+    sess = cf_auth.read_session(req.cookies.get(cf_auth.SESSION_COOKIE))
+    if not sess:
+        return None
+    user = user_manager.get(sess["user_id"])
+    if not user or user.get("status") == "suspended":
+        return None
+    return user
+
+
 def current_workspace():
-    """The workspace the local dashboard is signed in as (first account for now)."""
-    users = user_manager.all()
-    return users[0] if users else None
+    """The workspace serving this request."""
+    return signed_in_user()
+
+
+def require_user() -> Dict[str, Any]:
+    user = signed_in_user()
+    if not user:
+        raise HTTPException(status_code=401, detail="Sign in to continue.")
+    return user
+
+
+def require_admin() -> Dict[str, Any]:
+    """Guards every /api/admin/* route. Previously there was no guard at all."""
+    user = signed_in_user()
+    if not user:
+        raise HTTPException(status_code=401, detail="Sign in to continue.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="This area is for administrators.")
+    return user
 comment_watcher = CommentWatcher(
     browser_manager=campaign_manager.browser_manager,
     automation_engine=automation_engine,
@@ -180,22 +245,36 @@ async def serve_deletion():
 
 @app.get("/app", response_class=HTMLResponse)
 async def serve_app():
+    # A stranger typing /app used to get somebody else's dashboard.
+    if not signed_in_user():
+        return RedirectResponse("/login?next=/app", status_code=303)
     return _page("index.html", "ConverFlow dashboard loading...")
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard_alias():
+    if not signed_in_user():
+        return RedirectResponse("/login?next=/app", status_code=303)
     return _page("index.html", "ConverFlow dashboard loading...")
 
 # --- Admin console ---
 
 @app.get("/admin", response_class=HTMLResponse)
 async def serve_admin():
+    user = signed_in_user()
+    if not user:
+        return RedirectResponse("/login?next=/admin", status_code=303)
+    if user.get("role") != "admin":
+        # A customer who finds the URL gets told no, not a control panel.
+        return HTMLResponse(
+            "<h1>403</h1><p>This area is for administrators.</p>"
+            "<p><a href='/app'>Back to your dashboard</a></p>", status_code=403)
     return _page("admin.html", "Admin console missing")
 
 # --- System & Session Endpoints ---
 
 @app.get("/api/status")
 async def get_status():
+    require_user()
     active_count = sum(1 for r in automation_engine.get_all() if r.get("is_active") and r.get("type") == "comment_to_dm")
     stats = campaign_manager.get_stats()
     stats["watcher_status"] = comment_watcher.status
@@ -247,12 +326,14 @@ def _billing_payload():
 
 @app.get("/api/billing/status")
 async def get_billing():
+    require_user()
     return {"success": True, "billing": _billing_payload(),
             "plans": plans_manager.all_plans(public_only=True)}
 
 @app.post("/api/billing/upgrade")
 async def upgrade_workspace(req: dict = None):
     """Upgrade the signed-in workspace. Body may carry {plan_id, coupon}."""
+    require_user()
     user = current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -276,6 +357,7 @@ async def upgrade_workspace(req: dict = None):
 
 @app.post("/api/billing/reset")
 async def reset_trial():
+    require_user()
     user = current_workspace()
     if user:
         user_manager.start_trial(user["id"])
@@ -284,6 +366,7 @@ async def reset_trial():
 @app.post("/api/billing/coupon")
 async def preview_coupon(req: dict):
     """Price a plan with a coupon, without consuming it."""
+    require_user()
     quote = plans_manager.apply_offer(req.get("code", ""), req.get("plan_id", ""))
     return {"success": quote.get("valid", False), **quote}
 
@@ -291,13 +374,22 @@ async def preview_coupon(req: dict):
 
 @app.get("/api/instagram/posts")
 async def get_instagram_posts():
-    posts = PostProvider.get_recent_posts(meta_client=meta_client)
-    return {"success": True, "posts": posts}
+    """Kept for older callers. Real media only — no sample posts, ever."""
+    require_user()
+    user = current_workspace()
+    if not user or not instagram_account.connected(user):
+        return {"success": False, "connected": False,
+                "error": "Connect an Instagram account to see your posts.", "posts": []}
+    ok, out = instagram_account.media(user, limit=24)
+    if not ok:
+        return {"success": False, "connected": True, "error": out, "posts": []}
+    return {"success": True, "connected": True, "posts": out}
 
 # --- Official Meta Graph API & Webhook Endpoints ---
 
 @app.get("/api/meta/config")
 async def get_meta_config():
+    require_admin()
     cfg = dict(meta_client.config)
     token = cfg.get("access_token", "")
     if token:
@@ -306,12 +398,14 @@ async def get_meta_config():
 
 @app.post("/api/meta/save")
 async def save_meta_config(req: MetaConfigRequest):
+    require_admin()
     saved = meta_client.save_config(req.dict(exclude_unset=True))
     campaign_manager.add_log("SUCCESS", "Updated Facebook Developer / Meta API configuration.")
     return {"success": True, "config": saved}
 
 @app.post("/api/meta/test")
 async def test_meta_connection(req: MetaTestRequest):
+    require_admin()
     result = meta_client.test_connection(req.access_token)
     if result.get("success"):
         campaign_manager.add_log("SUCCESS", f"Connected via Meta Graph API: {result.get('message')}")
@@ -431,6 +525,7 @@ async def publish_wizard_automation(req: WizardPublishRequest):
     """
     Validates Free Trial limits (max 1 active reel) and creates the ManyChat automation rule.
     """
+    require_user()
     active_count = sum(1 for r in automation_engine.get_all() if r.get("is_active") and r.get("type") == "comment_to_dm")
 
     # Check limits
@@ -476,6 +571,7 @@ async def publish_wizard_automation(req: WizardPublishRequest):
 
 @app.post("/api/check-login")
 async def check_login():
+    require_user()
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, campaign_manager.browser_manager.check_login_status)
     campaign_manager.add_log(
@@ -486,6 +582,7 @@ async def check_login():
 
 @app.post("/api/open-login")
 async def open_login():
+    require_user()
     global login_thread
     if campaign_manager.status == "RUNNING" or comment_watcher.status == "RUNNING":
         raise HTTPException(status_code=400, detail="Cannot open login while an automation is running. Stop active task first.")
@@ -506,11 +603,13 @@ async def open_login():
 
 @app.get("/api/automations")
 async def list_automations():
+    require_user()
     rules = automation_engine.get_all()
     return {"success": True, "automations": rules}
 
 @app.post("/api/automations")
 async def save_automation(req: AutomationRuleRequest):
+    require_user()
     data = req.dict()
     rule_id = data.get("id")
     if rule_id and automation_engine.get_by_id(rule_id):
@@ -524,6 +623,7 @@ async def save_automation(req: AutomationRuleRequest):
 
 @app.post("/api/automations/{rule_id}/toggle")
 async def toggle_automation(rule_id: str):
+    require_user()
     rule = automation_engine.get_by_id(rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
@@ -549,6 +649,7 @@ async def toggle_automation(rule_id: str):
 
 @app.delete("/api/automations/{rule_id}")
 async def delete_automation(rule_id: str):
+    require_user()
     ok = automation_engine.delete(rule_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Rule not found")
@@ -562,6 +663,7 @@ async def simulate_message(req: SimulatorMessageRequest):
     """
     Simulates ManyChat trigger matching for comments or DMs in the interactive phone preview.
     """
+    require_user()
     username = req.username or "alex_growth"
     text = req.text.strip()
 
@@ -615,11 +717,13 @@ async def simulate_message(req: SimulatorMessageRequest):
 
 @app.get("/api/contacts")
 async def get_contacts(search: Optional[str] = None, tag: Optional[str] = None):
+    require_user()
     contacts = contacts_manager.get_all(search=search, tag=tag)
     return {"success": True, "contacts": contacts, "total": len(contacts)}
 
 @app.get("/api/contacts/export")
 async def export_contacts():
+    require_user()
     csv_data = contacts_manager.export_csv()
     return Response(
         content=csv_data,
@@ -631,6 +735,7 @@ async def export_contacts():
 
 @app.post("/api/watcher/start")
 async def start_watcher(req: WatcherStartRequest):
+    require_user()
     ok = comment_watcher.start(post_url=req.post_url, interval=req.interval or 60)
     if not ok:
         raise HTTPException(status_code=400, detail="Watcher is already running.")
@@ -638,6 +743,7 @@ async def start_watcher(req: WatcherStartRequest):
 
 @app.post("/api/watcher/stop")
 async def stop_watcher():
+    require_user()
     ok = comment_watcher.stop()
     return {"success": ok, "status": comment_watcher.status}
 
@@ -645,11 +751,13 @@ async def stop_watcher():
 
 @app.post("/api/targets/load-text")
 async def load_targets_text(req: LoadTextTargetsRequest):
+    require_user()
     count = campaign_manager.load_targets_from_text(req.text)
     return {"success": True, "count": count, "total": len(campaign_manager.targets)}
 
 @app.post("/api/targets/upload-csv")
 async def upload_targets_csv(file: UploadFile = File(...)):
+    require_user()
     content = await file.read()
     text = content.decode("utf-8", errors="replace")
     count = campaign_manager.load_targets_from_csv(text)
@@ -657,6 +765,7 @@ async def upload_targets_csv(file: UploadFile = File(...)):
 
 @app.get("/api/targets")
 async def get_targets():
+    require_user()
     return {
         "targets": [t.to_dict() for t in campaign_manager.targets],
         "total": len(campaign_manager.targets)
@@ -664,6 +773,7 @@ async def get_targets():
 
 @app.post("/api/targets/clear")
 async def clear_targets():
+    require_user()
     ok = campaign_manager.clear_targets()
     if not ok:
         raise HTTPException(status_code=400, detail="Cannot clear targets while campaign is running.")
@@ -671,11 +781,13 @@ async def clear_targets():
 
 @app.post("/api/spintax/preview")
 async def preview_spintax(req: SpintaxPreviewRequest):
+    require_user()
     previews = SpintaxEngine.generate_previews(req.template, count=5)
     return {"success": True, "previews": previews}
 
 @app.post("/api/campaign/start")
 async def start_campaign(req: CampaignSettingsRequest):
+    require_user()
     settings = req.dict()
     ok = campaign_manager.start_campaign(settings)
     if not ok:
@@ -684,21 +796,25 @@ async def start_campaign(req: CampaignSettingsRequest):
 
 @app.post("/api/campaign/pause")
 async def pause_campaign():
+    require_user()
     ok = campaign_manager.pause_campaign()
     return {"success": ok}
 
 @app.post("/api/campaign/resume")
 async def resume_campaign():
+    require_user()
     ok = campaign_manager.resume_campaign()
     return {"success": ok}
 
 @app.post("/api/campaign/stop")
 async def stop_campaign():
+    require_user()
     ok = campaign_manager.stop_campaign()
     return {"success": ok}
 
 @app.get("/api/campaign/export")
 async def export_campaign():
+    require_user()
     csv_data = campaign_manager.export_csv()
     return Response(
         content=csv_data,
@@ -708,6 +824,7 @@ async def export_campaign():
 
 @app.get("/api/logs/stream")
 async def stream_logs():
+    require_user()
     async def event_generator():
         q = campaign_manager.subscribe_logs()
         try:
@@ -742,6 +859,7 @@ class MetaConnectRequest(BaseModel):
 
 @app.get("/api/meta/config")
 async def get_meta_config():
+    require_admin()
     cfg = meta_client.config
     token = cfg.get("access_token", "")
     masked_token = (token[:8] + "..." + token[-4:]) if len(token) > 12 else ("***" if token else "")
@@ -759,6 +877,7 @@ async def get_meta_config():
 
 @app.post("/api/meta/connect")
 async def connect_meta(req: MetaConnectRequest):
+    require_admin()
     result = meta_client.test_connection(req.access_token)
     if result.get("success"):
         if req.verify_token:
@@ -769,6 +888,7 @@ async def connect_meta(req: MetaConnectRequest):
 
 @app.post("/api/meta/disconnect")
 async def disconnect_meta():
+    require_admin()
     meta_client.save_config({
         "enabled": False,
         "access_token": "",
@@ -899,11 +1019,46 @@ async def auth_signup(req: SignupRequest):
 
 
 @app.post("/api/auth/login")
-async def auth_login(req: LoginRequest):
+async def auth_login(req: LoginRequest, request: Request, response: Response):
     ok, result = user_manager.authenticate(req.email, req.password)
     if not ok:
+        # Deliberately vague and deliberately slow-ish: do not tell an attacker
+        # whether the email exists.
         return {"success": False, "error": result}
-    return {"success": True, "user": user_manager.public(result)}
+
+    token, expires = cf_auth.start_session(
+        result,
+        user_agent=request.headers.get("user-agent", ""),
+        ip=(request.client.host if request.client else ""),
+    )
+    response.set_cookie(
+        cf_auth.SESSION_COOKIE, token,
+        max_age=cf_auth.SESSION_DAYS * 86400,
+        httponly=True,                       # JavaScript cannot read it
+        samesite="lax",                      # not sent on cross-site POSTs
+        secure=bool(os.environ.get("COOKIE_SECURE", "")),   # set in production
+        path="/",
+    )
+    cf_auth.audit(result, "auth.login", result["id"], note="signed in")
+    return {"success": True, "user": user_manager.public(result),
+            "is_admin": result.get("role") == "admin"}
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(request: Request, response: Response):
+    cf_auth.end_session(request.cookies.get(cf_auth.SESSION_COOKIE))
+    response.delete_cookie(cf_auth.SESSION_COOKIE, path="/")
+    return {"success": True}
+
+
+@app.get("/api/auth/me")
+async def auth_me():
+    """Who is this browser? The front end uses it to decide what to render."""
+    user = signed_in_user()
+    if not user:
+        return {"success": True, "signed_in": False}
+    return {"success": True, "signed_in": True, "user": user_manager.public(user),
+            "is_admin": user.get("role") == "admin"}
 
 
 @app.get("/api/auth/announcement")
@@ -918,6 +1073,7 @@ async def auth_announcement():
 
 @app.get("/api/admin/overview")
 async def admin_overview():
+    require_admin()
     users = user_manager.list_public()
     return {
         "success": True,
@@ -934,11 +1090,13 @@ async def admin_overview():
 
 @app.get("/api/admin/users")
 async def admin_users(search: str = "", plan: str = "all", status: str = "all"):
+    require_admin()
     return {"success": True, "users": user_manager.list_public(search=search, plan=plan, status=status)}
 
 
 @app.get("/api/admin/users/{user_id}")
 async def admin_user_detail(user_id: str):
+    require_admin()
     user = user_manager.get(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -947,6 +1105,7 @@ async def admin_user_detail(user_id: str):
 
 @app.post("/api/admin/users")
 async def admin_create_user(req: AdminUserRequest):
+    require_admin()
     ok, result = user_manager.create(
         name=req.name, email=req.email, password=req.password or "converflow123",
         ig_handle=req.ig_handle or "", business=req.business or ""
@@ -961,6 +1120,7 @@ async def admin_create_user(req: AdminUserRequest):
 
 @app.patch("/api/admin/users/{user_id}")
 async def admin_update_user(user_id: str, req: AdminUserPatch):
+    require_admin()
     user = user_manager.update(user_id, req.dict(exclude_unset=True))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -970,6 +1130,9 @@ async def admin_update_user(user_id: str, req: AdminUserPatch):
 
 @app.post("/api/admin/users/{user_id}/plan")
 async def admin_set_plan(user_id: str, req: PlanChangeRequest):
+    actor = require_admin()
+    was = user_manager.get(user_id)
+    before = {"plan": was.get("plan"), "state": was.get("subscription_state")} if was else None
     plan_id = req.plan
     if plan_id == "trial":
         user = user_manager.start_trial(user_id)
@@ -981,11 +1144,15 @@ async def admin_set_plan(user_id: str, req: PlanChangeRequest):
     if not user:
         raise HTTPException(status_code=404, detail="User or plan not found")
     admin_store.log("SUCCESS", "billing", f"{user['email']} {action}")
+    cf_auth.audit(actor, "customer.plan_changed", user_id, before,
+                  {"plan": user.get("plan"), "state": user.get("subscription_state")},
+                  f"{user['email']} {action}")
     return {"success": True, "user": user_manager.public(user)}
 
 
 @app.post("/api/admin/users/{user_id}/extend")
 async def admin_extend_trial(user_id: str, req: ExtendTrialRequest):
+    require_admin()
     user = user_manager.extend_trial(user_id, req.days)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -995,16 +1162,25 @@ async def admin_extend_trial(user_id: str, req: ExtendTrialRequest):
 
 @app.post("/api/admin/users/{user_id}/toggle")
 async def admin_toggle_user(user_id: str):
+    actor = require_admin()
+    was = user_manager.get(user_id)
+    before = {"status": was.get("status")} if was else None
     user = user_manager.toggle_status(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user["status"] == "suspended":
+        # A suspended account must stop working immediately, not at cookie expiry.
+        cf_auth.end_all_sessions(user_id)
     admin_store.log("WARN" if user["status"] == "suspended" else "SUCCESS", "admin",
                     f"{user['email']} is now {user['status']}")
+    cf_auth.audit(actor, "customer.status_changed", user_id, before,
+                  {"status": user["status"]}, f"{user['email']} is now {user['status']}")
     return {"success": True, "user": user_manager.public(user)}
 
 
 @app.delete("/api/admin/users/{user_id}")
 async def admin_delete_user(user_id: str):
+    require_admin()
     user = user_manager.get(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1016,6 +1192,7 @@ async def admin_delete_user(user_id: str):
 
 @app.get("/api/admin/events")
 async def admin_events(level: str = "all", limit: int = 60):
+    require_admin()
     return {
         "success": True,
         "events": admin_store.list_events(level=level, limit=limit),
@@ -1025,11 +1202,13 @@ async def admin_events(level: str = "all", limit: int = 60):
 
 @app.get("/api/admin/announcements")
 async def admin_list_announcements():
+    require_admin()
     return {"success": True, "announcements": admin_store.list_announcements()}
 
 
 @app.post("/api/admin/announcements")
 async def admin_add_announcement(req: AnnouncementRequest):
+    require_admin()
     item = admin_store.add_announcement(
         title=req.title, body=req.body,
         audience=req.audience or "all", level=req.level or "update"
@@ -1039,6 +1218,7 @@ async def admin_add_announcement(req: AnnouncementRequest):
 
 @app.delete("/api/admin/announcements/{ann_id}")
 async def admin_delete_announcement(ann_id: str):
+    require_admin()
     ok = admin_store.delete_announcement(ann_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Announcement not found")
@@ -1047,6 +1227,7 @@ async def admin_delete_announcement(ann_id: str):
 
 @app.get("/api/admin/export/users")
 async def admin_export_users():
+    require_admin()
     import csv, io
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -1138,6 +1319,7 @@ class CouponCheck(BaseModel):
 
 @app.get("/api/admin/plans")
 async def admin_list_plans():
+    require_admin()
     return {
         "success": True,
         "plans": plans_manager.all_plans(),
@@ -1149,6 +1331,7 @@ async def admin_list_plans():
 
 @app.post("/api/admin/plans")
 async def admin_save_plan(req: PlanPayload):
+    require_admin()
     ok, result = plans_manager.save_plan(req.dict(exclude_unset=True))
     if not ok:
         return {"success": False, "error": result}
@@ -1158,6 +1341,7 @@ async def admin_save_plan(req: PlanPayload):
 
 @app.delete("/api/admin/plans/{plan_id}")
 async def admin_delete_plan(plan_id: str):
+    require_admin()
     in_use = sum(1 for u in user_manager.all() if u.get("plan") == plan_id)
     if in_use:
         return {"success": False,
@@ -1171,6 +1355,7 @@ async def admin_delete_plan(plan_id: str):
 
 @app.post("/api/admin/plans/reorder")
 async def admin_reorder_plans(req: Dict[str, List[str]]):
+    require_admin()
     plans_manager.reorder(req.get("order", []))
     return {"success": True, "plans": plans_manager.all_plans()}
 
@@ -1181,6 +1366,7 @@ async def admin_reorder_plans(req: Dict[str, List[str]]):
 
 @app.get("/api/admin/offers")
 async def admin_list_offers():
+    require_admin()
     return {"success": True, "offers": plans_manager.all_offers(),
             "schema": plans_manager.schema(),
             "plans": [{"id": p["id"], "name": p["name"]} for p in plans_manager.all_plans()]}
@@ -1188,6 +1374,7 @@ async def admin_list_offers():
 
 @app.post("/api/admin/offers")
 async def admin_save_offer(req: OfferPayload):
+    require_admin()
     ok, result = plans_manager.save_offer(req.dict(exclude_unset=True))
     if not ok:
         return {"success": False, "error": result}
@@ -1197,6 +1384,7 @@ async def admin_save_offer(req: OfferPayload):
 
 @app.post("/api/admin/offers/{offer_id}/toggle")
 async def admin_toggle_offer(offer_id: str):
+    require_admin()
     offer = plans_manager.toggle_offer(offer_id)
     if not offer:
         raise HTTPException(status_code=404, detail="Offer not found")
@@ -1205,6 +1393,7 @@ async def admin_toggle_offer(offer_id: str):
 
 @app.delete("/api/admin/offers/{offer_id}")
 async def admin_delete_offer(offer_id: str):
+    require_admin()
     if not plans_manager.delete_offer(offer_id):
         raise HTTPException(status_code=404, detail="Offer not found")
     return {"success": True}
@@ -1212,6 +1401,7 @@ async def admin_delete_offer(offer_id: str):
 
 @app.post("/api/admin/offers/check")
 async def admin_check_offer(req: CouponCheck):
+    require_admin()
     return {"success": True, "result": plans_manager.apply_offer(req.code, req.plan_id)}
 
 
@@ -1221,12 +1411,14 @@ async def admin_check_offer(req: CouponCheck):
 
 @app.get("/api/admin/settings")
 async def admin_get_settings():
+    require_admin()
     return {"success": True, "settings": platform_settings.public(),
             "default_scopes": platform_settings.meta_app().get("scopes", [])}
 
 
 @app.post("/api/admin/settings")
 async def admin_save_settings(req: SettingsPayload):
+    require_admin()
     section = platform_settings.update_section(req.section, req.values)
     admin_store.log("INFO", "settings", f"Updated {req.section} settings")
     return {"success": True, "section": req.section, "values": platform_settings.public().get(req.section, section)}
@@ -1234,6 +1426,7 @@ async def admin_save_settings(req: SettingsPayload):
 
 @app.post("/api/admin/meta-app/test")
 async def admin_test_meta_app():
+    require_admin()
     result = meta_oauth.test_app()
     admin_store.log("SUCCESS" if result.get("success") else "ERROR", "instagram",
                     result.get("message") or result.get("error", "Meta app test"))
@@ -1242,11 +1435,13 @@ async def admin_test_meta_app():
 
 @app.get("/api/admin/templates")
 async def admin_list_templates():
+    require_admin()
     return {"success": True, "templates": platform_settings.list_templates()}
 
 
 @app.patch("/api/admin/templates/{template_id}")
 async def admin_save_template(template_id: str, req: TemplatePayload):
+    require_admin()
     tpl = platform_settings.save_template(template_id, req.dict(exclude_unset=True))
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -1255,6 +1450,7 @@ async def admin_save_template(template_id: str, req: TemplatePayload):
 
 @app.get("/api/admin/templates/{template_id}/preview")
 async def admin_preview_template(template_id: str):
+    require_admin()
     sample = {
         "first_name": "Riya", "business": "GlowCart Skincare", "ig_handle": "glowcart.in",
         "plan_name": plans_manager.default_paid_plan()["name"],
@@ -1276,6 +1472,7 @@ async def admin_preview_template(template_id: str):
 
 @app.get("/api/instagram/status")
 async def instagram_status(user_id: Optional[str] = None):
+    require_user()
     user = user_manager.get(user_id) if user_id else current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -1288,6 +1485,7 @@ async def instagram_status(user_id: Optional[str] = None):
 
 @app.get("/api/instagram/connect")
 async def instagram_connect(user_id: Optional[str] = None):
+    require_user()
     user = user_manager.get(user_id) if user_id else current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -1299,6 +1497,7 @@ async def instagram_connect(user_id: Optional[str] = None):
 
 @app.post("/api/instagram/connect-token")
 async def instagram_connect_token(req: MetaTestRequest, user_id: Optional[str] = None):
+    require_user()
     user = user_manager.get(user_id) if user_id else current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -1389,6 +1588,7 @@ async def instagram_callback(code: Optional[str] = None, state: Optional[str] = 
 
 @app.post("/api/instagram/disconnect")
 async def instagram_disconnect(user_id: Optional[str] = None):
+    require_user()
     user = user_manager.get(user_id) if user_id else current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -1404,6 +1604,7 @@ async def instagram_disconnect(user_id: Optional[str] = None):
 @app.get("/api/insights")
 async def get_insights():
     """Funnel, safety headroom, reply speed and system health in one call."""
+    require_user()
     user = current_workspace()
     watcher = comment_watcher.status
     connected = bool(meta_client.config.get("enabled")) or bool(
@@ -1437,6 +1638,7 @@ def _already_paid(user: Dict[str, Any], payment_id: str) -> bool:
 @app.get("/api/billing/gateway")
 async def billing_gateway():
     """What the checkout button needs to know before it renders."""
+    require_user()
     return {
         "success": True,
         "ready": razorpay.ready(),
@@ -1449,6 +1651,7 @@ async def billing_gateway():
 @app.post("/api/billing/checkout")
 async def billing_checkout(req: dict = None):
     """Price the plan, apply any coupon, and open a Razorpay order."""
+    require_user()
     user = current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -1505,6 +1708,7 @@ async def billing_checkout(req: dict = None):
 @app.post("/api/billing/verify")
 async def billing_verify(req: dict = None):
     """Browser says it paid. We check that against our own secret before believing it."""
+    require_user()
     user = current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
@@ -1580,5 +1784,219 @@ async def razorpay_webhook(request: Request):
 
 @app.post("/api/admin/razorpay/test")
 async def admin_razorpay_test():
+    require_admin()
     ok, message = razorpay.test_keys()
     return {"success": ok, "message": message, "mode": razorpay.mode()}
+
+
+# ===========================================================================
+#  THE INSTAGRAM ACCOUNT — profile, posts, and turning a post into a flow
+#  Every response here comes from the workspace's own token. Nothing is
+#  sampled, seeded or substituted: if Instagram will not answer, the UI says
+#  so rather than showing a picture that is not theirs.
+# ===========================================================================
+
+@app.get("/api/instagram/profile")
+async def instagram_profile(refresh: bool = False):
+    require_user()
+    user = current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+    if not instagram_account.connected(user):
+        return {"success": True, "connected": False,
+                "platform_ready": platform_settings.meta_ready()}
+    ok, out = instagram_account.profile(user, force=refresh)
+    if not ok:
+        return {"success": False, "connected": True, "needs_reconnect": "expired" in str(out).lower(),
+                "error": out}
+    return {"success": True, "connected": True, "profile": out}
+
+
+@app.get("/api/instagram/media")
+async def instagram_media(limit: int = 24, refresh: bool = False):
+    require_user()
+    user = current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+    if not instagram_account.connected(user):
+        return {"success": True, "connected": False, "media": []}
+    ok, out = instagram_account.media(user, limit=limit, force=refresh)
+    if not ok:
+        return {"success": False, "connected": True, "media": [],
+                "needs_reconnect": "expired" in str(out).lower(), "error": out}
+
+    # Mark which posts already have an automation, so the grid can say so
+    live = {}
+    for rule in automation_engine.get_all():
+        mid = rule.get("post_media_id")
+        if mid:
+            live[mid] = {"rule_id": rule["id"], "active": bool(rule.get("is_active")),
+                         "keywords": rule.get("trigger_keywords", [])}
+    for m in out:
+        m["automation"] = live.get(m["id"])
+    return {"success": True, "connected": True, "media": out}
+
+
+class PostFlowRequest(BaseModel):
+    media_id: str
+    keywords: List[str] = []
+    any_comment: bool = False
+    dm_message: str
+    link_url: Optional[str] = ""
+    button_text: Optional[str] = "Open the link"
+    comment_reply: Optional[str] = ""
+    activate: bool = True
+
+
+@app.post("/api/flows/from-post")
+async def create_flow_from_post(req: PostFlowRequest):
+    """Pick a post, say the keyword, write the DM. That is the whole product."""
+    require_user()
+    user = current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+    if not instagram_account.connected(user):
+        return {"success": False, "error": "Connect your Instagram account first."}
+
+    ok, post = instagram_account.one(user, req.media_id)
+    if not ok:
+        return {"success": False, "error": post}
+
+    words = [w.strip().lower() for w in req.keywords if w and w.strip()]
+    if not req.any_comment and not words:
+        return {"success": False,
+                "error": "Give it at least one keyword, or set it to reply to every comment."}
+    if not (req.dm_message or "").strip():
+        return {"success": False, "error": "Write the DM you want people to receive."}
+
+    active_now = sum(1 for r in automation_engine.get_all()
+                     if r.get("is_active") and r.get("type") == "comment_to_dm")
+    if req.activate:
+        allowed, why = _can_activate(active_now)
+        if not allowed:
+            return {"success": False, "upgrade_required": True, "message": why,
+                    "plans": plans_manager.all_plans(public_only=True)}
+
+    caption = (post.get("caption") or "").strip()
+    short = (caption[:44] + "…") if len(caption) > 45 else (caption or "Untitled post")
+    label = words[0].upper() if words else "any comment"
+
+    rule = automation_engine.create({
+        "name": f"\u201c{short}\u201d \u2192 DM on {label}",
+        "type": "comment_to_dm",
+        "post_media_id": post["id"],
+        "post_target": post.get("permalink") or "*",
+        "post_thumbnail": post.get("thumbnail", ""),
+        "post_caption": caption,
+        "post_kind": post.get("kind", "post"),
+        "trigger_scope": "any" if req.any_comment else "specific",
+        "trigger_keywords": words,
+        "public_comment_reply": (req.comment_reply or "").strip(),
+        "comment_replies": [req.comment_reply.strip()] if (req.comment_reply or "").strip() else [],
+        "opening_dm": req.dm_message.strip(),
+        "dm_message": req.dm_message.strip(),
+        "button_text": (req.button_text or "").strip(),
+        "delivery_link": (req.link_url or "").strip(),
+        "is_active": bool(req.activate),
+        "created_by": user["id"],
+    })
+    campaign_manager.add_log("SUCCESS", f"Flow created for {post.get('permalink') or post['id']}")
+    admin_store.log("SUCCESS", "automation", f"{user['email']} built a flow on a {post.get('kind','post')}")
+    return {"success": True, "rule": rule}
+
+
+@app.delete("/api/flows/{rule_id}")
+async def delete_flow(rule_id: str):
+    user = current_workspace()
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace")
+    ok = automation_engine.delete(rule_id)
+    if not ok:
+        return {"success": False, "error": "That flow no longer exists."}
+    return {"success": True}
+
+
+# ===========================================================================
+#  ADMIN — the operator's view of who is actually working
+#  The support queue for this business is "who tried to connect and failed",
+#  so that is what the console shows, rather than another revenue chart.
+# ===========================================================================
+
+@app.get("/api/admin/connections")
+async def admin_connections():
+    require_admin()
+    rows, stuck, live = [], 0, 0
+    all_rules = automation_engine.get_all()
+    for u in user_manager.all():
+        ig = u.get("instagram") or {}
+        flows = [r for r in all_rules if r.get("created_by") == u["id"]]
+        active = sum(1 for r in flows if r.get("is_active"))
+        if ig.get("connected") and ig.get("access_token"):
+            state = "connected" if flows else "connected_no_flow"
+        elif ig.get("connected"):
+            state = "token_missing"
+        else:
+            state = "never_connected"
+        if state != "connected":
+            stuck += 1
+        else:
+            live += 1
+        rows.append({
+            "user_id": u["id"],
+            "name": u.get("name", ""),
+            "email": u.get("email", ""),
+            "plan": u.get("plan", ""),
+            "handle": ig.get("username") or u.get("ig_handle") or "",
+            "state": state,
+            "connected_at": ig.get("connected_at") or "",
+            "flows": len(flows),
+            "active_flows": active,
+            "created_at": u.get("created_at", ""),
+        })
+    order = {"token_missing": 0, "never_connected": 1, "connected_no_flow": 2, "connected": 3}
+    rows.sort(key=lambda r: (order.get(r["state"], 9), r["email"]))
+    return {"success": True, "rows": rows, "working": live, "needs_help": stuck,
+            "platform_ready": platform_settings.meta_ready()}
+
+
+@app.get("/api/admin/users/{user_id}/workspace")
+async def admin_user_workspace(user_id: str):
+    require_admin()
+    u = user_manager.get(user_id)
+    if not u:
+        raise HTTPException(status_code=404, detail="No such workspace")
+    ig = {k: v for k, v in (u.get("instagram") or {}).items()
+          if k not in ("access_token", "page_access_token")}
+    flows = [{"id": r["id"], "name": r.get("name", ""), "active": bool(r.get("is_active")),
+              "keywords": r.get("trigger_keywords", []), "post": r.get("post_target", "")}
+             for r in automation_engine.get_all() if r.get("created_by") == user_id]
+    return {"success": True, "instagram": ig, "flows": flows,
+            "plan": user_manager.plan_state(u), "usage": user_manager.usage(u)}
+
+
+@app.get("/api/admin/audit")
+async def admin_audit(limit: int = 200, subject_id: str = ""):
+    """Who changed what, when. Written on every admin mutation."""
+    require_admin()
+    return {"success": True, "rows": cf_auth.audit_read(limit, subject_id),
+            "storage": "postgres" if cf_store.using_postgres() else "file"}
+
+
+@app.get("/api/admin/storage")
+async def admin_storage():
+    """Which database the platform is actually running on right now."""
+    require_admin()
+    on_pg = cf_store.using_postgres()
+    out = {"success": True, "backend": "postgres" if on_pg else "json_files",
+           "configured": cf_db.configured()}
+    if on_pg:
+        try:
+            out["documents"] = cf_db.list_documents()
+        except Exception as exc:
+            out["error"] = str(exc)
+    elif cf_db.configured():
+        out["error"] = cf_db.last_error() or "DATABASE_URL is set but the server is unreachable."
+    else:
+        out["note"] = ("Running on JSON files. Set DATABASE_URL and run "
+                       "migrate_to_postgres.py --write to move to Postgres.")
+    return out

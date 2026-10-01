@@ -4718,3 +4718,195 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink-950); }
   border-radius: var(--radius-sm); font-weight: 700;
 }
 .btn-promo-discover:hover { background: var(--ink-100); border-color: var(--ink-100); }
+
+/* ==========================================================================
+   THE ACCOUNT SCREEN — connect, your posts, your flows
+   ========================================================================== */
+
+/* -- The gate. Deliberately the only thing on the page until it is done. -- */
+.ig-gate { display: flex; justify-content: center; padding: 56px 20px 80px; }
+.ig-gate-card {
+  max-width: 560px; width: 100%; text-align: center;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  padding: 48px 40px; background: #fff;
+}
+.ig-gate-mark {
+  width: 62px; height: 62px; margin: 0 auto 22px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink-950); color: #fff;
+}
+.ig-gate-card h1 { font-size: 27px; letter-spacing: -.03em; margin-bottom: 12px; }
+.ig-gate-card > p { color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; margin-bottom: 26px; }
+.btn-lg { padding: 13px 28px; font-size: 15px; }
+.ig-gate-note { margin-top: 14px; font-size: 13px; color: var(--danger); min-height: 18px; }
+.ig-gate-facts {
+  list-style: none; margin: 30px 0 0; padding: 22px 0 0; text-align: left;
+  border-top: 1px solid var(--border-light);
+  display: flex; flex-direction: column; gap: 11px;
+}
+.ig-gate-facts li {
+  font-size: 13px; color: var(--text-muted); line-height: 1.55; padding-left: 20px; position: relative;
+}
+.ig-gate-facts li::before {
+  content: ""; position: absolute; left: 0; top: 7px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ink-300);
+}
+.ig-gate-facts b { color: var(--text-primary); font-weight: 700; }
+
+/* -- Profile strip -- */
+.ig-profile {
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 20px; border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); margin-bottom: 20px;
+}
+.ig-avatar {
+  width: 54px; height: 54px; border-radius: 50%; object-fit: cover; flex: none;
+  background: var(--ink-100); border: 1px solid var(--border-subtle);
+}
+.ig-profile-meta { flex: 1; min-width: 0; }
+.ig-handle { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+.ig-profile-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+.ig-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 34px; }
+.ig-tile {
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 3px;
+}
+.ig-tile-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.ig-tile b { font-size: 26px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.ig-tile-sub { font-size: 12.5px; color: var(--text-faint); }
+
+.sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.sec-head h2 { font-size: 18px; letter-spacing: -.02em; }
+.sec-sub { font-size: 13.5px; color: var(--text-muted); margin-top: 3px; }
+
+.ig-state {
+  border: 1px dashed var(--border-strong); border-radius: var(--radius-md);
+  padding: 28px 24px; text-align: center; color: var(--text-muted); font-size: 13.5px;
+}
+.ig-state b { display: block; color: var(--text-primary); font-size: 15px; margin-bottom: 6px; }
+.ig-state button { margin-top: 14px; }
+
+/* -- The posts grid. The whole point of the screen, so it gets the space. -- */
+.ig-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px;
+}
+.ig-card {
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+  background: #fff; padding: 0; overflow: hidden; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; transition: border-color .14s, transform .14s;
+}
+.ig-card:hover { border-color: var(--ink-950); transform: translateY(-2px); }
+.ig-card.is-skeleton { height: 250px; background: var(--ink-050); border-style: dashed; cursor: default; }
+.ig-card.is-skeleton:hover { transform: none; border-color: var(--border-subtle); }
+.ig-card-img { position: relative; aspect-ratio: 4 / 5; background: var(--ink-100); }
+.ig-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ig-card-nothumb {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--text-faint);
+}
+.ig-card-kind {
+  position: absolute; top: 9px; left: 9px; background: rgba(10, 10, 11, .78); color: #fff;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+  padding: 4px 8px; border-radius: var(--radius-full); backdrop-filter: blur(4px);
+}
+.ig-card-flag {
+  position: absolute; bottom: 9px; left: 9px; right: 9px;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff; border: 1px solid var(--border-subtle);
+  font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: var(--radius-sm);
+}
+.ig-card-flag.is-on { background: var(--ink-950); color: #fff; border-color: var(--ink-950); }
+.ig-card-flag.is-on .state-dot.is-live { background: #fff; }
+.ig-card-body { padding: 11px 12px 13px; display: flex; flex-direction: column; gap: 5px; }
+.ig-card-cap { font-size: 12.8px; color: var(--text-secondary); line-height: 1.45; }
+.ig-card-stats { font-size: 11.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+/* -- Flow list -- */
+.flow-list { display: flex; flex-direction: column; gap: 10px; }
+.flow-row {
+  display: flex; align-items: center; gap: 14px; padding: 13px 16px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+}
+.flow-row.confirming { border-color: var(--danger); }
+.flow-thumb { width: 46px; height: 58px; border-radius: var(--radius-xs); object-fit: cover; flex: none; background: var(--ink-100); }
+.flow-thumb.is-empty { background: var(--ink-100); }
+.flow-main { flex: 1; min-width: 0; }
+.flow-state { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; }
+.flow-trigger { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; margin: 3px 0 2px; }
+.flow-trigger code {
+  font-family: var(--font-mono); font-size: 12.5px; background: var(--ink-050);
+  border: 1px solid var(--border-subtle); padding: 1px 6px; border-radius: var(--radius-xs);
+}
+.flow-dm { font-size: 12.8px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flow-actions { display: flex; align-items: center; gap: 12px; flex: none; }
+.btn-link-danger { background: none; border: none; color: var(--text-faint); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.btn-link-danger:hover { color: var(--danger); }
+
+/* -- The composer -- */
+.cfx-scrim {
+  position: fixed; inset: 0; z-index: 900; background: rgba(10, 10, 11, .45);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  backdrop-filter: blur(2px);
+}
+.cfx-scrim[hidden] { display: none; }
+.cfx-panel {
+  background: #fff; border-radius: var(--radius-lg); width: 100%; max-width: 520px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(10, 10, 11, .26);
+}
+.cfx-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 24px 16px; border-bottom: 1px solid var(--border-light); }
+.cfx-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); }
+.cfx-head h3 { font-size: 19px; letter-spacing: -.02em; margin-top: 4px; }
+.cfx-close { background: none; border: none; font-size: 24px; line-height: 1; color: var(--text-faint); cursor: pointer; padding: 0 4px; }
+.cfx-close:hover { color: var(--ink-950); }
+.cfx-body { padding: 20px 24px; overflow-y: auto; }
+.cfx-post { display: flex; gap: 13px; padding: 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 22px; }
+.cfx-post img { width: 54px; height: 68px; object-fit: cover; border-radius: var(--radius-xs); flex: none; background: var(--ink-100); }
+.cfx-kind { font-size: 9.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); }
+.cfx-post p { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin: 3px 0 5px; }
+.cfx-post a { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.cfx-label { display: block; font-size: 13px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 7px; }
+.cfx-label:not(:first-of-type) { margin-top: 20px; }
+.cfx-optional { font-weight: 500; color: var(--text-faint); font-size: 12px; }
+.cfx-input {
+  width: 100%; padding: 11px 13px; font-size: 14px; font-family: inherit;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: #fff;
+}
+textarea.cfx-input { resize: vertical; line-height: 1.5; }
+.cfx-hint { font-size: 12.3px; color: var(--text-muted); margin-top: 7px; line-height: 1.5; }
+.cfx-hint code { font-family: var(--font-mono); font-size: 11.5px; background: var(--ink-050); padding: 1px 5px; border-radius: 3px; }
+.cfx-check { display: flex; align-items: center; gap: 7px; margin-top: 9px; cursor: pointer; color: var(--text-secondary); }
+.cfx-more { margin-top: 20px; border-top: 1px solid var(--border-light); padding-top: 16px; }
+.cfx-more summary { font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
+.cfx-error {
+  margin-top: 16px; padding: 11px 13px; font-size: 13px;
+  background: var(--danger-bg); border: 1px solid var(--danger-border);
+  color: var(--danger); border-radius: var(--radius-sm);
+}
+.cfx-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 20px; border-top: 1px solid var(--border-light); }
+
+@media (max-width: 720px) {
+  .ig-tiles { grid-template-columns: 1fr; }
+  .ig-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .ig-gate-card { padding: 34px 22px; }
+  .flow-row { flex-wrap: wrap; }
+  .flow-actions { width: 100%; justify-content: flex-end; }
+}
+
+/* The sidebar identity is the workspace's initials. A stock photo of a
+   stranger used to sit here, which is a small lie the product does not need. */
+.avatar-initials {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .16); color: #fff;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .02em; flex: none;
+}
+
+/* [hidden] must win. A component class that sets display: flex silently beats
+   the browser's own [hidden] rule, which is how the connect gate and the
+   connected workspace ended up on screen at the same time. */
+[hidden] { display: none !important; }

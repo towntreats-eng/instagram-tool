@@ -15,6 +15,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 
+from core import store
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 PLANS_FILE = os.path.join(DATA_DIR, "plans.json")
@@ -71,10 +73,9 @@ class PlansManager:
 
     # ------------------------------------------------------------------ io
     def _load(self, path: str, seeder, key: str) -> List[Dict[str, Any]]:
-        if os.path.exists(path):
+        if store.exists(path):
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                data = store.read(path)
                 if isinstance(data, dict) and key in data:
                     return data[key]
                 if isinstance(data, list):
@@ -86,10 +87,7 @@ class PlansManager:
         return data
 
     def _write(self, path: str, key: str, data: List[Dict[str, Any]]) -> None:
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump({key: data, "updated_at": _now()}, f, indent=2, ensure_ascii=False)
-        os.replace(tmp, path)
+        store.write(path, {key: data, "updated_at": _now()})
 
     def _save_plans(self):
         self._write(PLANS_FILE, "plans", self.plans)

@@ -386,3 +386,17 @@ textarea.input { height: auto; padding: 11px 13px; resize: vertical; min-height:
 }
 .btn-ghost:hover { background: var(--line-soft); border-color: var(--faint); }
 input[readonly] { background: var(--surface-2); color: var(--muted); }
+
+/* Connections — the support queue */
+.conn-summary { display: flex; gap: 28px; margin-bottom: 6px; }
+.conn-stat { display: flex; align-items: baseline; gap: 8px; }
+.conn-stat b { font-size: 30px; font-weight: 800; letter-spacing: -.03em; }
+.conn-stat span { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.conn-stat.is-bad b { color: var(--coral); }
+.conn-pill {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: var(--r-full); background: var(--coral-50); color: var(--coral);
+  border: 1px solid var(--coral); 
+}
+.conn-pill.is-ok { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tbl-sub { font-size: 11.5px; color: var(--faint); margin-top: 2px; }

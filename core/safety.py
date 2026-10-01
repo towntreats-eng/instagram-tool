@@ -5,6 +5,8 @@ import random
 from datetime import datetime, date
 from typing import Tuple, Dict, Any
 
+from core import store
+
 STATS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "stats.json")
 
 class SafetyManager:
@@ -29,23 +31,21 @@ class SafetyManager:
             os.makedirs(folder, exist_ok=True)
 
     def _load_stats(self) -> Dict[str, Any]:
-        if not os.path.exists(self.stats_file):
+        if not store.exists(self.stats_file):
             return {"date": str(date.today()), "sent_today": 0, "total_sent": 0}
         try:
-            with open(self.stats_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                today = str(date.today())
-                if data.get("date") != today:
-                    data["date"] = today
-                    data["sent_today"] = 0
-                return data
+            data = store.read(self.stats_file)
+            today = str(date.today())
+            if data.get("date") != today:
+                data["date"] = today
+                data["sent_today"] = 0
+            return data
         except Exception:
             return {"date": str(date.today()), "sent_today": 0, "total_sent": 0}
 
     def _save_stats(self, data: Dict[str, Any]):
         self._ensure_dir()
-        with open(self.stats_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        store.write(self.stats_file, data)
 
     def get_today_sent_count(self) -> int:
         stats = self._load_stats()

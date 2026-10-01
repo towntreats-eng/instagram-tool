@@ -5,6 +5,8 @@ from io import StringIO
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+from core import store
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONTACTS_FILE = os.path.join(BASE_DIR, "data", "contacts.json")
 
@@ -26,7 +28,7 @@ class ContactsManager:
             os.makedirs(folder, exist_ok=True)
 
     def _load(self) -> List[Dict[str, Any]]:
-        if not os.path.exists(self.file_path):
+        if not store.exists(self.file_path):
             # Seed with sample captured contacts so user immediately sees how ManyChat CRM works
             seed_data = [
                 {
@@ -63,15 +65,13 @@ class ContactsManager:
             self._save_raw(seed_data)
             return seed_data
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            return store.read(self.file_path)
         except Exception:
             return []
 
     def _save_raw(self, data: List[Dict[str, Any]]):
         self._ensure_dir()
-        with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        store.write(self.file_path, data)
 
     def _save(self):
         self._save_raw(self._contacts)

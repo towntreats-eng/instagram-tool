@@ -1,8 +1,8 @@
 @echo off
-title InstaDM Pro - Instagram Auto DM Automation
-color 0b
+title ConverFlow - Instagram Automation for D2C
+color 0f
 echo ================================================================
-echo           InstaDM PRO - INSTAGRAM AUTO DM TOOL
+echo        CONVERFLOW - INSTAGRAM AUTOMATION SUITE
 echo ================================================================
 echo.
 echo  [1/2] Checking Python environment...
@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo  [2/2] Launching InstaDM Pro Dashboard...
+echo  [2/2] Launching ConverFlow...
 echo.
 python run.py
 if %errorlevel% neq 0 (

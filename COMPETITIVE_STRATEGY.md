@@ -337,3 +337,93 @@ subscribe it to `payment.captured` and `order.paid`.
   state, before anyone pays.
 - The admin "Signups per month" axis repeats tick labels on small integer
   ranges.
+
+---
+
+## Appendix C — Market research, 1 Oct 2026, and the cleanup it triggered
+
+### What the research changed
+
+The plan up to now was "flat INR pricing, UPI, Hinglish, cheaper than ManyChat."
+**That position is already occupied.** ReplyKaro sells at ₹99/mo flat with
+Razorpay, FlowDM at ₹299/mo with GPay/PhonePe, QuickDM at ₹399. None of the
+four things we thought were our wedge is a wedge.
+
+What the research did find is one gap the incumbents are *structurally*
+prevented from closing:
+
+**AiSensy, Interakt, Wati and Zoko earn their margin on the WhatsApp
+per-message markup.** Meta charges ₹0.8631 for an India marketing message;
+Interakt bills ₹0.882 (12.4% markup), Zoko ₹1.25. And on **1 October 2026**
+Meta began charging for service messages beyond 1,000/month and stopped
+making utility templates free inside the service window.
+
+Instagram DM has **no Meta per-message fee at all**.
+
+So a feature that moves a conversation off WhatsApp and onto Instagram DM
+destroys the revenue line of every WhatsApp-first Indian tool. They will not
+build it. ManyChat has the mirror-image problem: its unit is the *active
+contact*, counted even for organic inbox messages, which is the worst possible
+unit for a high-comment Indian creator — and it cannot go flat for India
+without repricing globally.
+
+**The buyer changes accordingly.** Not the ₹99 creator — that segment has
+already cleared at a price that cannot fund support. The buyer is one of the
+6,000–15,000 D2C brands already paying ₹2,799+/mo to Interakt or AiSensy,
+where cutting a ₹20,000/mo WhatsApp bill pays for us several times over.
+
+### Two hard platform facts we must build around
+
+- **750 private replies per hour, per Instagram account.** A viral reel with
+  5,000 comments in an hour breaks every tool on the market equally. Who we DM
+  first out of that backlog is an unbuilt product surface nobody is marketing
+  on. This should be ours.
+- **One private reply per commenter, within 7 days.** After that we need them
+  to reply before we can send anything else. Any flow design that assumes a
+  second unprompted message is wrong.
+
+### What got deleted from the customer dashboard
+
+The audit found the product was showing merchants things that were not true:
+
+- **The CRM padded the contact list with invented people.** `loadContacts()`
+  merged `sampleFallbackContacts` into the real server response, so a merchant
+  could open a conversation with somebody who did not exist. Removed; a failed
+  load now shows an empty list.
+- **`post_provider.py` served four Unsplash stock photos as "your posts."**
+  File retired. The posts grid is the Instagram Graph API or nothing.
+- **Three seeded automations** pointed at `instagram.com/reel/C7xyz123/`, a URL
+  that does not exist, so they could never fire. Seeding removed, and existing
+  installs clean themselves once on startup.
+- **A stock photo of a stranger** was the merchant's profile avatar in three
+  places. Now their own initials.
+- **Flow Tester, AI Assist, Inbox and Broadcast** — 1,900 lines of app.js and
+  472 lines of HTML, none of it moving real data. Deleted, not hidden.
+
+`index.html` went from 90 KB to 36 KB; `app.js` from 92 KB to 25 KB. Sixty per
+cent of the customer dashboard was set dressing.
+
+### What replaced it
+
+One screen. Not connected: a single Connect button and nothing else, because
+nothing else works until that is done. Connected: the real profile picture,
+handle and follower count, the account's real posts and reels, and a tap on any
+post opens three fields — keyword, DM, link — and a **Turn it on** button.
+
+Each post carries its own state on the thumbnail, so "which of my reels has a
+DM running" is answerable at a glance instead of by cross-referencing a list.
+
+### New in admin: Connections
+
+Sorted worst-first, because the useful question is never "how many customers do
+we have" but "who paid us and still cannot send a DM". It currently reads
+**1 working, 7 need help** — and names the cause at the top: the Meta app id
+and secret are blank, so no customer can self-connect.
+
+### The next thing to build
+
+Given the research, not another Instagram feature: **the channel-cost layer.**
+Show a brand what their WhatsApp bill would have been, and what routing the
+same conversation through Instagram DM saved. That is the number that justifies
+₹1,999/mo to a brand already paying Interakt, and it is the one number our
+competitors cannot show them.

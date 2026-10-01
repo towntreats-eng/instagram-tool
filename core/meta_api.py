@@ -4,6 +4,8 @@ import logging
 import requests
 from typing import Dict, Any, Optional, List
 
+from core import store
+
 logger = logging.getLogger("MetaAPI")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,7 +31,7 @@ class MetaAPIClient:
         folder = os.path.dirname(self.config_file)
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
-        if not os.path.exists(self.config_file):
+        if not store.exists(self.config_file):
             default_config = {
                 "enabled": False,
                 "app_id": "",
@@ -41,20 +43,17 @@ class MetaAPIClient:
                 "connected_account_name": "",
                 "connected_account_username": ""
             }
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(default_config, f, indent=2)
+            store.write(self.config_file, default_config)
 
     def _load(self) -> Dict[str, Any]:
         try:
-            with open(self.config_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+            return store.read(self.config_file)
         except Exception:
             return {}
 
     def save_config(self, new_config: Dict[str, Any]) -> Dict[str, Any]:
         self.config.update(new_config)
-        with open(self.config_file, "w", encoding="utf-8") as f:
-            json.dump(self.config, f, indent=2)
+        store.write(self.config_file, self.config)
         return self.config
 
     def test_connection(self, access_token: Optional[str] = None) -> Dict[str, Any]:

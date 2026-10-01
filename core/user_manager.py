@@ -20,6 +20,8 @@ from typing import Dict, Any, List, Optional, Tuple
 
 from core.plans_manager import PlansManager, UNLIMITED
 
+from core import store
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
@@ -52,9 +54,11 @@ def _parse(value: Optional[str]) -> Optional[datetime]:
 
 
 def hash_password(raw: str, salt: Optional[str] = None) -> str:
-    salt = salt or secrets.token_hex(8)
-    digest = hashlib.sha256((salt + raw).encode("utf-8")).hexdigest()
-    return f"{salt}${digest}"
+    """PBKDF2 now. The old single-round SHA-256 is still *verified* (see
+    core.auth.verify_password) so nobody is locked out, but nothing new is
+    written with it."""
+    from core.auth import hash_password as strong_hash
+    return strong_hash(raw)
 
 
 def verify_password(raw: str, stored: str) -> bool:
@@ -73,10 +77,9 @@ class UserManager:
 
     # ------------------------------------------------------------------ io
     def _load(self) -> Dict[str, Any]:
-        if os.path.exists(self.file_path):
+        if store.exists(self.file_path):
             try:
-                with open(self.file_path, "r", encoding="utf-8") as f:
-                    state = json.load(f)
+                state = store.read(self.file_path)
                 if isinstance(state, dict) and "users" in state:
                     if self._migrate(state["users"]):
                         self._write(state)
@@ -110,85 +113,59 @@ class UserManager:
 
     def _write(self, state: Dict[str, Any]) -> None:
         state["updated_at"] = _now()
-        tmp = self.file_path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=2, ensure_ascii=False)
-        os.replace(tmp, self.file_path)
+        store.write(self.file_path, state)
 
     def _save(self) -> None:
         self._write(self._state)
 
     # ---------------------------------------------------------------- seed
     def _seed(self) -> List[Dict[str, Any]]:
-        """First-run demo book so the admin dashboard is never an empty shell."""
-        now = datetime.now()
-        book = [
-            ("Umang Satnam", "hello@umangsatnam.in", "satnamwebservices", "Satnam Web Services", "agency", ACTIVE, 120, 3, 1840, 9),
-            ("Riya Mehta", "riya@glowcart.in", "glowcart.in", "GlowCart Skincare", "growth", ACTIVE, 640, 5, 2410, 14),
-            ("Arjun Nair", "arjun@urbanedge.co", "urbanedge.co", "Urban Edge Apparel", "growth", ACTIVE, 410, 4, 1620, 7),
-            ("Sneha Patel", "sneha@kraftly.in", "kraftly.in", "Kraftly Home Decor", "starter", ACTIVE, 190, 2, 310, 3),
-            ("Dev Shah", "dev@nutriblend.in", "nutriblend.in", "NutriBlend Foods", "growth", TRIALING, 44, 1, 96, 1),
-            ("Kavya Iyer", "kavya@theslowstudio", "theslowstudio", "The Slow Studio", "growth", EXPIRED, 380, 2, 740, 11),
-            ("Rohit Verma", "rohit@fitforge.in", "fitforge.in", "FitForge Gym Gear", "growth", ACTIVE, 880, 6, 3120, 18),
-            ("Ananya Das", "ananya@petpalsindia", "petpalsindia", "PetPals India", "free", FREE, 22, 1, 44, 0),
-        ]
-        ages = [96, 74, 61, 42, 4, 130, 88, 2]
-        seen = [2, 5, 9, 26, 1, 620, 3, 40]
+        """A new install starts with ONE account: the operator's, from the
+        environment, or nothing at all.
 
-        users: List[Dict[str, Any]] = []
-        for i, (name, email, handle, biz, plan_id, state, contacts, autos, dms, failed) in enumerate(book):
-            created = now - timedelta(days=ages[i])
-            user = self._blank_user(name=name, email=email, password="converflow123",
-                                    ig_handle=handle, business=biz)
-            user["created_at"] = created.strftime(ISO)
-            user["trial_start"] = created.strftime(ISO)
-            user["plan"] = plan_id
-            user["subscription_state"] = state
-            user["stats"].update({
-                "contacts": contacts,
-                "automations": autos,
-                "active_automations": autos if state == ACTIVE else min(autos, 1),
-                "dms_sent": dms,
-                "dms_this_month": int(dms * 0.34),
-                "dms_failed": failed,
-                "last_active": (now - timedelta(hours=seen[i])).strftime(ISO),
-            })
-            if state == ACTIVE:
-                price = (self.plans.get_plan(plan_id) or {}).get("price_monthly", 0)
-                started = created + timedelta(days=3)
-                months = max(1, int((now - started).days // 30))
-                user["pro_since"] = started.strftime(ISO)
-                user["renews_on"] = (now + timedelta(days=[12, 21, 6, 17, 0, 0, 27, 0][i] or 15)).strftime(ISO)
-                user["payments"] = [{
-                    "id": f"pay_{uuid.uuid4().hex[:10]}",
-                    "date": (started + timedelta(days=30 * m)).strftime(ISO),
-                    "amount": price,
-                    "plan": plan_id,
-                    "method": "manual",
-                    "status": "paid",
-                } for m in range(months) if started + timedelta(days=30 * m) <= now]
-                last = _parse(user["payments"][-1]["date"]) if user["payments"] else None
-                if last is None or (now - last).days > 12:
-                    user["payments"].append({
-                        "id": f"pay_{uuid.uuid4().hex[:10]}",
-                        "date": (now - timedelta(days=[3, 6, 9, 5, 0, 0, 2, 0][i] or 4)).strftime(ISO),
-                        "amount": price,
-                        "plan": plan_id,
-                        "method": "manual",
-                        "status": "paid",
-                    })
-            if i in (0, 1, 6):  # a few demo workspaces already connected Instagram
-                user["instagram"] = {
-                    "connected": True,
-                    "provider": "meta_oauth",
-                    "username": handle,
-                    "display_name": biz,
-                    "followers": [8400, 24100, 15600][[0, 1, 6].index(i)],
-                    "connected_at": (created + timedelta(days=1)).strftime(ISO),
-                    "instagram_account_id": f"1784{uuid.uuid4().hex[:10]}",
-                }
-            users.append(user)
-        return users
+        This used to invent eight customers — Riya Mehta at glowcart.in and so
+        on — which then counted toward revenue, MRR and the signup chart in the
+        admin console. Those numbers were the product lying to its owner about
+        how the business was doing.
+
+        Set ADMIN_EMAIL and ADMIN_PASSWORD to have the first administrator
+        created on boot; otherwise the first person to sign up becomes it.
+        """
+        email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+        password = os.environ.get("ADMIN_PASSWORD", "")
+        if not (email and password):
+            return []
+        return [self._blank_user(
+            name=os.environ.get("ADMIN_NAME", "Owner"),
+            email=email, password=password, role="admin",
+            plan=self.plans.top_plan()["id"] if hasattr(self.plans, "top_plan") else "agency",
+        )]
+
+    def _blank_user(self, name: str, email: str, password: str,
+                    role: str = "owner", plan: str = "free") -> Dict[str, Any]:
+        return {
+            "id": f"usr_{uuid.uuid4().hex[:12]}",
+            "name": name,
+            "email": email,
+            "password_hash": hash_password(password),
+            "ig_handle": "",
+            "business": "",
+            "phone": "",
+            "role": role,
+            "plan": plan,
+            "subscription_state": ACTIVE if role == "admin" else FREE,
+            "status": "active",
+            "created_at": _now(),
+            "trial_start": None,
+            "pro_since": _now() if role == "admin" else None,
+            "renews_on": None,
+            "coupon": None,
+            "notes": "",
+            "instagram": {"connected": False},
+            "stats": {"contacts": 0, "automations": 0, "dms_sent": 0,
+                      "dms_this_month": 0, "last_active": _now()},
+            "payments": [],
+        }
 
     def _blank_user(self, name: str, email: str, password: str,
                     ig_handle: str = "", business: str = "") -> Dict[str, Any]:
@@ -396,8 +373,13 @@ class UserManager:
             return False, "No account found for this email."
         if user.get("status") == "suspended":
             return False, "This account is suspended. Contact support."
-        if not verify_password(password, user.get("password_hash", "")):
+        from core.auth import verify_password as check, hash_password as strong_hash
+        ok, needs_rehash = check(password, user.get("password_hash", ""))
+        if not ok:
             return False, "Incorrect password."
+        if needs_rehash:
+            # Silently upgrade the stored hash now that we have the plaintext.
+            user["password_hash"] = strong_hash(password)
         user["stats"]["last_active"] = _now()
         self._save()
         return True, user

@@ -15,6 +15,8 @@ import copy
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
+from core import store
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
@@ -108,10 +110,9 @@ class PlatformSettings:
 
     def _load_settings(self) -> Dict[str, Any]:
         base = self._defaults()
-        if os.path.exists(SETTINGS_FILE):
+        if store.exists(SETTINGS_FILE):
             try:
-                with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                    saved = json.load(f)
+                saved = store.read(SETTINGS_FILE)
                 for section, values in saved.items():
                     if isinstance(values, dict) and section in base:
                         base[section].update(values)
@@ -124,10 +125,9 @@ class PlatformSettings:
         return base
 
     def _load_templates(self) -> List[Dict[str, Any]]:
-        if os.path.exists(TEMPLATES_FILE):
+        if store.exists(TEMPLATES_FILE):
             try:
-                with open(TEMPLATES_FILE, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                data = store.read(TEMPLATES_FILE)
                 if isinstance(data, dict) and "templates" in data:
                     return data["templates"]
                 if isinstance(data, list):
@@ -139,10 +139,7 @@ class PlatformSettings:
         return seeded
 
     def _write(self, path: str, data: Any) -> None:
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        os.replace(tmp, path)
+        store.write(path, data)
 
     def save(self) -> None:
         self.settings["updated_at"] = _now()

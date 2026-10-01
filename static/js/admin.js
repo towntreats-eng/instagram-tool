@@ -1103,3 +1103,66 @@
     var f = document.getElementById("rzpWebhookUrl");
     if (f) f.value = window.location.origin + "/api/razorpay/webhook";
   });
+
+/* ---------------------------------------------------------------------------
+   Connections — the operator's support queue.
+   Sorted worst-first on purpose: the useful question is never "how many
+   customers do we have", it is "who paid us and still cannot send a DM".
+   --------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  var LABEL = {
+    token_missing:     ["Broken", "Marked connected but the token is gone — they must reconnect."],
+    never_connected:   ["Not connected", "Has never linked an Instagram account."],
+    connected_no_flow: ["No flows yet", "Connected, but has not set up a single DM."],
+    connected:         ["Working", "Connected and running at least one flow."]
+  };
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  async function load() {
+    var body = document.getElementById("connBody");
+    if (!body) return;
+    var r;
+    try { r = await fetch("/api/admin/connections").then(function (x) { return x.json(); }); }
+    catch (e) { body.innerHTML = '<tr><td colspan="5">Could not reach the server.</td></tr>'; return; }
+
+    var sum = document.getElementById("connSummary");
+    if (sum) {
+      sum.innerHTML =
+        '<div class="conn-stat"><b>' + r.working + '</b><span>working</span></div>' +
+        '<div class="conn-stat' + (r.needs_help ? " is-bad" : "") + '"><b>' + r.needs_help + '</b><span>need help</span></div>';
+    }
+    var plat = document.getElementById("connPlatform");
+    if (plat) {
+      plat.innerHTML = r.platform_ready
+        ? "One-click connect is live — customers can link their own account."
+        : "<b>One-click connect is off.</b> No customer can self-connect until the Meta app id and secret are saved under Instagram API.";
+      plat.style.color = r.platform_ready ? "" : "var(--coral)";
+    }
+    if (!r.rows || !r.rows.length) {
+      body.innerHTML = '<tr><td colspan="5">No workspaces yet.</td></tr>'; return;
+    }
+    body.innerHTML = r.rows.map(function (w) {
+      var lab = LABEL[w.state] || [w.state, ""];
+      var ok = w.state === "connected";
+      return '<tr>' +
+        '<td><b>' + esc(w.name || "—") + '</b><div class="tbl-sub">' + esc(w.email) + '</div></td>' +
+        '<td>' + (w.handle ? "@" + esc(w.handle) : '<span class="tbl-sub">—</span>') + '</td>' +
+        '<td><span class="conn-pill' + (ok ? " is-ok" : "") + '">' + esc(lab[0]) + '</span>' +
+          '<div class="tbl-sub">' + esc(lab[1]) + '</div></td>' +
+        '<td>' + w.active_flows + ' live<div class="tbl-sub">' + w.flows + ' total</div></td>' +
+        '<td>' + esc(w.plan) + '</td></tr>';
+    }).join("");
+  }
+  document.addEventListener("click", function (ev) {
+    if (ev.target.closest("#btnConnRefresh")) load();
+    var nav = ev.target.closest('[data-view="connections"]');
+    if (nav) setTimeout(load, 60);
+  });
+  document.addEventListener("DOMContentLoaded", function () {
+    if (location.hash === "#connections") setTimeout(load, 200);
+  });
+})();

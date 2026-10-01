@@ -13,17 +13,6 @@
 <body>
 
   <!-- Top Notification Ribbon (1:1 with Reference Design) -->
-  <div class="top-upgrade-ribbon" id="topUpgradeRibbon">
-    <div class="ribbon-left">
-      <div class="ribbon-sparkle-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-      <span>Flat pricing &mdash; a viral reel never changes your bill</span>
-    </div>
-    <div class="ribbon-right">
-      <button class="btn-ribbon-trial" id="btnRibbonTrial">See plans</button>
-      <a href="#" class="link-ribbon-pricing" id="linkRibbonPricing">View pricing</a>
-      <button class="btn-ribbon-close" id="btnRibbonClose" aria-label="Dismiss">&times;</button>
-    </div>
-  </div>
 
   <!-- Mobile Top Bar -->
   <header class="mobile-header">
@@ -63,45 +52,33 @@
         <!-- Navigation Menu Items -->
         <nav class="sidebar-nav">
           <div class="nav-group">
-            <div class="nav-group-label">Run</div>
+            <div class="nav-group-label">Your account</div>
             <a href="#home" class="nav-item active" data-view="view-home">
             <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
             <span>Home</span>
-          </a>
-            <a href="#automations" class="nav-item" data-view="view-automations">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
-            <span>Automation</span>
-          </a>
-            <a href="#inbox" class="nav-item" data-view="view-inbox">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-            <span>Inbox</span>
-          </a>
+            </a>
           </div>
           <div class="nav-group">
-            <div class="nav-group-label">Grow</div>
-            <a href="#broadcast" class="nav-item" data-view="view-broadcast">
-            <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a4 4 0 0 1 0 7"/><path d="M19 5.5a8 8 0 0 1 0 13"/></svg></span>
-            <span>Broadcast</span>
-          </a>
+            <div class="nav-group-label">What it produced</div>
             <a href="#contacts" class="nav-item" data-view="view-contacts">
             <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-            <span>Contacts</span>
-          </a>
+            <span>People</span>
+            </a>
             <a href="#analytics" class="nav-item" data-view="view-analytics">
             <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M7 20V10M12 20V4M17 20v-7"/></svg></span>
-            <span>Analytics</span>
-          </a>
+            <span>Results</span>
+            </a>
           </div>
           <div class="nav-group">
             <div class="nav-group-label">Account</div>
             <a href="#billing" class="nav-item" data-view="view-billing">
             <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg></span>
-            <span>Plan &amp; billing</span>
-          </a>
+            <span>Plan</span>
+            </a>
             <a href="#settings" class="nav-item" data-view="view-settings">
             <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
             <span>Settings</span>
-          </a>
+            </a>
           </div>
         </nav>
       </div>
@@ -116,7 +93,7 @@
 
         <a href="#profile" class="sidebar-footer-link" id="linkUserProfile">
           <div class="user-avatar-mini">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60" alt="Profile" class="avatar-img-circle">
+            <span class="avatar-initials" id="navAvatarInitials">—</span>
           </div>
           <span>My Profile</span>
         </a>
@@ -148,128 +125,122 @@
       <!-- ====================================================================
            VIEW 0: HOME (1:1 with User Screenshot)
            ==================================================================== -->
-      <section class="content-view active" id="view-home">
-        <div class="view-top-header" style="margin-bottom: 20px;">
-          <h1 class="view-page-title" style="font-size: 24px;">Home</h1>
-        </div>
+      <section class="view-section active" id="view-home">
 
-        <!-- Announcement Banner -->
-        <div class="promo-banner" id="promoBanner">
-          <div class="promo-banner-left">
-            <div class="promo-logo-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.34 6.34 0 0 0 1.87-4.49V8.62a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.87-.05z"/></svg>
+        <!-- ================= STATE A: no Instagram account yet =================
+             One card. One button. Nothing else on the screen, because nothing
+             else works until this is done. -->
+        <div id="igConnectGate" class="ig-gate" hidden>
+          <div class="ig-gate-card">
+            <div class="ig-gate-mark">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.2" fill="currentColor" stroke="none"/>
+              </svg>
             </div>
-            <div class="promo-text">
-              <div class="promo-title">TikTok &times; ConverFlow. Now we're talking</div>
-              <div class="promo-subtitle">Discover new opportunities for your audience in TikTok &amp; Instagram</div>
-            </div>
-          </div>
-          <div class="promo-banner-right">
-            <button class="btn-promo-discover" id="btnPromoDiscover">Discover &rarr;</button>
-            <button class="btn-promo-close" id="btnPromoClose" aria-label="Dismiss">&times;</button>
-          </div>
-        </div>
-
-        <!-- Greeting Section -->
-        <div class="home-greeting-section">
-          <h1 class="greeting-heading">Hello, Umang!</h1>
-          <div class="greeting-sub">
-            <span>1 connected channel</span>
-            <span class="dot-sep">&middot;</span>
-            <a href="#settings" class="link-see-insights" data-view="view-settings">See Insights</a>
+            <h1>Connect your Instagram</h1>
+            <p>ConverFlow reads the comments on your posts and sends the DM for you.
+               To do that it needs permission from your account — one click, no password given to us.</p>
+            <button class="btn btn-primary btn-lg" id="btnIgConnect">Connect Instagram</button>
+            <div class="ig-gate-note" id="igGateNote"></div>
+            <ul class="ig-gate-facts">
+              <li>Your account must be a <b>Business</b> or <b>Creator</b> account — Instagram blocks automated DMs on personal accounts.</li>
+              <li>We never see or store your password. Instagram gives us a token you can revoke any time.</li>
+              <li>You can disconnect from Settings and everything stops immediately.</li>
+            </ul>
           </div>
         </div>
 
-        <!-- Start Here Section -->
-        <div class="start-here-section">
+        <!-- ================= STATE B: connected ================= -->
+        <div id="igWorkspace" hidden>
 
-        <!-- Answer strip — what happened, what it earned, what needs you.
-             Rivals open on a template gallery; a returning user wants the result. -->
-        <div class="cf-answer">
-          <div class="cf-headline">
-            <span class="cf-eyebrow">Since you last looked</span>
-            <h2 id="cfHeadline">Loading your numbers…</h2>
-            <p id="cfHeadlineSub">Pulling contacts, DMs and automation health.</p>
-            <div class="cf-headline-actions">
-              <a href="#analytics" class="btn btn-white btn-sm" data-view="view-analytics">See the funnel</a>
-              <a href="#automations" class="btn btn-outline-light btn-sm" data-view="view-automations">Automations</a>
+          <div class="ig-profile">
+            <img id="igAvatar" class="ig-avatar" alt="" referrerpolicy="no-referrer">
+            <div class="ig-profile-meta">
+              <div class="ig-handle" id="igHandle">—</div>
+              <div class="ig-profile-sub" id="igProfileSub">—</div>
+            </div>
+            <div class="ig-profile-actions">
+              <button class="btn btn-secondary btn-sm" id="btnIgRefresh">Refresh</button>
             </div>
           </div>
-          <div class="cf-todo">
-            <h3>What needs you</h3>
-            <div id="cfHealthList"></div>
-          </div>
-        </div>
 
-        <div id="cfHomeSafety" style="margin-bottom:20px"></div>
-
-          <div class="home-section-head section-title-row">
-            <h2>Start here</h2>
-            <a href="#automations" class="link-explore-templates" data-view="view-automations">Browse all templates &rarr;</a>
+          <div class="ig-tiles">
+            <div class="ig-tile"><span class="ig-tile-label">Live flows</span><b id="tileFlows">—</b><span class="ig-tile-sub" id="tileFlowsSub">&nbsp;</span></div>
+            <div class="ig-tile"><span class="ig-tile-label">DMs sent this month</span><b id="tileDms">—</b><span class="ig-tile-sub" id="tileDmsSub">&nbsp;</span></div>
+            <div class="ig-tile"><span class="ig-tile-label">People captured</span><b id="tilePeople">—</b><span class="ig-tile-sub" id="tilePeopleSub">&nbsp;</span></div>
           </div>
 
-          <div class="start-here-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
-            <div class="template-card start-card" id="cardHomeAutoDm">
-              <div class="template-title">Auto-DM links from comments</div>
-              <p class="template-desc">Someone comments your keyword, they get the link in their DMs within seconds.</p>
-              <div class="template-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Ready in about a minute
-                <span class="badge-popular">Popular</span>
-              </div>
+          <div class="sec-head">
+            <div>
+              <h2>Your posts</h2>
+              <p class="sec-sub">Tap a post to set up the DM it should send.</p>
             </div>
-            <div class="template-card start-card" id="cardHomeStories">
-              <div class="template-title">Generate leads with stories</div>
-              <p class="template-desc">Turn story replies and mentions into tagged contacts in your CRM.</p>
-              <div class="template-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Ready in about a minute
-                
-              </div>
-            </div>
-            <div class="template-card start-card" id="cardHomeAllDms">
-              <div class="template-title">Respond to all your DMs</div>
-              <p class="template-desc">Answer the questions you get every day &mdash; price, size, shipping &mdash; automatically.</p>
-              <div class="template-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Ready in about a minute
-                
-              </div>
-            </div>
+            <button class="btn btn-secondary btn-sm" id="btnMediaRefresh">Reload posts</button>
           </div>
-        </div>
+          <div id="igMediaState" class="ig-state" hidden></div>
+          <div class="ig-grid" id="igMediaGrid"></div>
 
-        <!-- Next best moves — was a narrow card stranded on a wide row. -->
-        <div class="next-moves-section">
-          <div class="home-section-head">
-            <h2>Your next best moves</h2>
-          </div>
-          <div class="next-moves">
-            <div class="next-moves-head">
-              <div>
-                <span class="eyebrow">First steps</span>
-                <h3>You're nailing it — two more automations and your whole funnel runs itself.</h3>
-              </div>
-              <div class="next-moves-progress">
-                <b>1 / 3</b>
-                <span>completed</span>
-              </div>
-            </div>
-
-            <div class="next-moves-list">
-              <div class="next-move move-item clickable" id="moveAffiliateLinks">
-                <span class="tick circle-checkbox"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-                <span class="move-item-title">Send affiliate product links</span>
-                <svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-              </div>
-              <div class="next-move move-item clickable" id="moveGrowFollowers">
-                <span class="tick circle-checkbox"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-                <span class="move-item-title">Grow followers from comments</span>
-                <svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-              </div>
-              <div class="next-move done move-item completed" id="moveDefaultReply">
-                <span class="tick circle-checkbox checked"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-                <span class="move-item-title">Set up a default reply</span>
-                <svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-              </div>
+          <div class="sec-head" style="margin-top:34px">
+            <div>
+              <h2>Your flows</h2>
+              <p class="sec-sub">Every automation that is watching a post right now.</p>
             </div>
           </div>
+          <div id="igFlowList" class="flow-list"></div>
         </div>
       </section>
+
+      <!-- ================= The composer: one post, one keyword, one DM ======= -->
+      <div class="cfx-scrim" id="flowComposer" hidden>
+        <div class="cfx-panel" role="dialog" aria-modal="true" aria-labelledby="fcTitle">
+          <div class="cfx-head">
+            <div>
+              <div class="cfx-eyebrow">Set up a DM</div>
+              <h3 id="fcTitle">On this post</h3>
+            </div>
+            <button class="cfx-close" id="fcClose" aria-label="Close">&times;</button>
+          </div>
+
+          <div class="cfx-body">
+            <div class="cfx-post">
+              <img id="fcThumb" alt="" referrerpolicy="no-referrer">
+              <div>
+                <span class="cfx-kind" id="fcKind">post</span>
+                <p id="fcCaption">—</p>
+                <a id="fcLink" href="#" target="_blank" rel="noopener">View on Instagram &rarr;</a>
+              </div>
+            </div>
+
+            <label class="cfx-label" for="fcKeyword">1 &middot; When someone comments</label>
+            <input class="cfx-input" id="fcKeyword" placeholder="PRICE" autocomplete="off">
+            <div class="cfx-hint">
+              One word people can remember. Separate a few with commas if you want.
+              <label class="cfx-check"><input type="checkbox" id="fcAny"> Reply to <b>every</b> comment instead</label>
+            </div>
+
+            <label class="cfx-label" for="fcDm">2 &middot; Send them this DM</label>
+            <textarea class="cfx-input" id="fcDm" rows="4" placeholder="Hey {name}! Here's the link you asked for 👇"></textarea>
+            <div class="cfx-hint"><code>{name}</code> becomes their Instagram name. Write <code>{Hi|Hey|Hello}</code> to vary the opening — Instagram is friendlier to messages that are not identical.</div>
+
+            <label class="cfx-label" for="fcUrl">3 &middot; Link to send <span class="cfx-optional">optional</span></label>
+            <input class="cfx-input" id="fcUrl" placeholder="https://yourstore.com/offer" autocomplete="off">
+
+            <details class="cfx-more">
+              <summary>Also reply under the comment</summary>
+              <input class="cfx-input" id="fcReply" placeholder="Sent you a DM! 📩" autocomplete="off">
+              <div class="cfx-hint">A public reply tells everyone else the same thing is available to them.</div>
+            </details>
+
+            <div class="cfx-error" id="fcError" hidden></div>
+          </div>
+
+          <div class="cfx-foot">
+            <button class="btn btn-secondary" id="fcCancel">Cancel</button>
+            <button class="btn btn-primary" id="fcSave">Turn it on</button>
+          </div>
+        </div>
+      </div>
+
 
       <!-- ====================================================================
            VIEW 1: CONTACTS & CRM (Redesigned with White Theme)
@@ -370,608 +341,28 @@
       <!-- ====================================================================
            VIEW 2: AUTOMATIONS (Redesigned with White Theme)
            ==================================================================== -->
-      <section class="content-view" id="view-automations">
-        <div class="page-top-action-bar">
-          <div>
-            <h1 class="view-page-title">Automations</h1>
-            <p class="view-page-desc">Create Comment-to-DM flows, story mention replies, and keyword auto-responders.</p>
-          </div>
-          <div class="action-bar-buttons">
-            <div class="watcher-status-pill" id="watcherPill">
-              <span class="status-indicator yellow" id="watcherDot"></span>
-              <span id="watcherText">Watcher: Inactive</span>
-            </div>
-            <button class="btn btn-secondary btn-sm" id="btnToggleWatcher">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Live Watcher
-            </button>
-            <button class="btn btn-primary btn-sm" id="btnNewAutomation">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> New Automation
-            </button>
-          </div>
-        </div>
-
-        <!-- 4 KPI cards. Every number here comes from the API. If we cannot
-             measure something we say so rather than printing a flattering guess. -->
-        <div class="stats-summary-grid">
-          <div class="stat-card">
-            <span class="stat-label">Live automations</span>
-            <div class="stat-num-row">
-              <span class="stat-number" id="kpiActiveFlows">—</span>
-              <span class="stat-growth-pill" id="kpiActiveFlowsPill">&nbsp;</span>
-            </div>
-            <span class="stat-sub" id="kpiActiveFlowsSub">Running right now</span>
-          </div>
-
-          <div class="stat-card">
-            <span class="stat-label">DMs sent</span>
-            <div class="stat-num-row">
-              <span class="stat-number" id="kpiDmsSent">—</span>
-              <span class="stat-growth-pill" id="kpiDmsPill">&nbsp;</span>
-            </div>
-            <span class="stat-sub" id="kpiDmsSub">This month, against your plan</span>
-          </div>
-
-          <div class="stat-card">
-            <span class="stat-label">People who replied</span>
-            <div class="stat-num-row">
-              <span class="stat-number" id="kpiReplied">—</span>
-              <span class="stat-growth-pill" id="kpiRepliedPill">&nbsp;</span>
-            </div>
-            <span class="stat-sub" id="kpiRepliedSub">Of everyone your keywords caught</span>
-          </div>
-
-          <div class="stat-card">
-            <span class="stat-label">Clicked your link</span>
-            <div class="stat-num-row">
-              <span class="stat-number" id="kpiClicked">—</span>
-              <span class="stat-growth-pill" id="kpiClickedPill">&nbsp;</span>
-            </div>
-            <span class="stat-sub" id="kpiClickedSub">Tag a contact "Link Requested" to count it</span>
-          </div>
-        </div>
-
-        <!-- Popular First Move Cards -->
-        <div class="first-move-section">
-          <span class="first-move-intro">CREATOR STARTER TEMPLATES</span>
-          <h2>Let's start! Pick a popular first move:</h2>
-          <div class="first-move-grid">
-            <div class="first-move-card" id="cardStartCgt">
-              <span class="first-move-tag">Loved by Creators</span>
-              <h3>Send a DM with your link every time someone comments on your post</h3>
-              <div class="first-move-preview">
-                <div class="mock-flow-bubble">
-                  <span>link pls!</span>
-                  <div class="mock-flow-reply">Here it is <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="6" x2="12" y2="18"/></svg><br><span class="mock-link-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link</span></div>
-                </div>
-              </div>
-              <button class="btn btn-primary btn-full btn-sm" id="btnStartCgt">Send A Link From Comments</button>
-            </div>
-
-            <div class="first-move-card" id="cardStartDm">
-              <span class="first-move-tag">Boosts engagement</span>
-              <h3>Send customized replies when people DM you specific keywords</h3>
-              <div class="first-move-preview">
-                <div class="mock-flow-bubble">
-                  <span class="mock-kw-badge">INFO</span>
-                  <div class="mock-flow-reply">Here you go<br><span class="mock-link-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link 1</span> <span class="mock-link-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link 2</span></div>
-                </div>
-              </div>
-              <button class="btn btn-secondary btn-full btn-sm" id="btnStartDmFlow">Respond To All Your DMs</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Filter Ribbon -->
-        <div class="filter-ribbon">
-          <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="all">All Flows</button>
-            <button class="filter-tab" data-filter="comment_to_dm">Comment-to-DM (Growth)</button>
-            <button class="filter-tab" data-filter="dm_keyword">DM Keywords</button>
-            <button class="filter-tab" data-filter="story_mention">Story Mentions</button>
-          </div>
-          <div class="quick-stats-pill">
-            <span>Active Reels: <strong id="activeRulesCount">1</strong> / <span id="maxAllowedReelsText">1</span></span>
-          </div>
-        </div>
-
-        <!-- Automation Flow Cards Grid -->
-        <div class="automations-grid" id="automationsGrid">
-          <!-- Dynamically populated Flow Cards -->
-        </div>
-      </section>
+      
 
       <!-- ====================================================================
            VIEW 3: AI ASSIST & FLOW GENERATOR (ConverFlow AI Engine)
            ==================================================================== -->
-      <section class="content-view" id="view-ai">
-        <div class="page-top-action-bar">
-          <div>
-            <h1 class="view-page-title">AI Assist &amp; Flow Generator</h1>
-            <p class="view-page-desc">Generate high-converting comment triggers, spintax DM copy, and viral reel hooks in seconds using AI.</p>
-          </div>
-          <div class="action-bar-buttons">
-            <button class="btn btn-primary btn-sm" id="btnApplyAiToWizard">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Open 4-Step Builder
-            </button>
-          </div>
-        </div>
-
-        <div class="ai-workbench-grid">
-          <!-- Left Column: Flow Generator Tool -->
-          <div class="ai-panel-card">
-            <div class="ai-panel-header">
-              <div class="ai-tool-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg> AI COPYWRITER</div>
-              <h3>1-Click Comment-to-DM Flow Builder</h3>
-              <p>Type your offer or reel concept. ConverFlow AI writes the full multi-step conversation.</p>
-            </div>
-
-            <div class="ai-panel-body">
-              <div class="input-group">
-                <label>What are you giving away or selling?</label>
-                <input type="text" id="aiInputOffer" placeholder="e.g. Free 10-Step Website Checklist for Freelancers" value="Free 50 Canva Templates for Instagram Growth">
-              </div>
-
-              <div class="input-group-row">
-                <div class="input-group" style="flex: 1;">
-                  <label>Brand Tone:</label>
-                  <select id="aiToneSelect" class="form-select">
-                    <option value="creator">Creator & Friendly</option>
-                    <option value="hype">High Energy & Urgency</option>
-                    <option value="authority">Professional & Authority</option>
-                    <option value="minimal">Minimal & Direct</option>
-                  </select>
-                </div>
-                <div class="input-group" style="flex: 1;">
-                  <label>Destination Link:</label>
-                  <input type="text" id="aiInputLink" placeholder="https://..." value="https://satnamwebservices.com/canva-pack">
-                </div>
-              </div>
-
-              <button class="btn btn-primary btn-full" id="btnGenerateAiFlow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Generate Complete Flow with AI
-              </button>
-
-              <!-- AI Results Box -->
-              <div class="ai-generated-box" id="aiGeneratedBox">
-                <div class="ai-result-label">GENERATED FLOW BLUEPRINT</div>
-                
-                <div class="ai-field-block">
-                  <span class="ai-sub-label">Trigger Keyword:</span>
-                  <div class="ai-code-pill" id="aiResKeyword">CANVA, PACK, TEMPLATE</div>
-                </div>
-
-                <div class="ai-field-block">
-                  <span class="ai-sub-label">Public Comment Replies (3 Spintax Variations):</span>
-                  <ul class="ai-spintax-list" id="aiResReplies">
-                    <li>1. Just sent you the Canva templates in DMs! Check your message requests</li>
-                    <li>2. Sent! Enjoy the templates, let me know how your reels perform</li>
-                    <li>3. Check your messages! The Canva pack link is waiting for you</li>
-                  </ul>
-                </div>
-
-                <div class="ai-field-block">
-                  <span class="ai-sub-label">Opening DM Copy:</span>
-                  <div class="ai-quote-box" id="aiResOpeningDm">
-                    Hey there! Thanks so much for stopping by my reel<br><br>Click the button below and I'll send you the 50 free Canva templates right away!
-                  </div>
-                </div>
-
-                <div class="ai-field-block">
-                  <span class="ai-sub-label">Interactive DM Button Text:</span>
-                  <div class="ai-button-mock" id="aiResButton">Send me the templates</div>
-                </div>
-
-                <div class="ai-action-footer">
-                  <button class="btn btn-green btn-sm" id="btnPushToBuilder">
-                    ✓ Use in 4-Step Builder Wizard
-                  </button>
-                  <button class="btn btn-secondary btn-sm" id="btnCopyAiJson">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Text
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column: Viral Reel Hook Generator -->
-          <div class="ai-panel-card">
-            <div class="ai-panel-header">
-              <div class="ai-tool-badge" style="background: #f1f1f3; color: #3a3a41;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> HOOK ENGINE</div>
-              <h3>Viral Reel Hooks &amp; CTAs</h3>
-              <p>Hooks designed specifically to drive high comment velocity so your reel goes viral.</p>
-            </div>
-
-            <div class="ai-panel-body">
-              <div class="input-group">
-                <label>Reel Topic / Niche:</label>
-                <input type="text" id="aiInputNiche" placeholder="e.g. Website conversion tips, fitness, real estate" value="Website Design &amp; Client Acquisition">
-              </div>
-
-              <button class="btn btn-secondary btn-full" id="btnGenerateHooks">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate 3 Viral Hooks
-              </button>
-
-              <div class="hooks-list-wrap" id="hooksListWrap">
-                <div class="hook-card">
-                  <span class="hook-number">01</span>
-                  <div class="hook-text">
-                    <strong>"Most founders make this 1 web mistake that kills 80% of sales..."</strong>
-                    <p class="hook-cta">CTA: <em>"Comment <strong>'AUDIT'</strong> and I'll DM you the free 5-point checklist."</em></p>
-                  </div>
-                </div>
-
-                <div class="hook-card">
-                  <span class="hook-number">02</span>
-                  <div class="hook-text">
-                    <strong>"I tested 40 landing pages in 60 days. Here is the only structure that converted:"</strong>
-                    <p class="hook-cta">CTA: <em>"Comment <strong>'WIREFRAME'</strong> to get my Figma layout link in DMs."</em></p>
-                  </div>
-                </div>
-
-                <div class="hook-card">
-                  <span class="hook-number">03</span>
-                  <div class="hook-text">
-                    <strong>"Stop paying ₹50,000 for complex agency websites. Do this instead:"</strong>
-                    <p class="hook-cta">CTA: <em>"Comment <strong>'BLUEPRINT'</strong> and I'll send you the exact guide."</em></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       <!-- ====================================================================
            VIEW 4: LIVE DM INBOX (3-Column Direct Message Manager)
            ==================================================================== -->
-      <section class="content-view" id="view-inbox">
-        <div class="page-top-action-bar" style="margin-bottom: 16px;">
-          <div>
-            <h1 class="view-page-title">Instagram DM Inbox</h1>
-            <p class="view-page-desc">Manage live 1-on-1 Instagram conversations, comment triggers, and human agent takeover.</p>
-          </div>
-          <div class="action-bar-buttons">
-            <span class="badge badge-connected">● Live Sync Active</span>
-          </div>
-        </div>
-
-        <div class="inbox-layout-container">
-          <!-- Col 1: Threads List -->
-          <div class="inbox-thread-pane">
-            <div class="inbox-thread-search">
-              <input type="text" id="inboxSearchInput" placeholder="Search conversations...">
-            </div>
-            <div class="inbox-thread-list" id="inboxThreadList">
-              <div class="inbox-thread-item active" data-user="sarah_growth">
-                <div class="thread-avatar">SG</div>
-                <div class="thread-meta">
-                  <div class="thread-top">
-                    <span class="thread-handle">@sarah_growth</span>
-                    <span class="thread-time">2m</span>
-                  </div>
-                  <p class="thread-snippet">Clicked 'Send me the link'</p>
-                </div>
-                <span class="unread-dot"></span>
-              </div>
-
-              <div class="inbox-thread-item" data-user="rahul_marketing">
-                <div class="thread-avatar" style="background: #232329;">RM</div>
-                <div class="thread-meta">
-                  <div class="thread-top">
-                    <span class="thread-handle">@rahul_marketing</span>
-                    <span class="thread-time">14m</span>
-                  </div>
-                  <p class="thread-snippet">Thanks for the link! Looking at the offer.</p>
-                </div>
-              </div>
-
-              <div class="inbox-thread-item" data-user="mike_dev">
-                <div class="thread-avatar" style="background: #3a3a41;">MD</div>
-                <div class="thread-meta">
-                  <div class="thread-top">
-                    <span class="thread-handle">@mike_dev</span>
-                    <span class="thread-time">1h</span>
-                  </div>
-                  <p class="thread-snippet">Does this include the source code?</p>
-                </div>
-              </div>
-
-              <div class="inbox-thread-item" data-user="clara_design">
-                <div class="thread-avatar" style="background: #3a3a41;">CD</div>
-                <div class="thread-meta">
-                  <div class="thread-top">
-                    <span class="thread-handle">@clara_design</span>
-                    <span class="thread-time">3h</span>
-                  </div>
-                  <p class="thread-snippet">Commented on Reel: "link"</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Col 2: Active Chat Pane -->
-          <div class="inbox-chat-pane">
-            <div class="inbox-chat-header">
-              <div class="chat-header-user">
-                <div class="thread-avatar-sm" id="inboxHeaderAvatar">SG</div>
-                <div>
-                  <strong class="chat-header-name" id="inboxHeaderName">@sarah_growth</strong>
-                  <span class="chat-header-status">● Active now &middot; Follows you</span>
-                </div>
-              </div>
-              <div class="chat-header-actions">
-                <button class="btn btn-secondary btn-xs" id="btnToggleBotHandled"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg> Bot Mode: Active</button>
-              </div>
-            </div>
-
-            <div class="inbox-messages-scroll" id="inboxMessagesScroll">
-              <div class="chat-divider"><span>TODAY</span></div>
-              
-              <div class="inbox-msg-row incoming">
-                <div class="inbox-bubble incoming">
-                  Commented on your Reel: <strong>"link pls!"</strong>
-                </div>
-              </div>
-
-              <div class="inbox-msg-row outgoing">
-                <div class="inbox-bubble outgoing">
-                  Hey there! I'm so happy you're here, thanks so much for your interest.<br><br>Click below and I'll send you the link in just a sec.
-                  <div class="inbox-bubble-button">Send me the link</div>
-                </div>
-              </div>
-
-              <div class="inbox-msg-row incoming">
-                <div class="inbox-bubble incoming button-click-bubble">
-                  Clicked <strong>"Send me the link"</strong>
-                </div>
-              </div>
-
-              <div class="inbox-msg-row outgoing">
-                <div class="inbox-bubble outgoing">
-                  Here is your link<br>
-                  <a href="#" class="inbox-link-card"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> https://satnamwebservices.com/offer</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="inbox-composer-area">
-              <div class="quick-snippets-bar">
-                <button class="snippet-btn" data-snippet="Here is the link: https://satnamwebservices.com/offer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Offer Link</button>
-                <button class="snippet-btn" data-snippet="Thanks for reaching out! Let me know if you need help."><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Thanks</button>
-                <button class="snippet-btn" data-snippet="Happy to share our pricing — let me send you the plan that fits."><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pricing</button>
-              </div>
-              <div class="composer-input-row">
-                <input type="text" id="inboxInputMessage" placeholder="Type a message to @sarah_growth...">
-                <button class="btn btn-primary btn-sm" id="btnSendInboxMessage">Send</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Col 3: Lead Profile Inspector -->
-          <div class="inbox-inspector-pane">
-            <div class="inspector-profile-header">
-              <div class="inspector-avatar">SG</div>
-              <h3 id="inspectorHandle">@sarah_growth</h3>
-              <span class="inspector-role">Sarah Jenkins</span>
-            </div>
-
-            <div class="inspector-detail-section">
-              <span class="inspector-label">LEAD STATUS</span>
-              <div class="inspector-pill-row">
-                <span class="badge-plan-free" style="background:#eeeef0; color:#1c1c20;">Hot Lead</span>
-                <span class="badge-plan-free">VIP</span>
-              </div>
-            </div>
-
-            <div class="inspector-detail-section">
-              <span class="inspector-label">TRIGGER SOURCE</span>
-              <p class="inspector-val">Reel #1: Growth Tips 2026</p>
-            </div>
-
-            <div class="inspector-detail-section">
-              <span class="inspector-label">ENGAGEMENT STATS</span>
-              <div class="inspector-stat-grid">
-                <div>
-                  <strong id="inspectorMsgCount">3</strong>
-                  <small>Messages</small>
-                </div>
-                <div>
-                  <strong>1</strong>
-                  <small>Link Taps</small>
-                </div>
-                <div>
-                  <strong>100%</strong>
-                  <small>Delivery</small>
-                </div>
-              </div>
-            </div>
-
-            <div class="inspector-detail-section">
-              <span class="inspector-label">QUICK NOTES</span>
-              <textarea class="inspector-notes" placeholder="Add private note about this lead...">Requested offer link on Friday. Interested in custom website design.</textarea>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       <!-- ====================================================================
            VIEW 5: FLOW TESTER / SIMULATOR (Clean White Design)
            ==================================================================== -->
-      <section class="content-view" id="view-simulator">
-        <div class="page-top-action-bar">
-          <div>
-            <h1 class="view-page-title">Chatbot Flow Tester</h1>
-            <p class="view-page-desc">Test your ConverFlow triggers in real-time on an interactive smartphone simulator.</p>
-          </div>
-          <div class="action-bar-buttons">
-            <button class="btn btn-secondary btn-sm" id="btnClearSimChat">Clear Chat</button>
-          </div>
-        </div>
-
-        <div class="simulator-layout">
-          <!-- Left: Controls -->
-          <div class="simulator-controls panel-card">
-            <div class="panel-header">
-              <div class="panel-title">
-                <h2>Simulator Controls</h2>
-              </div>
-            </div>
-            <div class="panel-body">
-              <div class="input-group">
-                <label>Test As Interaction Type:</label>
-                <div class="segmented-control">
-                  <button class="segment-btn active" data-sim-channel="comment"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comment on Reel</button>
-                  <button class="segment-btn" data-sim-channel="dm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Direct Message</button>
-                </div>
-              </div>
-
-              <div class="input-group">
-                <label>Test Follower Handle:</label>
-                <input type="text" id="simUsername" value="alex_growth" placeholder="Username">
-              </div>
-
-              <div class="quick-keywords-box">
-                <label>Quick Trigger Tests:</label>
-                <div class="quick-chips">
-                  <button class="chip sim-chip" data-test="link">"link"</button>
-                  <button class="chip sim-chip" data-test="guide">"guide"</button>
-                  <button class="chip sim-chip" data-test="price">"price"</button>
-                  <button class="chip sim-chip" data-test="canva">"canva"</button>
-                </div>
-              </div>
-
-              <div class="helper-banner">
-                <span class="helper-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-                <div class="helper-text">
-                  Testing triggers automatically logs simulated contacts into your <strong>Contacts &amp; CRM</strong> tab!
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: Interactive Mobile Mockup -->
-          <div class="simulator-device-wrapper">
-            <div class="phone-mockup">
-              <div class="phone-notch">
-                <div class="camera"></div>
-                <div class="speaker"></div>
-              </div>
-
-              <div class="phone-header">
-                <div class="phone-back">&larr;</div>
-                <div class="phone-user-info">
-                  <div class="phone-avatar">IG</div>
-                  <div>
-                    <span class="phone-title" id="phoneBrandName">satnamwebservices</span>
-                    <span class="phone-active">Active now</span>
-                  </div>
-                </div>
-                <div class="phone-icons">⋯</div>
-              </div>
-
-              <div class="phone-chat-body" id="phoneChatBody">
-                <div class="chat-date">TODAY</div>
-                <div class="chat-bubble bot-bubble">
-                  <p>Hey! Type a keyword like <strong>"link"</strong>, <strong>"canva"</strong>, or <strong>"price"</strong> to test your automated reply &amp; link!</p>
-                </div>
-              </div>
-
-              <div class="phone-input-bar">
-                <input type="text" id="phoneInputText" placeholder="Message or comment..." autocomplete="off">
-                <button id="btnPhoneSend">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       <!-- ====================================================================
            VIEW 6: SETTINGS & META API (Clean White Theme)
            ==================================================================== -->
       <!-- ======================= BROADCAST ======================= -->
-      <section class="content-view" id="view-broadcast">
-        <div class="page-top-action-bar">
-          <div>
-            <h1 class="view-page-title">Broadcast</h1>
-            <p class="view-page-desc">Send a personalised DM to a list of leads, with randomised delays so your account stays safe.</p>
-          </div>
-          <div class="action-bar-buttons">
-            <button class="btn btn-secondary btn-sm" id="bcPause">Pause</button>
-            <button class="btn btn-primary btn-sm" id="bcStart">Start campaign</button>
-          </div>
-        </div>
-
-        <!-- Safety cockpit. LEAK 3: Instagram blocks silently at ~200/hr and
-             ~1,000/day and no rival shows the margin. This is our trust signal. -->
-        <div id="bcSafety" style="margin-bottom:18px"></div>
-
-        <div id="bcLock" class="helper-banner" style="margin-bottom:18px;display:none">
-          <span class="helper-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <span class="helper-text" id="bcLockText">Broadcast is a paid feature.</span>
-        </div>
-
-        <div class="simulator-layout">
-          <div class="simulator-controls">
-            <div class="settings-panel-card">
-              <div class="panel-header"><div class="panel-title"><h2>1 · Your lead list</h2></div></div>
-              <div class="panel-body">
-                <div class="input-group">
-                  <label>Paste handles — one per line</label>
-                  <textarea id="bcTargets" rows="5" placeholder="riya_designs&#10;urbanedge.co&#10;kraftly.in"></textarea>
-                </div>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                  <button class="btn btn-secondary btn-sm" id="bcLoadText">Load list</button>
-                  <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-                    Upload CSV<input type="file" id="bcCsv" accept=".csv" hidden>
-                  </label>
-                  <button class="btn btn-secondary btn-sm" id="bcClear">Clear</button>
-                  <span id="bcCount" class="helper-text" style="margin-left:auto"></span>
-                </div>
-              </div>
-            </div>
-
-            <div class="settings-panel-card">
-              <div class="panel-header"><div class="panel-title"><h2>2 · Your message</h2></div></div>
-              <div class="panel-body">
-                <div class="input-group">
-                  <label>Spintax template</label>
-                  <textarea id="bcTemplate" rows="4">{Hey|Hi|Hello} {first_name}! {Loved your recent post|Your feed looks great} — we help brands like yours turn Instagram comments into orders. Want the 2-minute demo?</textarea>
-                  <small style="color:var(--text-muted);font-size:.72rem">Use <code>{a|b}</code> for variations and <code>{username}</code>, <code>{first_name}</code>, <code>{name}</code> as placeholders.</small>
-                </div>
-                <button class="btn btn-secondary btn-sm" id="bcPreview">Preview 3 variations</button>
-                <div id="bcPreviewBox" class="quick-keywords-box" style="margin-top:12px"></div>
-              </div>
-            </div>
-
-            <div class="settings-panel-card">
-              <div class="panel-header"><div class="panel-title"><h2>3 · Safety</h2></div></div>
-              <div class="panel-body">
-                <div class="input-grid-2">
-                  <div class="input-group"><label>Min delay (seconds)</label><input type="number" id="bcMin" value="45"></div>
-                  <div class="input-group"><label>Max delay (seconds)</label><input type="number" id="bcMax" value="90"></div>
-                </div>
-                <div class="input-group"><label>Daily send cap</label><input type="number" id="bcCap" value="35"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-panel-card" style="position:sticky;top:24px">
-            <div class="panel-header"><div class="panel-title"><h2>Live console</h2></div></div>
-            <div class="panel-body">
-              <div class="usage-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
-                <div class="usage-tile"><div class="label">Sent</div><div class="value" id="bcSent">0</div></div>
-                <div class="usage-tile"><div class="label">Failed</div><div class="value" id="bcFailed">0</div></div>
-              </div>
-              <div id="bcLog" class="phone-chat-body" style="min-height:260px;max-height:340px;border-radius:12px;font-family:var(--font-mono);font-size:12px;gap:6px"></div>
-              <button class="btn btn-secondary btn-sm btn-block" id="bcStop" style="margin-top:12px">Stop campaign</button>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       <!-- ======================= ANALYTICS ======================= -->
       <!-- Built against COMPETITIVE_STRATEGY.md LEAK 4: the category measures the
@@ -1144,308 +535,7 @@
        MODALS: WIZARD, UPGRADE PRO, PROFILE, HELP
        ==================================================================== -->
 
-  <!-- EASY BUILDER 4-STEP WIZARD MODAL (1:1 Design) -->
-  <div class="modal-overlay wizard-overlay" id="easyBuilderWizardModal">
-    <div class="wizard-container">
-      <div class="wizard-header">
-        <div class="wizard-progress-bar">
-          <div class="progress-step active" id="progStep1"></div>
-          <div class="progress-step" id="progStep2"></div>
-          <div class="progress-step" id="progStep3"></div>
-          <div class="progress-step" id="progStep4"></div>
-        </div>
-        <button class="btn-skip" id="btnSkipWizard">Skip</button>
-      </div>
 
-      <div class="wizard-body">
-        <div class="wizard-title-block">
-          <h2 id="wizardStepTitle">First, pick a post</h2>
-          <p id="wizardStepSubtitle">Build your automation ...and see it come to life</p>
-          
-          <div class="wizard-mobile-toggle" id="wizardMobileToggle">
-            <button class="wiz-mobile-btn active" data-target="form"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Step</button>
-            <button class="wiz-mobile-btn" data-target="preview"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Live Preview</button>
-          </div>
-        </div>
-
-        <div class="wizard-split-layout">
-          <!-- LEFT FORM COLUMN -->
-          <div class="wizard-form-col">
-            <!-- STEP 1: PICK POST -->
-            <div class="wizard-step-pane active" id="stepPane1">
-              <label class="wizard-field-label">When someone comments on</label>
-              
-              <div class="wizard-radio-group">
-                <label class="wizard-radio-card active">
-                  <input type="radio" name="wizardPostScope" value="specific" checked>
-                  <div class="radio-content">
-                    <strong>a specific post or reel</strong>
-                    <div class="posts-thumbnail-grid" id="wizardPostsGrid"></div>
-                    <button class="btn-link" id="btnShowAllPosts">Show All</button>
-                  </div>
-                </label>
-
-                <label class="wizard-radio-card disabled" id="radioAnyPost">
-                  <input type="radio" name="wizardPostScope" value="any_post" disabled>
-                  <div class="radio-content">
-                    <div class="radio-title-row">
-                      <strong>any post or reel</strong>
-                      <span class="upgrade-tag">UPGRADE</span>
-                    </div>
-                    <small>Triggers on all existing and future reels</small>
-                  </div>
-                </label>
-
-                <label class="wizard-radio-card disabled" id="radioNextPost">
-                  <input type="radio" name="wizardPostScope" value="next_post" disabled>
-                  <div class="radio-content">
-                    <div class="radio-title-row">
-                      <strong>next post or reel</strong>
-                      <span class="upgrade-tag">UPGRADE</span>
-                    </div>
-                    <small>Automatically arms your upcoming reel</small>
-                  </div>
-                </label>
-              </div>
-
-              <div class="wizard-actions">
-                <div></div>
-                <button class="btn btn-primary" id="btnStep1Next">Next</button>
-              </div>
-            </div>
-
-            <!-- STEP 2: SET KEYWORD & COMMENT REPLIES -->
-            <div class="wizard-step-pane" id="stepPane2">
-              <label class="wizard-field-label">And this comment has</label>
-
-              <div class="wizard-radio-group">
-                <label class="wizard-radio-card">
-                  <input type="radio" name="wizardKwType" value="specific" id="kwTypeSpecific">
-                  <div class="radio-content">
-                    <strong>a specific word or reaction</strong>
-                    <div class="kw-input-box" id="kwInputBox" style="display: none; margin-top: 8px;">
-                      <input type="text" id="wizardKeywordsInput" value="link, send, info" placeholder="e.g. link, price, guide">
-                    </div>
-                  </div>
-                </label>
-
-                <label class="wizard-radio-card active">
-                  <input type="radio" name="wizardKwType" value="any" id="kwTypeAny" checked>
-                  <div class="radio-content">
-                    <strong>any word or reaction</strong>
-                  </div>
-                </label>
-              </div>
-
-              <div class="wizard-toggle-row">
-                <span>reply to their comments under the post</span>
-                <label class="switch-toggle">
-                  <input type="checkbox" id="toggleCommentReplies" checked>
-                  <span class="slider"></span>
-                </label>
-              </div>
-
-              <div class="comment-reply-inputs" id="commentReplyInputs">
-                <div class="reply-input-wrap">
-                  <input type="text" class="reply-var-input" id="replyVar1" value="Thanks! Please see DMs.">
-                </div>
-                <div class="reply-input-wrap">
-                  <input type="text" class="reply-var-input" id="replyVar2" value="Sent you a message! Check it out!">
-                </div>
-                <div class="reply-input-wrap">
-                  <input type="text" class="reply-var-input" id="replyVar3" value="Nice! Check your DMs!">
-                </div>
-              </div>
-
-              <div class="wizard-actions">
-                <button class="btn btn-secondary" id="btnStep2Back">Back</button>
-                <button class="btn btn-primary" id="btnStep2Next">Next</button>
-              </div>
-            </div>
-
-            <!-- STEP 3: TWEAK OPENING DM & BUTTON -->
-            <div class="wizard-step-pane" id="stepPane3">
-              <label class="wizard-field-label">They will get</label>
-
-              <div class="opening-dm-box">
-                <div class="opening-dm-label">an opening DM</div>
-                <textarea id="wizardOpeningDmText" rows="4">Hey there! I'm so happy you're here, thanks so much for your interest.
-
-Click below and I'll send you the link in just a sec.</textarea>
-                
-                <div class="button-label-group">
-                  <label>Button Text (They click this in DMs):</label>
-                  <input type="text" id="wizardButtonTextInput" value="Send me the link">
-                </div>
-                <span class="dm-why-link">ⓘ Why does an Opening DM matter?</span>
-              </div>
-
-              <div class="upgrade-toggles-box">
-                <div class="upgrade-toggle-item">
-                  <div class="toggle-desc">
-                    <span>a DM asking to follow you before they get the link</span>
-                    <span class="upgrade-tag">UPGRADE</span>
-                  </div>
-                  <label class="switch-toggle">
-                    <input type="checkbox" disabled class="trigger-upgrade-prompt">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-
-                <div class="upgrade-toggle-item">
-                  <div class="toggle-desc">
-                    <span>Ask for emails in DMs to keep in touch beyond social</span>
-                    <span class="upgrade-tag">UPGRADE</span>
-                  </div>
-                  <label class="switch-toggle">
-                    <input type="checkbox" disabled class="trigger-upgrade-prompt">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="wizard-actions">
-                <button class="btn btn-secondary" id="btnStep3Back">Back</button>
-                <button class="btn btn-primary" id="btnStep3Next">Next</button>
-              </div>
-            </div>
-
-            <!-- STEP 4: DELIVERY LINK & PUBLISH -->
-            <div class="wizard-step-pane" id="stepPane4">
-              <label class="wizard-field-label">Final Delivery</label>
-
-              <div class="input-group">
-                <label>Automation Name:</label>
-                <input type="text" id="wizardFlowName" value="Reel Link Delivery Flow">
-              </div>
-
-              <div class="input-group">
-                <label>Resource / Destination Link to Send:</label>
-                <input type="url" id="wizardFinalLink" value="https://satnamwebservices.com/offer" placeholder="https://yourwebsite.com/resource">
-              </div>
-
-              <div class="input-group">
-                <label>CRM Lead Tags:</label>
-                <input type="text" id="wizardTags" value="Reel Lead, Link Requested">
-              </div>
-
-              <div class="summary-card">
-                <strong><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Summary of ConverFlow Automation:</strong>
-                <ul>
-                  <li>When someone comments on your Reel</li>
-                  <li>Bot replies to comment publicly with 3 spintax variations</li>
-                  <li>Bot delivers opening DM + button</li>
-                  <li>Follower clicks button and receives your link instantly!</li>
-                </ul>
-              </div>
-
-              <div class="wizard-actions">
-                <button class="btn btn-secondary" id="btnStep4Back">Back</button>
-                <button class="btn btn-primary btn-lg" id="btnPublishAutomation">Publish Automation <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT LIVE PHONE PREVIEW -->
-          <div class="wizard-phone-col">
-            <span class="phone-preview-label">Preview</span>
-            <div class="wizard-phone-frame">
-              <div class="phone-notch">
-                <div class="camera"></div>
-                <div class="speaker"></div>
-              </div>
-
-              <!-- PHONE VIEW STATE 1: POST VIEW -->
-              <div class="phone-screen-state active" id="phoneStatePost">
-                <div class="ig-top-header">
-                  <span class="ig-time">11:22</span>
-                  <span class="ig-bar-title">Posts</span>
-                </div>
-                <div class="ig-post-author">
-                  <div class="ig-avatar-sm">SW</div>
-                  <div>
-                    <strong class="ig-handle-text" id="phoneHandleText">satnamwebservices</strong>
-                    <small>Original audio</small>
-                  </div>
-                </div>
-                <div class="ig-post-media">
-                  <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&q=80" id="phonePostImage" alt="Post preview">
-                </div>
-                <div class="ig-post-actions">
-                  <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b42318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 47</span>
-                  <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 2</span>
-                  <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>
-                </div>
-                <div class="ig-post-caption-box">
-                  <strong>satnamwebservices</strong> <span id="phoneCaptionText">Simple website = 20% conversion. Ek clear message, ek CTA...</span>
-                </div>
-                <div class="ig-comment-bar-mock">
-                  <input type="text" placeholder="Add a comment for satnamwebservices..." disabled>
-                </div>
-              </div>
-
-              <!-- PHONE VIEW STATE 2: COMMENTS SHEET VIEW -->
-              <div class="phone-screen-state" id="phoneStateComments">
-                <div class="ig-top-header">
-                  <span class="ig-time">11:23</span>
-                  <span class="ig-bar-title">Comments</span>
-                </div>
-                <div class="ig-post-media-mini">
-                  <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&q=80" id="phoneMiniImage">
-                </div>
-                <div class="ig-comments-sheet">
-                  <div class="comment-sheet-handle"></div>
-                  <div class="comment-row user-row">
-                    <div class="avatar-circle">U</div>
-                    <div class="comment-content">
-                      <strong>username</strong> <small>Now</small>
-                      <p>Leaves any comment</p>
-                    </div>
-                  </div>
-                  <div class="comment-row bot-row">
-                    <div class="avatar-circle bot-avatar">SW</div>
-                    <div class="comment-content">
-                      <strong id="phoneBotHandle">satnamwebservices</strong> <small>Now</small>
-                      <p id="phoneLiveCommentReply">Thanks! Please see DMs.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- PHONE VIEW STATE 3: DM VIEW -->
-              <div class="phone-screen-state" id="phoneStateDm">
-                <div class="ig-top-header">
-                  <span class="ig-time">11:23</span>
-                  <span class="ig-bar-title" id="phoneDmHandle">satnamwebservices</span>
-                </div>
-                <div class="ig-dm-thread">
-                  <div class="dm-bubble-bot">
-                    <div class="avatar-circle bot-avatar-mini">SW</div>
-                    <div class="dm-bubble-content">
-                      <p id="phoneLiveOpeningDm">Hey there! I'm so happy you're here, thanks so much for your interest.<br><br>Click below and I'll send you the link in just a sec.</p>
-                      <div class="dm-interactive-btn" id="phoneLiveButton">Send me the link</div>
-                    </div>
-                  </div>
-
-                  <div class="dm-bubble-user" id="phoneUserClickedBubble">
-                    <span id="phoneLiveUserClick">Send me the link</span>
-                  </div>
-
-                  <div class="dm-bubble-bot" id="phoneDeliveryBubble">
-                    <div class="avatar-circle bot-avatar-mini">SW</div>
-                    <div class="dm-bubble-content">
-                      <p>Here is your link</p>
-                      <a href="#" class="dm-link-card" id="phoneLiveLinkCard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Open Offer Link</a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- UPGRADE MODAL — price and benefits are filled from /api/billing/status
        so they can never drift from the plans the admin actually sells. -->
@@ -1486,7 +576,7 @@ Click below and I'll send you the link in just a sec.</textarea>
       </div>
       <div class="modal-body" style="text-align: center;">
         <div class="user-avatar-lg" style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; margin: 0 auto 12px auto; border: 3px solid #e7e7ea;">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover;">
+          
         </div>
         <h3 style="font-size: 18px; font-weight: 800; color: #000;">Umang</h3>
         <p style="color: var(--text-muted); font-size: 13px;">Satnam web services &middot; admin@satnamwebservices.com</p>
@@ -1557,17 +647,9 @@ Click below and I'll send you the link in just a sec.</textarea>
       <span class="mobile-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
       <span>Home</span>
     </a>
-    <a href="#automations" class="mobile-nav-item" data-view="view-automations">
-      <span class="mobile-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
-      <span>Flows</span>
-    </a>
-    <a href="#inbox" class="mobile-nav-item" data-view="view-inbox">
-      <span class="mobile-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-      <span>Inbox</span>
-    </a>
     <a href="#contacts" class="mobile-nav-item" data-view="view-contacts">
       <span class="mobile-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-      <span>Contacts</span>
+      <span>People</span>
     </a>
     <a href="#settings" class="mobile-nav-item" data-view="view-settings">
       <span class="mobile-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
@@ -1577,5 +659,6 @@ Click below and I'll send you the link in just a sec.</textarea>
 
   <script src="/static/js/app.js"></script>
   <script src="/static/js/converflow.js"></script>
+  <script src="/static/js/flows.js"></script>
 </body>
 </html>

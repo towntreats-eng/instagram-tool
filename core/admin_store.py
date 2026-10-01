@@ -11,6 +11,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 
+from core import store
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 ANNOUNCE_FILE = os.path.join(DATA_DIR, "announcements.json")
@@ -32,10 +34,9 @@ class AdminStore:
 
     # ------------------------------------------------------------------ io
     def _load(self, path: str, seeder) -> List[Dict[str, Any]]:
-        if os.path.exists(path):
+        if store.exists(path):
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                data = store.read(path)
                 if isinstance(data, list):
                     return data
             except Exception:
@@ -45,62 +46,22 @@ class AdminStore:
         return data
 
     def _write(self, path: str, data: List[Dict[str, Any]]) -> None:
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        os.replace(tmp, path)
+        store.write(path, data)
 
     # ---------------------------------------------------------------- seed
     def _seed_announcements(self) -> List[Dict[str, Any]]:
-        now = datetime.now()
-        return [
-            {
-                "id": f"ann_{uuid.uuid4().hex[:8]}",
-                "title": "Story-mention automations are live",
-                "body": "Trigger a DM whenever someone mentions you in their story. Find it under Automations > New rule.",
-                "audience": "all",
-                "level": "feature",
-                "published": True,
-                "created_at": (now - timedelta(days=4)).strftime(ISO),
-            },
-            {
-                "id": f"ann_{uuid.uuid4().hex[:8]}",
-                "title": "Scheduled maintenance, Sunday 2-3 AM IST",
-                "body": "Comment watchers will pause for roughly 40 minutes. Queued DMs resume automatically.",
-                "audience": "all",
-                "level": "maintenance",
-                "published": True,
-                "created_at": (now - timedelta(days=11)).strftime(ISO),
-            },
-        ]
+        """None. Announcements are written by the operator, not shipped."""
+        return []
 
     def _seed_events(self) -> List[Dict[str, Any]]:
-        now = datetime.now()
-        rows = [
-            ("SUCCESS", "campaign", "Broadcast 'Diwali Drop' finished - 142 sent, 3 failed", 1),
-            ("INFO", "watcher", "Comment watcher polled 6 reels across 4 accounts", 2),
-            ("WARN", "safety", "Daily DM cap reached for @kraftly.in - queue paused", 5),
-            ("SUCCESS", "billing", "Manual upgrade to Pro recorded for rohit@fitforge.in", 9),
-            ("ERROR", "session", "Instagram session expired for @theslowstudio - relogin required", 14),
-            ("INFO", "system", "Nightly backup of data/ completed", 20),
-            ("SUCCESS", "automation", "Comment-to-DM rule 'FREE GUIDE' delivered 38 DMs", 3),
-            ("INFO", "contacts", "27 new contacts captured from reel comments", 4),
-            ("SUCCESS", "campaign", "Broadcast 'Festive Restock' finished - 96 sent, 0 failed", 7),
-            ("INFO", "watcher", "Watcher interval adjusted to 60s for 3 accounts", 8),
-            ("SUCCESS", "billing", "Renewal recorded for riya@glowcart.in", 12),
-            ("INFO", "system", "Spintax cache warmed for 41 templates", 16),
-            ("SUCCESS", "automation", "Keyword rule 'PRICE' replied to 64 DMs", 18),
-            ("INFO", "system", "Health probe OK - API latency 82ms", 22),
-        ]
-        return [{
-            "id": f"evt_{uuid.uuid4().hex[:8]}",
-            "level": level,
-            "source": source,
-            "message": msg,
-            "created_at": (now - timedelta(hours=hrs)).strftime(ISO),
-        } for level, source, msg, hrs in rows]
+        """Nothing. The activity log shows what actually happened.
 
-    # ------------------------------------------------------- announcements
+        It used to ship fourteen invented events naming customers who did not
+        exist — "Renewal recorded for riya@glowcart.in" — so the first thing an
+        operator read in their own console was fiction.
+        """
+        return []
+
     def list_announcements(self) -> List[Dict[str, Any]]:
         return sorted(self.announcements, key=lambda a: a.get("created_at", ""), reverse=True)
 

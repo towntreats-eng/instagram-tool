@@ -14,7 +14,8 @@ browser_profile/
 
 # Temporary and scratch files
 scratch/
-data/screenshots/
+data/*
+!data/.gitkeep
 
 # Environment & Secrets
 .env
