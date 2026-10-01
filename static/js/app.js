@@ -18,11 +18,11 @@
   var contactsActiveFilter = "all";
 
   var VIEW_META = {
-    "view-home":      { title: "", sub: "" },
-    "view-contacts":  { title: "People", sub: "Everyone your automations have captured, and where they came from." },
+    "view-home": { title: "", sub: "" },
+    "view-contacts": { title: "People", sub: "Everyone your automations have captured, and where they came from." },
     "view-analytics": { title: "Results", sub: "Not how many messages went out — how many turned into something." },
-    "view-billing":   { title: "Plan & billing", sub: "What you're on, what you've used, and what upgrading unlocks." },
-    "view-settings":  { title: "Settings", sub: "Your Instagram connection and how ConverFlow signs in on your behalf." }
+    "view-billing": { title: "Plan & billing", sub: "What you're on, what you've used, and what upgrading unlocks." },
+    "view-settings": { title: "Settings", sub: "Your Instagram connection and how ConverFlow signs in on your behalf." }
   };
 
   function escapeHtml(str) {
@@ -320,11 +320,11 @@
         };
         cachedContactsList.unshift(newContact);
         filterAndRenderContacts();
-        alert(`✅ Lead @${cleanUser} added to Contacts & CRM!`);
+        alert(` Lead @${cleanUser} added to Contacts & CRM!`);
       });
     }
 
-    const tabPills = document.querySelectorAll(".contacts-table-card .tab-pill");
+    const tabPills = document.querySelectorAll(".contacts-table-card.tab-pill");
     tabPills.forEach(pill => {
       pill.addEventListener("click", () => {
         tabPills.forEach(p => p.classList.remove("active"));
@@ -337,7 +337,7 @@
 
   async function loadContacts(search = "") {
     try {
-      const url = search ? `/api/contacts?search=${encodeURIComponent(search)}` : "/api/contacts";
+      const url = search? `/api/contacts?search=${encodeURIComponent(search)}`: "/api/contacts";
       const res = await fetch(url);
       const data = await res.json();
       const serverContacts = data.contacts || [];
@@ -353,13 +353,13 @@
       filterAndRenderContacts();
     } catch (e) {
       console.error(e);
-      cachedContactsList = [];   // an error shows an empty list, never fake people
+      cachedContactsList = []; // an error shows an empty list, never fake people
       filterAndRenderContacts();
     }
   }
 
   function filterAndRenderContacts() {
-    const searchVal = contactsSearch ? contactsSearch.value.trim().toLowerCase() : "";
+    const searchVal = contactsSearch? contactsSearch.value.trim().toLowerCase(): "";
     let filtered = cachedContactsList;
 
     if (contactsActiveFilter === "reel") {
@@ -395,11 +395,11 @@
     const colors = ["#0a0a0b", "#2e2e35", "#47474f", "#62626a", "#8a8a93", "#b0b0b8"];
 
     contactsTableBody.innerHTML = filtered.map((c, idx) => {
-      const initials = (c.name ? c.name.split(" ").map(w => w[0]).join("") : c.username.slice(0, 2)).toUpperCase();
+      const initials = (c.name? c.name.split(" ").map(w => w[0]).join(""): c.username.slice(0, 2)).toUpperCase();
       const color = colors[idx % colors.length];
       const tagsHtml = (c.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join(" ");
-      const statusClass = c.status === "active" ? "active" : (c.status === "converted" ? "converted" : "followed");
-      const statusLabel = c.status ? (c.status.charAt(0).toUpperCase() + c.status.slice(1)) : "Active";
+      const statusClass = c.status === "active"? "active": (c.status === "converted"? "converted": "followed");
+      const statusLabel = c.status? (c.status.charAt(0).toUpperCase() + c.status.slice(1)): "Active";
 
       return `
         <tr>
@@ -413,7 +413,7 @@
             </div>
           </td>
           <td>
-            <span class="source-badge">📹 ${escapeHtml(c.source || 'Reel Comments')}</span>
+            <span class="source-badge"> ${escapeHtml(c.source || 'Reel Comments')}</span>
           </td>
           <td>${tagsHtml || '<span style="color:var(--text-faint);">-</span>'}</td>
           <td><small style="color:var(--text-muted);">${escapeHtml(c.last_interaction || 'Recent')}</small></td>
@@ -421,7 +421,7 @@
           <td><span class="lead-status-pill ${statusClass}">${statusLabel}</span></td>
           <td style="text-align: right;">
             <button class="btn-table-action" onclick="window.openInboxWithUser('${escapeHtml(c.username)}')">
-              💬 Chat
+               Chat
             </button>
           </td>
         </tr>
@@ -453,10 +453,10 @@
       notes: "Requested Canva offer pack. Very high intent for website design service.",
       messages: [
         { type: "divider", text: "TODAY" },
-        { type: "incoming", text: 'Commented on your Reel: <strong>"link pls! ❤️"</strong>' },
-        { type: "outgoing", text: 'Hey there! I\'m so happy you\'re here, thanks so much for your interest 😊<br><br>Click below and I\'ll send you the link in just a sec ✨', button: "Send me the link" },
+        { type: "incoming", text: 'Commented on your Reel: <strong>"link pls! "</strong>' },
+        { type: "outgoing", text: 'Hey there! I\'m so happy you\'re here, thanks so much for your interest <br><br>Click below and I\'ll send you the link in just a sec ', button: "Send me the link" },
         { type: "incoming-btn", text: 'Clicked <strong>"Send me the link"</strong>' },
-        { type: "outgoing", text: 'Here is your link 👇<br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank">🔗 https://satnamwebservices.com/offer</a>' }
+        { type: "outgoing", text: 'Here is your link <br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank"> https://satnamwebservices.com/offer</a>' }
       ]
     },
     {
@@ -475,7 +475,7 @@
       messages: [
         { type: "divider", text: "TODAY" },
         { type: "incoming", text: 'Commented on your Reel: <strong>"canva templates"</strong>' },
-        { type: "outgoing", text: 'Hey Rahul! Here is the direct link to the 50 Canva Pack for your marketing team 🚀<br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank">🔗 https://satnamwebservices.com/offer</a>' },
+        { type: "outgoing", text: 'Hey Rahul! Here is the direct link to the 50 Canva Pack for your marketing team <br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank"> https://satnamwebservices.com/offer</a>' },
         { type: "incoming", text: 'Thanks for the link! Looking at the offer now.' }
       ]
     },
@@ -495,7 +495,7 @@
       messages: [
         { type: "divider", text: "TODAY" },
         { type: "incoming", text: 'Mentioned you in a Story: <em>"Loving the automation tool!"</em>' },
-        { type: "outgoing", text: 'Hey Michael! Thanks a ton for the shoutout 🙌 Let me know if you need any assistance.' },
+        { type: "outgoing", text: 'Hey Michael! Thanks a ton for the shoutout Let me know if you need any assistance.' },
         { type: "incoming", text: 'Does this include the source code for Meta Graph API?' }
       ]
     },
@@ -515,7 +515,7 @@
       messages: [
         { type: "divider", text: "YESTERDAY" },
         { type: "incoming", text: 'Commented on Reel: <strong>"link"</strong>' },
-        { type: "outgoing", text: 'Here are the design assets & wireframe blueprint 👇<br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank">🔗 https://satnamwebservices.com/offer</a>' }
+        { type: "outgoing", text: 'Here are the design assets & wireframe blueprint <br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank"> https://satnamwebservices.com/offer</a>' }
       ]
     }
   ];
@@ -564,7 +564,7 @@
   // --- Broadcast / Outreach UI (Integrated from previous phase) ---
 
   // --- Bridges to the modules that replaced the deleted code ----------------
-  function loadAutomations() { return window.CFAccount ? window.CFAccount.reload() : Promise.resolve(); }
+  function loadAutomations() { return window.CFAccount? window.CFAccount.reload(): Promise.resolve(); }
   function refreshCampaignStatus() { return Promise.resolve(); }
   function refreshTargetsTable() { return Promise.resolve(); }
   function selectInboxThread() {}

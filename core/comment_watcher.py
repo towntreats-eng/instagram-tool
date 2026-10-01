@@ -15,7 +15,7 @@ logger = logging.getLogger("CommentWatcher")
 class CommentWatcher:
     """
     Background worker that monitors Instagram Posts/Reels for new comments,
-    matches keywords against ManyChat automation rules, posts public replies,
+    matches keywords against the automation rules, posts public replies,
     sends private DMs, and captures contacts into CRM.
     """
 
@@ -37,7 +37,7 @@ class CommentWatcher:
     def log(self, level: str, message: str):
         logger.info(f"[{level}] {message}")
         if self.campaign_manager:
-            self.campaign_manager.add_log(level, f"[ManyChat Watcher] {message}")
+            self.campaign_manager.add_log(level, f"[Watcher] {message}")
 
     def start(self, post_url: Optional[str] = None, interval: int = 60) -> bool:
         if self.status == "RUNNING":
@@ -152,7 +152,7 @@ class CommentWatcher:
                         else:
                             self.log("ERROR", f"Failed sending DM to @{username}: {res.get('error')}")
 
-                    # 2. Record lead into ManyChat Contacts CRM
+                    # 2. Record the lead in the CRM
                     self.contacts_manager.record_interaction(
                         username=username,
                         name=username,

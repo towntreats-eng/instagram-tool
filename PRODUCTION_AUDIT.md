@@ -211,3 +211,96 @@ These are platform rules, not bugs, and no amount of code removes them:
 4. Admin → Instagram API: paste the Meta **app id** and **app secret**.
 
 Until step 1, the app runs on JSON files exactly as before — nothing breaks.
+
+---
+
+# Addendum — 1 Oct 2026, evening
+
+## Instagram is live
+
+@satnamwebservices is connected on the deployed app: 301 followers, 14 posts,
+real thumbnails. Comment → DM is reading real media through the existing
+integration. The chain works end to end.
+
+## Competitor name removed from the product
+
+36 references, including:
+
+- `MANYCHAT-STYLE VISUAL AUTOMATION STUDIO` in the flow builder header
+- the `mc-` CSS prefix across **139 rules** and all the markup — now `fx-`
+- `verify_token = "manychat_secret_token_123"`, which was both a brand leak and
+  a guessable webhook secret; now `DEFAULT_VERIFY_TOKEN` from the environment
+- the GitHub README title, which is the repo's public front page
+- `"ManyChat Flow"` saved as a tag on live automation data
+
+Strategy documents still name competitors, which is correct — that is what they
+are for. Nothing a customer can see does.
+
+## Claims we removed because we cannot stand behind them
+
+| Was on screen | Why it went |
+|---|---|
+| "Official Meta Graph API v21.0 **Certified**" | Meta does not certify apps. Asserting a compliance status we were never granted is the kind of claim that costs an app its API access. |
+| "**100%** Anti-Spam Spintax Protection" | No tool can promise 100%. Spintax varies the text; Instagram still decides. |
+| "**0.5-second** automated response" | Never measured. The node now reads "Live". |
+
+Replacements say what is true: *"Built on the official Instagram Messaging API ·
+Replies in seconds · message variations so no two DMs are identical."*
+
+## The follow-gate, and the bug that would have blocked your own followers
+
+The gate was wired to `check_user_follows()`, which returns a plain **bool**.
+A bool cannot distinguish *"they do not follow"* from *"Instagram would not
+tell us"* — and those need opposite behaviour.
+
+Meta's user-profile documentation states that profile access requires consent,
+and that consent *"occurs only when a person messages the business"*. At the
+moment a **comment** webhook fires, the commenter has not messaged you yet, so
+the lookup can come back empty. Read as `False`, that **withholds the link from
+people who do follow you** — every merchant would conclude the product is
+broken.
+
+`core/follow_gate.py` makes it three states:
+
+| State | What happens |
+|---|---|
+| `FOLLOWS` | Send the real message and the link. |
+| `NOT_FOLLOWING` | Send the follow prompt, hold the link. |
+| `UNKNOWN` | Send a prompt that does **not** accuse them of not following, and let their reply open the conversation so the next pass can read the truth. |
+
+Verified: a bad token returns `unknown`, never `not_following`.
+
+`meta_api.py` was not modified — it stays the locked integration.
+
+## Two multi-tenant bugs fixed alongside it
+
+1. **The follow prompt named a hard-coded account.** `account_name = rule.get(...)
+   or "satnamwebservices"` meant another merchant's follow-gate would send
+   *their* audience to *your* Instagram. It now reads the rule owner's own handle,
+   and falls back to empty rather than to anyone else's account.
+2. **DM-keyword replies sent with no workspace token**, so they went out on
+   whichever connection the global config happened to hold. Now always the rule
+   owner's own.
+
+The four message templates shipped with that handle written into them too; they
+now carry `{handle}`, resolved to whichever account is connected.
+
+## UI
+
+- **The giant profile picture.** Two `.ig-avatar` rules existed; the second
+  dropped `flex: none`, and `img.ig-avatar` (specificity 0,1,1) beat
+  `.ig-avatar` (0,1,0) with `width: 100%` — so the avatar sized itself to the
+  whole page. One rule now, 56px, and it wins because it is last.
+- **Every node was clipped.** The canvas is a flex column in a fixed-height
+  modal, so each node shrank (`flex-shrink` defaults to 1) and `overflow: hidden`
+  sliced off the keyword chips, the gate toggle and the template row. Children
+  keep their natural height; the canvas scrolls.
+- **`&rarr;` printed literally** in three places — `textContent` does not decode
+  HTML entities. Now a real `→`.
+- **The studio was the only coloured surface left**: green, violet and blue on
+  `.is-trigger` / `.is-condition` / `.is-action` modifiers that outranked the ink
+  layer. The whole studio is monochrome now; the single red survives only on the
+  blocked branch, where "this stops here" is the meaning.
+
+Verified in a browser: zero clipped nodes, zero JS errors, and the only non-grey
+values left anywhere in `style.css` are the three danger tones.

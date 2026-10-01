@@ -6,20 +6,20 @@ import uvicorn
 
 def open_browser():
     time.sleep(1.8)
-    print("\n✨ Opening ConverFlow in your browser...")
+    print("\n Opening ConverFlow in your browser...")
     webbrowser.open("http://localhost:8000")
 
 if __name__ == "__main__":
     print("=" * 62)
-    print("  ConverFlow - Instagram Automation, CRM & Outreach Suite")
+    print(" ConverFlow - Instagram Automation, CRM & Outreach Suite")
     print("=" * 62)
-    print("  Landing page  ->  http://localhost:8000/")
-    print("  Pricing       ->  http://localhost:8000/pricing")
-    print("  Sign up       ->  http://localhost:8000/signup")
-    print("  Dashboard     ->  http://localhost:8000/app")
-    print("  Admin console ->  http://localhost:8000/admin")
+    print(" Landing page -> http://localhost:8000/")
+    print(" Pricing -> http://localhost:8000/pricing")
+    print(" Sign up -> http://localhost:8000/signup")
+    print(" Dashboard -> http://localhost:8000/app")
+    print(" Admin console -> http://localhost:8000/admin")
     print("-" * 62)
-    print("  Press Ctrl + C in this window to stop the server.")
+    print(" Press Ctrl + C in this window to stop the server.")
     print("=" * 62)
 
     # Launch browser automatically

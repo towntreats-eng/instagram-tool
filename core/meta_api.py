@@ -39,7 +39,7 @@ class MetaAPIClient:
                 "access_token": "",
                 "page_id": "",
                 "instagram_account_id": "",
-                "verify_token": "manychat_secret_token_123",
+                "verify_token": "converflow_webhook_token",
                 "connected_account_name": "",
                 "connected_account_username": ""
             }
@@ -259,7 +259,7 @@ class MetaAPIClient:
             if "error" in data:
                 # Fallback to plain text + link if rich template is not enabled for the app
                 if button_url and "attachment" in payload.get("message", {}):
-                    fallback_text = f"{message_text}\n\n👉 {button_url}"
+                    fallback_text = f"{message_text}\n\n {button_url}"
                     fb_payload = {
                         "recipient": {"id": recipient_ig_id},
                         "message": {"text": fallback_text}

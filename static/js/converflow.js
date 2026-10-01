@@ -709,7 +709,7 @@
 
   // --- connection doctor ----------------------------------------------------
   // Every step reports its own state. A failure always carries its cause and its
-  // fix, because the single loudest complaint about ManyChat is a connect button
+  // fix, because the single loudest complaint about tools in this category is a connect button
   // that does nothing and says nothing.
   async function renderDoctor() {
     var steps = $("#doctorSteps");

@@ -12,7 +12,7 @@ CONTACTS_FILE = os.path.join(BASE_DIR, "data", "contacts.json")
 
 class ContactsManager:
     """
-    ManyChat-style Contact & Lead CRM:
+    Contact and lead CRM:
     Records users who interacted via comments or DMs, their tags,
     sources, and conversation history.
     """
@@ -29,7 +29,7 @@ class ContactsManager:
 
     def _load(self) -> List[Dict[str, Any]]:
         if not store.exists(self.file_path):
-            # Seed with sample captured contacts so user immediately sees how ManyChat CRM works
+            # Seed with sample captured contacts CRM works
             seed_data = [
                 {
                     "id": 1,

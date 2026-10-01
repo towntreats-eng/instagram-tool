@@ -3,6 +3,11 @@ import json
 import asyncio
 import threading
 import contextvars
+
+# Webhook verify token fallback. The old default was a guessable literal that
+# also carried a competitor's name; the real value is set per-install in
+# Admin -> Instagram API.
+DEFAULT_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "converflow_webhook_token")
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
@@ -26,6 +31,7 @@ from core.meta_oauth import MetaOAuth
 from core.insights import Insights
 from core.razorpay_client import RazorpayClient
 from core import instagram_account
+from core import follow_gate
 from core import auth as cf_auth
 from core import db as cf_db
 from core import store as cf_store
@@ -119,7 +125,7 @@ def require_admin() -> Dict[str, Any]:
     user = signed_in_user()
     if not user:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
-    if user.get("role") != "admin":
+    if user.get("role")!= "admin":
         raise HTTPException(status_code=403, detail="This area is for administrators.")
     return user
 comment_watcher = CommentWatcher(
@@ -191,7 +197,7 @@ class MetaConfigRequest(BaseModel):
     access_token: str
     page_id: Optional[str] = ""
     instagram_account_id: Optional[str] = ""
-    verify_token: Optional[str] = "manychat_secret_token_123"
+    verify_token: Optional[str] = DEFAULT_VERIFY_TOKEN
 
 class MetaTestRequest(BaseModel):
     access_token: str
@@ -263,7 +269,7 @@ async def serve_admin():
     user = signed_in_user()
     if not user:
         return RedirectResponse("/login?next=/admin", status_code=303)
-    if user.get("role") != "admin":
+    if user.get("role")!= "admin":
         # A customer who finds the URL gets told no, not a control panel.
         return HTMLResponse(
             "<h1>403</h1><p>This area is for administrators.</p>"
@@ -423,9 +429,9 @@ async def meta_webhook_challenge(
     Handles Meta's Webhook verification handshake.
     """
     valid_tokens = {
-        meta_client.config.get("verify_token", "manychat_secret_token_123"),
+        meta_client.config.get("verify_token", DEFAULT_VERIFY_TOKEN),
         platform_settings.meta_app().get("verify_token", "converflow_webhook_token"),
-        "manychat_secret_token_123",
+        DEFAULT_VERIFY_TOKEN,
         "converflow_webhook_token"
     }
     if hub_mode == "subscribe" and hub_verify_token in valid_tokens:
@@ -460,12 +466,12 @@ async def meta_webhook_event(request: Request):
                 media_id = val.get("media", {}).get("id")
 
                 for rule in automation_engine.get_all():
-                    if not rule.get("is_active") or rule.get("type") != "comment_to_dm":
+                    if not rule.get("is_active") or rule.get("type")!= "comment_to_dm":
                         continue
 
                     # Match post_media_id if set on the rule
                     post_id = rule.get("post_media_id")
-                    if post_id and media_id and str(post_id) != str(media_id):
+                    if post_id and media_id and str(post_id)!= str(media_id):
                         continue
 
                     keywords = rule.get("trigger_keywords", ["*"])
@@ -480,29 +486,36 @@ async def meta_webhook_event(request: Request):
                             actual_reply = SpintaxEngine.spin(pub_reply)
                             meta_client.reply_to_comment(comment_id, actual_reply, access_token=user_token)
 
-                        # 2. Follow-Gate check: "agar follow nai krta to msg nai jayega aage"
+                        # 2. Follow-gate — hold the link until they follow.
+                        # Three outcomes, not two. "Instagram would not tell us"
+                        # is NOT the same as "they do not follow": reading the
+                        # first as the second blocks the account's real
+                        # followers and makes the product look broken.
                         require_follow = rule.get("require_follow", False)
-                        account_name = rule.get("connected_account_username") or "satnamwebservices"
+                        account_name = follow_gate.owner_handle(rule, rule_user)
 
                         if require_follow and user_id:
-                            is_follower = meta_client.check_user_follows(user_id, access_token=user_token)
-                            if not is_follower:
-                                # User does not follow -> STOP MAIN MESSAGE & LINK!
-                                raw_gate = rule.get("follow_prompt_msg") or (
-                                    f"Hey @{username}! 🔒 You must follow @{account_name} to unlock this link!\n\n"
-                                    f"👉 Tap the button below to follow us, then comment again or reply 'DONE' to get instant access 🎁"
-                                )
-                                gate_msg = raw_gate.replace("{name}", username).replace("{first_name}", username).replace("{username}", username)
-                                gate_msg = SpintaxEngine.spin(gate_msg)
-                                follow_url = f"https://instagram.com/{account_name}"
+                            state, why = follow_gate.status(user_id, user_token)
+                            if state!= follow_gate.FOLLOWS:
+                                known = state == follow_gate.NOT_FOLLOWING
+                                gate_msg = SpintaxEngine.spin(
+                                    follow_gate.prompt_text(rule, account_name, username, known))
                                 meta_client.send_instagram_dm(
                                     user_id,
                                     gate_msg,
-                                    f"Follow @{account_name}",
-                                    follow_url,
+                                    (f"Follow @{account_name}" if account_name else None),
+                                    (f"https://instagram.com/{account_name}" if account_name else None),
                                     access_token=user_token
                                 )
-                                campaign_manager.add_log("INFO", f"🔒 Follow-Gate: Commenter @{username} is not following. Main message withheld until they follow.")
+                                campaign_manager.add_log(
+                                    "INFO",
+                                    f"Follow-gate held the link for @{username} "
+                                    f"({'not following' if known else 'follow status unknown'} — {why})")
+                                contacts_manager.upsert_contact(
+                                    username=username, name=username,
+                                    source=f"Comment on {media_id}",
+                                    tags=["Comment Lead", "Awaiting follow"],
+                                    interaction_text=text)
                                 processed_count += 1
                                 break
 
@@ -524,7 +537,7 @@ async def meta_webhook_event(request: Request):
                             interaction_text=text
                         )
                         processed_count += 1
-                        campaign_manager.add_log("SUCCESS", f"⚡ Meta Webhook: Automated reply and DM sent to @{username} on Reel ({text})")
+                        campaign_manager.add_log("SUCCESS", f" Meta Webhook: Automated reply and DM sent to @{username} on Reel ({text})")
                         break
 
         # 2. Instagram Direct Messages (DM keyword triggers)
@@ -547,19 +560,23 @@ async def meta_webhook_event(request: Request):
                     deliv_link = rule.get("delivery_link")
                     if raw_dm:
                         dm_msg = SpintaxEngine.spin(raw_dm)
-                        meta_client.send_instagram_dm(sender_id, dm_msg, btn_text, deliv_link)
+                        # Always send on the rule owner's own connection.
+                        dm_owner = user_manager.get(rule.get("created_by", ""))
+                        dm_token = ((dm_owner or {}).get("instagram") or {}).get("access_token")
+                        meta_client.send_instagram_dm(sender_id, dm_msg, btn_text, deliv_link,
+                                                      access_token=dm_token)
                         processed_count += 1
-                        campaign_manager.add_log("SUCCESS", f"⚡ Meta Webhook: Auto DM sent to sender {sender_id} (keyword: {msg_text})")
+                        campaign_manager.add_log("SUCCESS", f" Meta Webhook: Auto DM sent to sender {sender_id} (keyword: {msg_text})")
                         break
 
     return {"status": "ok", "processed": processed_count}
 
-# --- ManyChat Wizard Publish Endpoint ---
+# --- ConverFlow Wizard Publish Endpoint ---
 
 @app.post("/api/wizard/publish")
 async def publish_wizard_automation(req: WizardPublishRequest):
     """
-    Validates Free Trial limits (max 1 active reel) and creates the ManyChat automation rule.
+    Validates Free Trial limits (max 1 active reel) and creates the ConverFlow automation rule.
     """
     require_user()
     active_count = sum(1 for r in automation_engine.get_all() if r.get("is_active") and r.get("type") == "comment_to_dm")
@@ -593,15 +610,15 @@ async def publish_wizard_automation(req: WizardPublishRequest):
         "opening_dm": req.opening_dm,
         "button_text": req.button_text,
         "delivery_link": req.delivery_link,
-        "dm_message": f"{req.opening_dm}\n\n👉 {req.delivery_link}" if req.delivery_link else req.opening_dm,
+        "dm_message": f"{req.opening_dm}\n\n {req.delivery_link}" if req.delivery_link else req.opening_dm,
         "require_follow": req.require_follow,
         "ask_email": req.ask_email,
-        "tags": req.tags or ["Reel Lead", "ManyChat Flow"],
+        "tags": req.tags or ["Reel Lead", "ConverFlow Flow"],
         "is_active": True
     }
 
     created = automation_engine.create(rule_data)
-    campaign_manager.add_log("SUCCESS", f"Published ManyChat Automation: '{req.name}' for {req.post_target}")
+    campaign_manager.add_log("SUCCESS", f"Published ConverFlow Automation: '{req.name}' for {req.post_target}")
     return {"success": True, "upgrade_required": False, "rule": created}
 
 
@@ -635,7 +652,7 @@ async def open_login():
     login_thread.start()
     return {"success": True, "message": "Browser opened for login. Complete your login in the window."}
 
-# --- ManyChat Automations Endpoints ---
+# --- ConverFlow Automations Endpoints ---
 
 @app.get("/api/automations")
 async def list_automations():
@@ -650,11 +667,11 @@ async def save_automation(req: AutomationRuleRequest):
     rule_id = data.get("id")
     if rule_id and automation_engine.get_by_id(rule_id):
         updated = automation_engine.update(rule_id, data)
-        campaign_manager.add_log("INFO", f"Updated ManyChat automation rule: '{data['name']}'")
+        campaign_manager.add_log("INFO", f"Updated ConverFlow automation rule: '{data['name']}'")
         return {"success": True, "automation": updated}
     else:
         created = automation_engine.create(data)
-        campaign_manager.add_log("SUCCESS", f"Created new ManyChat automation rule: '{data['name']}'")
+        campaign_manager.add_log("SUCCESS", f"Created new ConverFlow automation rule: '{data['name']}'")
         return {"success": True, "automation": created}
 
 @app.post("/api/automations/{rule_id}/toggle")
@@ -692,12 +709,12 @@ async def delete_automation(rule_id: str):
     campaign_manager.add_log("WARN", f"Deleted automation rule {rule_id}")
     return {"success": True}
 
-# --- ManyChat Flow Simulator Endpoint ---
+# --- ConverFlow Flow Simulator Endpoint ---
 
 @app.post("/api/simulator/send")
 async def simulate_message(req: SimulatorMessageRequest):
     """
-    Simulates ManyChat trigger matching for comments or DMs in the interactive phone preview.
+    Simulates ConverFlow trigger matching for comments or DMs in the interactive phone preview.
     """
     require_user()
     username = req.username or "alex_growth"
@@ -764,7 +781,7 @@ async def export_contacts():
     return Response(
         content=csv_data,
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="manychat_contacts.csv"'}
+        headers={"Content-Disposition": 'attachment; filename="converflow_contacts.csv"'}
     )
 
 # --- Comment Watcher Background Task ---
@@ -890,7 +907,7 @@ class MetaConnectRequest(BaseModel):
     access_token: str
     app_id: Optional[str] = None
     app_secret: Optional[str] = None
-    verify_token: Optional[str] = "manychat_secret_token_123"
+    verify_token: Optional[str] = DEFAULT_VERIFY_TOKEN
 
 
 @app.get("/api/meta/config")
@@ -905,7 +922,7 @@ async def get_meta_config():
         "connected_account_username": cfg.get("connected_account_username", ""),
         "instagram_account_id": cfg.get("instagram_account_id", ""),
         "page_id": cfg.get("page_id", ""),
-        "verify_token": cfg.get("verify_token", "manychat_secret_token_123"),
+        "verify_token": cfg.get("verify_token", DEFAULT_VERIFY_TOKEN),
         "has_token": bool(token),
         "masked_token": masked_token
     }
@@ -945,7 +962,7 @@ async def verify_meta_webhook(request: Request):
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
-    expected_token = meta_client.config.get("verify_token", "manychat_secret_token_123")
+    expected_token = meta_client.config.get("verify_token", DEFAULT_VERIFY_TOKEN)
     if mode == "subscribe" and token == expected_token:
         return PlainTextResponse(content=challenge or "")
     raise HTTPException(status_code=403, detail="Verification token mismatch")
@@ -995,7 +1012,7 @@ async def receive_meta_webhook(request: Request):
 
 
 # =============================================================================
-#  AUTH  —  signup / login against the multi-user store
+# AUTH — signup / login against the multi-user store
 # =============================================================================
 
 class SignupRequest(BaseModel):
@@ -1070,9 +1087,9 @@ async def auth_login(req: LoginRequest, request: Request, response: Response):
     response.set_cookie(
         cf_auth.SESSION_COOKIE, token,
         max_age=cf_auth.SESSION_DAYS * 86400,
-        httponly=True,                       # JavaScript cannot read it
-        samesite="lax",                      # not sent on cross-site POSTs
-        secure=bool(os.environ.get("COOKIE_SECURE", "")),   # set in production
+        httponly=True, # JavaScript cannot read it
+        samesite="lax", # not sent on cross-site POSTs
+        secure=bool(os.environ.get("COOKIE_SECURE", "")), # set in production
         path="/",
     )
     cf_auth.audit(result, "auth.login", result["id"], note="signed in")
@@ -1104,7 +1121,7 @@ async def auth_announcement():
 
 
 # =============================================================================
-#  ADMIN  —  business control room
+# ADMIN — business control room
 # =============================================================================
 
 @app.get("/api/admin/overview")
@@ -1287,7 +1304,7 @@ async def admin_export_users():
 
 
 # =============================================================================
-#  PUBLIC  —  what the marketing site and dashboard may read
+# PUBLIC — what the marketing site and dashboard may read
 # =============================================================================
 
 @app.get("/api/public/plans")
@@ -1306,7 +1323,7 @@ async def public_settings():
 
 
 # =============================================================================
-#  ADMIN  —  plans & pricing
+# ADMIN — plans & pricing
 # =============================================================================
 
 class PlanPayload(BaseModel):
@@ -1397,7 +1414,7 @@ async def admin_reorder_plans(req: Dict[str, List[str]]):
 
 
 # =============================================================================
-#  ADMIN  —  offers & coupons
+# ADMIN — offers & coupons
 # =============================================================================
 
 @app.get("/api/admin/offers")
@@ -1442,7 +1459,7 @@ async def admin_check_offer(req: CouponCheck):
 
 
 # =============================================================================
-#  ADMIN  —  platform settings, Meta app & templates
+# ADMIN — platform settings, Meta app & templates
 # =============================================================================
 
 @app.get("/api/admin/settings")
@@ -1503,7 +1520,7 @@ async def admin_preview_template(template_id: str):
 
 
 # =============================================================================
-#  INSTAGRAM CONNECT  —  one Meta app, every customer connects themselves
+# INSTAGRAM CONNECT — one Meta app, every customer connects themselves
 # =============================================================================
 
 @app.get("/api/instagram/status")
@@ -1537,11 +1554,11 @@ async def instagram_connect_token(req: MetaTestRequest, user_id: Optional[str] =
     user = user_manager.get(user_id) if user_id else current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
-    
+
     result = meta_client.test_connection(req.access_token)
     if not result.get("success"):
         return result
-    
+
     account = result.get("account", {})
     conn = {
         "connected": True,
@@ -1637,7 +1654,7 @@ async def instagram_disconnect(user_id: Optional[str] = None):
 
 
 # =============================================================================
-#  INSIGHTS  —  the numbers rivals stop short of
+# INSIGHTS — the numbers rivals stop short of
 # =============================================================================
 
 @app.get("/api/insights")
@@ -1661,13 +1678,13 @@ async def get_insights():
 
 
 # ===========================================================================
-#  PAYMENTS — Razorpay
-#  Three rules this code keeps:
-#  1. The price is decided on the server, from the live plan catalogue.
-#     The browser sends a plan id, never an amount.
-#  2. A plan changes only after the signature verifies against our secret.
-#  3. Webhook and browser callback are both idempotent — whichever arrives
-#     second finds the payment already recorded and does nothing.
+# PAYMENTS — Razorpay
+# Three rules this code keeps:
+# 1. The price is decided on the server, from the live plan catalogue.
+# The browser sends a plan id, never an amount.
+# 2. A plan changes only after the signature verifies against our secret.
+# 3. Webhook and browser callback are both idempotent — whichever arrives
+# second finds the payment already recorded and does nothing.
 # ===========================================================================
 
 def _already_paid(user: Dict[str, Any], payment_id: str) -> bool:
@@ -1829,10 +1846,10 @@ async def admin_razorpay_test():
 
 
 # ===========================================================================
-#  THE INSTAGRAM ACCOUNT — profile, posts, and turning a post into a flow
-#  Every response here comes from the workspace's own token. Nothing is
-#  sampled, seeded or substituted: if Instagram will not answer, the UI says
-#  so rather than showing a picture that is not theirs.
+# THE INSTAGRAM ACCOUNT — profile, posts, and turning a post into a flow
+# Every response here comes from the workspace's own token. Nothing is
+# sampled, seeded or substituted: if Instagram will not answer, the UI says
+# so rather than showing a picture that is not theirs.
 # ===========================================================================
 
 @app.get("/api/instagram/profile")
@@ -1921,7 +1938,10 @@ async def create_flow_from_post(req: PostFlowRequest):
     caption = (post.get("caption") or "").strip()
     short = (caption[:44] + "…") if len(caption) > 45 else (caption or "Untitled post")
     label = words[0].upper() if words else "any comment"
-    connected_ig = (user.get("instagram") or {}).get("username") or meta_client.config.get("connected_account_username", "satnamwebservices")
+    # The rule records ITS OWNER's handle. Falling back to a shared global here
+    # would point another merchant's follow prompt at somebody else's account.
+    connected_ig = ((user.get("instagram") or {}).get("username")
+                    or (user.get("ig_handle") or "").lstrip("@"))
 
     rule = automation_engine.create({
         "name": f"\u201c{short}\u201d \u2192 DM on {label}",
@@ -1962,9 +1982,9 @@ async def delete_flow(rule_id: str):
 
 
 # ===========================================================================
-#  ADMIN — the operator's view of who is actually working
-#  The support queue for this business is "who tried to connect and failed",
-#  so that is what the console shows, rather than another revenue chart.
+# ADMIN — the operator's view of who is actually working
+# The support queue for this business is "who tried to connect and failed",
+# so that is what the console shows, rather than another revenue chart.
 # ===========================================================================
 
 @app.get("/api/admin/connections")
@@ -1982,7 +2002,7 @@ async def admin_connections():
             state = "token_missing"
         else:
             state = "never_connected"
-        if state != "connected":
+        if state!= "connected":
             stuck += 1
         else:
             live += 1

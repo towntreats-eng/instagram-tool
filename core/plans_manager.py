@@ -98,9 +98,9 @@ class PlansManager:
     # ---------------------------------------------------------------- seed
     def _seed_plans(self) -> List[Dict[str, Any]]:
         """
-        Benchmarked Sept 2026: Manychat Essential ~Rs.1,245/mo (250 contacts),
-        Manychat Pro ~Rs.3,735/mo (2,500 contacts); Indian rivals sit at
-        Rs.99-Rs.799 flat. This ladder undercuts Manychat heavily while leaving
+        Benchmarked Sept 2026: the US incumbent's entry tier ~Rs.1,245/mo (250 contacts),
+        its Pro tier ~Rs.3,735/mo (2,500 contacts); Indian rivals sit at
+        Rs.99-Rs.799 flat. This ladder undercuts the incumbent heavily while leaving
         real headroom above the Rs.399 entry point.
         """
         def plan(pid, name, tagline, monthly, yearly, order, limits, features,

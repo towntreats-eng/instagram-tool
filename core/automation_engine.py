@@ -11,7 +11,7 @@ AUTOMATIONS_FILE = os.path.join(BASE_DIR, "data", "automations.json")
 
 class AutomationEngine:
     """
-    ManyChat Automation Rules Manager & Evaluator:
+    Automation rules manager and evaluator:
     Handles Comment-to-DM triggers, DM Keyword triggers,
     and Story Mention auto-responders.
     """
