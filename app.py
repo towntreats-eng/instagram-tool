@@ -990,60 +990,7 @@ async def disconnect_meta():
     return {"success": True}
 
 
-@app.get("/api/meta/webhook")
-async def verify_meta_webhook(request: Request):
-    """
-    Handles Meta Webhook Verification challenge
-    """
-    mode = request.query_params.get("hub.mode")
-    token = request.query_params.get("hub.verify_token")
-    challenge = request.query_params.get("hub.challenge")
-    expected_token = meta_client.config.get("verify_token", DEFAULT_VERIFY_TOKEN)
-    if mode == "subscribe" and token == expected_token:
-        return PlainTextResponse(content=challenge or "")
-    raise HTTPException(status_code=403, detail="Verification token mismatch")
 
-
-@app.post("/api/meta/webhook")
-async def receive_meta_webhook(request: Request):
-    """
-    Receives real-time Meta comments / messages webhook event (0.5s auto-responder)
-    """
-    try:
-        data = await request.json()
-    except Exception:
-        return {"status": "ignored"}
-
-    entries = data.get("entry", [])
-    for entry in entries:
-        changes = entry.get("changes", [])
-        for change in changes:
-            field = change.get("field")
-            val = change.get("value", {})
-            if field == "comments":
-                comment_text = val.get("text", "")
-                comment_id = val.get("id", "")
-                sender = val.get("from", {})
-                username = sender.get("username", "")
-                user_id = sender.get("id", "")
-
-                match = automation_engine.match_comment(comment_text, username=username)
-                if match:
-                    if match.get("public_reply") and comment_id:
-                        meta_client.reply_to_comment(comment_id, match["public_reply"])
-                    if match.get("dm_reply") and user_id:
-                        meta_client.send_instagram_dm(
-                            recipient_ig_id=user_id,
-                            message_text=match["dm_reply"],
-                            button_text=match.get("button_text"),
-                            button_url=match.get("button_url")
-                        )
-                    contacts_manager.record_interaction(
-                        username=username or user_id,
-                        source="Meta Webhook Comment",
-                        new_tags=match.get("tags", [])
-                    )
-    return {"status": "ok"}
 
 
 
