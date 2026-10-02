@@ -304,3 +304,96 @@ now carry `{handle}`, resolved to whichever account is connected.
 
 Verified in a browser: zero clipped nodes, zero JS errors, and the only non-grey
 values left anywhere in `style.css` are the three danger tones.
+
+---
+
+# Addendum 2 — 2 Oct 2026: why it was not actually firing
+
+## The bug that made all of it silent
+
+`meta_oauth.subscribe_webhook()` only runs when a connection carries a Facebook
+`page_id`:
+
+```python
+if conn.get("page_id") and conn.get("page_access_token"):
+    meta_oauth.subscribe_webhook(...)
+```
+
+@satnamwebservices connected through **Instagram Login** (graph.instagram.com),
+which has no page id. So that line was skipped. The account linked, the profile
+loaded, the real posts appeared, a flow went live — **and a comment on a reel
+reached nothing at all.** Everything looked correct and nothing fired.
+
+Instagram Login subscribes through its own endpoint, now in
+`core/webhook_setup.py`:
+
+```
+POST https://graph.instagram.com/v24.0/me/subscribed_apps
+     ?subscribed_fields=comments,messages,...&access_token=<IG user token>
+```
+
+It now runs on connect for both paths. `meta_oauth.py` and `meta_api.py` were
+not modified.
+
+## "Is it working?" — the panel
+
+Connected and working are different states, and nothing in the product told
+them apart. The Home screen now walks the real chain and names the broken link:
+
+| Step | Source of truth |
+|---|---|
+| Account connected | the workspace record |
+| Token still valid | a live `/me` call |
+| Business or Creator | `account_type` from Instagram |
+| **Subscribed to comment events** | `GET /me/subscribed_apps` |
+| At least one flow live | this workspace's own rules |
+| Webhook address | what Meta must be pointed at |
+
+A failed step carries the fix. The **Repair** button appears only when
+re-subscribing is the thing that would actually help, and admin has the same
+view across every workspace at `/api/admin/webhook-health`.
+
+Verified: broken state reported "Not subscribed to anything", Repair subscribed
+all five fields, re-check returned *"The chain is complete."*
+
+## Two bugs found by firing a real comment through it
+
+**1. The wrong DM went out.** The matcher took the first rule in the file and
+stopped. An old catch-all rule (`keywords: ["*"]`, bound to no post) swallowed a
+comment that belonged to a post-specific flow — so the merchant builds "comment
+PRICE on this reel → send the catalogue", and the commenter receives something
+else entirely. Rules are now ranked by specificity:
+
+1. this exact post + this keyword
+2. this exact post, any comment
+3. any post + this keyword
+4. any post, any comment
+
+Re-tested: `"PRICE please"` on reel 17901 now sends *"Hey riya_shops! Here's the
+festive catalogue with your 30% code inside"* — the right rule, with the
+commenter's name resolved.
+
+**2. The public reply printed its own braces.** `{Check DMs!}` has no pipe, so
+it is not a choice — but the spintax expander only handled groups containing
+`|` and left the braces in. That text was posted publicly under the merchant's
+own post. Now a single-option group unwraps.
+
+## End-to-end, exercised rather than assumed
+
+- Webhook handshake: correct `hub.verify_token` echoes the challenge; a wrong
+  one returns 403.
+- Comment webhook POSTed → the right rule matched → a DM went to the Instagram
+  send endpoint with the merge field resolved.
+- A comment on a post with no flow of its own correctly falls through to the
+  catch-all.
+
+## Still true, and still outside the code
+
+- **Advanced Access via App Review** for `instagram_manage_comments` and the
+  Human Agent feature. Until Meta grants it, comment webhooks fire only for
+  people with a role on your app — you. No customer's account will work.
+- **The Meta app's own webhook subscription.** Subscribing the *account* is what
+  this release fixes; the *app* must also have the `comments` field enabled
+  under Webhooks → Instagram, with the callback URL matching, or Meta has
+  nowhere to deliver.
+- `app_id` and `app_secret` are still blank in platform settings.

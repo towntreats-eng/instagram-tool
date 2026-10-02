@@ -32,6 +32,7 @@ from core.insights import Insights
 from core.razorpay_client import RazorpayClient
 from core import instagram_account
 from core import follow_gate
+from core import webhook_setup
 from core import auth as cf_auth
 from core import db as cf_db
 from core import store as cf_store
@@ -465,17 +466,43 @@ async def meta_webhook_event(request: Request):
                 user_id = from_user.get("id")
                 media_id = val.get("media", {}).get("id")
 
-                for rule in automation_engine.get_all():
-                    if not rule.get("is_active") or rule.get("type")!= "comment_to_dm":
-                        continue
-
-                    # Match post_media_id if set on the rule
+                # Pick the MOST SPECIFIC rule, not the first one in the file.
+                #
+                # Without this, an old catch-all rule (keywords ["*"], bound to
+                # no post) swallows every comment on every post — so the flow a
+                # merchant carefully built for one reel never fires and the
+                # commenter gets somebody else's message. Specificity wins:
+                #   1. this exact post + this keyword
+                #   2. this exact post, any comment
+                #   3. any post + this keyword
+                #   4. any post, any comment
+                def _rank(rule):
                     post_id = rule.get("post_media_id")
-                    if post_id and media_id and str(post_id)!= str(media_id):
-                        continue
+                    kws = [k for k in (rule.get("trigger_keywords") or []) if k and k != "*"]
+                    bound = bool(post_id and media_id and str(post_id) == str(media_id))
+                    keyed = any(kw.lower() in text.lower() for kw in kws)
+                    if bound and keyed: return 0
+                    if bound:           return 1
+                    if keyed:           return 2
+                    return 3
 
-                    keywords = rule.get("trigger_keywords", ["*"])
-                    if "*" in keywords or any(kw.lower() in text.lower() for kw in keywords):
+                candidates = []
+                for rule in automation_engine.get_all():
+                    if not rule.get("is_active") or rule.get("type") != "comment_to_dm":
+                        continue
+                    post_id = rule.get("post_media_id")
+                    # A rule bound to a different post never applies here.
+                    if post_id and media_id and str(post_id) != str(media_id):
+                        continue
+                    kws = rule.get("trigger_keywords") or ["*"]
+                    catch_all = "*" in kws or rule.get("trigger_scope") == "any"
+                    if not (catch_all or any(kw.lower() in text.lower() for kw in kws if kw)):
+                        continue
+                    candidates.append(rule)
+                candidates.sort(key=_rank)
+
+                for rule in candidates:
+                    if True:
                         # Workspace token for this rule
                         rule_user = user_manager.get(rule.get("created_by", ""))
                         user_token = ((rule_user or {}).get("instagram") or {}).get("access_token")
@@ -1623,8 +1650,17 @@ async def instagram_callback(code: Optional[str] = None, state: Optional[str] = 
 
     user = user_manager.set_instagram(result["user_id"], result["connection"])
     conn = result["connection"]
+    # Subscribe this account to comment and message events. Two different
+    # endpoints depending on how it connected — and the Instagram Login case
+    # was never handled, so those accounts connected and then received nothing.
     if conn.get("page_id") and conn.get("page_access_token"):
         meta_oauth.subscribe_webhook(conn["page_id"], conn["page_access_token"])
+    elif conn.get("access_token"):
+        sub_ok, sub_msg = webhook_setup.subscribe(conn["access_token"])
+        admin_store.log(
+            "SUCCESS" if sub_ok else "ERROR", "instagram",
+            f"Webhook subscription for @{conn.get('username')}: "
+            f"{'subscribed to comments and messages' if sub_ok else sub_msg}")
 
     meta_client.save_config({
         "enabled": True,
@@ -2065,3 +2101,68 @@ async def admin_storage():
         out["note"] = ("Running on JSON files. Set DATABASE_URL and run "
                        "migrate_to_postgres.py --write to move to Postgres.")
     return out
+
+
+# ===========================================================================
+#  "IS IT ACTUALLY WORKING?"
+#  A merchant cannot tell the difference between "connected" and "working".
+#  These two endpoints walk the real chain and say exactly where it stops.
+# ===========================================================================
+
+def _webhook_url(request: Request) -> str:
+    cfg = platform_settings.meta_app()
+    return (cfg.get("webhook_url") or "").strip() or str(request.base_url).rstrip("/") + "/api/meta/webhook"
+
+
+@app.get("/api/instagram/diagnose")
+async def instagram_diagnose(request: Request):
+    user = require_user()
+    mine = [r for r in automation_engine.get_all() if r.get("created_by") == user["id"]]
+    return {"success": True,
+            **webhook_setup.diagnose(user, mine, _webhook_url(request))}
+
+
+@app.post("/api/instagram/repair-webhook")
+async def instagram_repair_webhook():
+    """Re-subscribe this account to comment and message events."""
+    user = require_user()
+    token = ((user.get("instagram") or {}).get("access_token") or "")
+    if not token:
+        return {"success": False, "error": "Connect an Instagram account first."}
+    ok, out = webhook_setup.subscribe(token)
+    if not ok:
+        admin_store.log("ERROR", "instagram", f"Repair failed for {user['email']}: {out}")
+        return {"success": False, "error": str(out)}
+    got_ok, fields = webhook_setup.subscribed_fields(token)
+    cf_auth.audit(user, "instagram.webhook_repaired", user["id"], None,
+                  {"fields": fields}, "re-subscribed to Instagram events")
+    admin_store.log("SUCCESS", "instagram", f"{user['email']} re-subscribed: {', '.join(fields)}")
+    return {"success": True,
+            "subscribed": fields,
+            "comments": "comments" in fields,
+            "message": ("Subscribed. A comment on a live post will now reach ConverFlow."
+                        if "comments" in fields else
+                        "Instagram accepted the request but did not list 'comments'. "
+                        "Check that your Meta app has the comments webhook field enabled.")}
+
+
+@app.get("/api/admin/webhook-health")
+async def admin_webhook_health(request: Request):
+    """Every workspace, and whether its events can actually reach us."""
+    require_admin()
+    rows = []
+    all_rules = automation_engine.get_all()
+    for u in user_manager.all():
+        ig = u.get("instagram") or {}
+        if not ig.get("access_token"):
+            continue
+        ok, fields = webhook_setup.subscribed_fields(ig["access_token"])
+        rows.append({
+            "email": u.get("email", ""), "handle": ig.get("username", ""),
+            "readable": ok,
+            "comments": ok and "comments" in fields,
+            "fields": fields,
+            "live_flows": sum(1 for r in all_rules
+                              if r.get("created_by") == u["id"] and r.get("is_active")),
+        })
+    return {"success": True, "rows": rows, "webhook_url": _webhook_url(request)}

@@ -72,6 +72,7 @@
     STATE.profile = out.profile || {};
     paintProfile();
     await Promise.all([loadMedia(), loadFlows()]);
+    loadChain();
     paintTiles();
   }
 
@@ -92,6 +93,42 @@
     if (p.media_count!= null) bits.push(num(p.media_count) + " posts");
     if (p.account_type) bits.push(String(p.account_type).toLowerCase().replace("_", " ") + " account");
     if ($("#igProfileSub")) $("#igProfileSub").textContent = bits.join(" · ") || "Connected";
+  }
+
+
+  /* ----------------------------------------------------------------- chain
+     Connected and working are different states, and the gap between them is
+     invisible: the account links, the profile loads, the posts appear — and a
+     comment still reaches nothing because the webhook was never subscribed.
+     This walks the real chain and names the broken link.
+     ------------------------------------------------------------------ */
+  var MARK = { pass: "\u2713", fail: "!", unknown: "?", info: "i" };
+
+  async function loadChain() {
+    var panel = $("#chainPanel");
+    if (!panel) return;
+    show(panel, true);
+    var out = await api("/api/instagram/diagnose");
+    if (!out || !out.checks) {
+      $("#chainVerdict").textContent = "Could not run the check.";
+      return;
+    }
+    $("#chainVerdict").textContent = out.verdict || "";
+    $("#chainList").innerHTML = out.checks.map(function (c) {
+      return '<li class="chain-step' + (c.state === "fail" ? " is-fail" : "") + '">' +
+        '<span class="chain-mark ' + c.state + '">' + (MARK[c.state] || "") + '</span>' +
+        '<div class="chain-body">' +
+          '<div class="chain-label">' + esc(c.label) + '</div>' +
+          '<div class="chain-detail">' + esc(c.detail) + '</div>' +
+          (c.fix && c.state !== "pass" ? '<div class="chain-fix">' + esc(c.fix) + '</div>' : "") +
+        '</div></li>';
+    }).join("");
+
+    // Repair is only offered when it is the thing that would actually help.
+    var broken = out.checks.filter(function (c) {
+      return c.key === "webhook_sub" && c.state !== "pass";
+    }).length > 0;
+    show($("#btnChainRepair"), broken);
   }
 
   /* ------------------------------------------------------------------ media */
@@ -486,6 +523,22 @@
       if (pr.success) { STATE.profile = pr.profile; paintProfile(); }
       await loadMedia(true); await loadFlows(); paintTiles();
       rb.disabled = false;
+      return;
+    }
+    if (ev.target.closest("#btnChainCheck")) {
+      var cb = ev.target.closest("#btnChainCheck");
+      cb.disabled = true; cb.textContent = "Checking...";
+      await loadChain();
+      cb.disabled = false; cb.textContent = "Re-check";
+      return;
+    }
+    if (ev.target.closest("#btnChainRepair")) {
+      var rb = ev.target.closest("#btnChainRepair");
+      rb.disabled = true; rb.textContent = "Repairing...";
+      var r = await api("/api/instagram/repair-webhook", { method: "POST" });
+      rb.disabled = false; rb.textContent = "Repair";
+      toast(r.success ? r.message : (r.error || "Could not repair"), !r.success);
+      await loadChain();
       return;
     }
     if (ev.target.closest("#btnMediaRefresh")) {

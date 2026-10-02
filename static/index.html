@@ -177,6 +177,22 @@
             <div class="ig-tile"><span class="ig-tile-label">People captured</span><b id="tilePeople">—</b><span class="ig-tile-sub" id="tilePeopleSub">&nbsp;</span></div>
           </div>
 
+          <!-- Is the chain actually live? Connected and working are not the same
+               thing, and the gap between them is invisible without this. -->
+          <div class="chain" id="chainPanel" hidden>
+            <div class="chain-head">
+              <div>
+                <h2>Is it working?</h2>
+                <p class="sec-sub" id="chainVerdict">Checking the chain...</p>
+              </div>
+              <div class="chain-actions">
+                <button class="btn btn-secondary btn-sm" id="btnChainCheck">Re-check</button>
+                <button class="btn btn-primary btn-sm" id="btnChainRepair" hidden>Repair</button>
+              </div>
+            </div>
+            <ol class="chain-list" id="chainList"></ol>
+          </div>
+
           <div class="sec-head">
             <div>
               <h2>Your posts</h2>

@@ -48,6 +48,11 @@ class SpintaxEngine:
             chosen = random.choice(options)
             text = text[:match.start()] + chosen + text[match.end():]
 
+        # A group with no pipe is not a choice — it is one option in braces,
+        # and leaving the braces in means the public comment reply literally
+        # reads "{Check DMs!}" under the merchant's own post.
+        text = re.sub(r"\{([^{}|]+)\}", lambda m: m.group(1), text)
+
         return text.strip()
 
     @classmethod
