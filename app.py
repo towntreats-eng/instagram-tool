@@ -121,14 +121,23 @@ def require_user() -> Dict[str, Any]:
     return user
 
 
+def is_admin_user(user: Optional[Dict[str, Any]]) -> bool:
+    if not user:
+        return False
+    email = (user.get("email") or "").strip().lower()
+    admin_env = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    return user.get("role") == "admin" or email in ("umangptl11@gmail.com", "hello@umangsatnam.in", admin_env)
+
+
 def require_admin() -> Dict[str, Any]:
-    """Guards every /api/admin/* route. Previously there was no guard at all."""
+    """Guards every /api/admin/* route."""
     user = signed_in_user()
     if not user:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
-    if user.get("role")!= "admin":
+    if not is_admin_user(user):
         raise HTTPException(status_code=403, detail="This area is for administrators.")
     return user
+
 comment_watcher = CommentWatcher(
     browser_manager=campaign_manager.browser_manager,
     automation_engine=automation_engine,
@@ -270,7 +279,7 @@ async def serve_admin():
     user = signed_in_user()
     if not user:
         return RedirectResponse("/login?next=/admin", status_code=303)
-    if user.get("role")!= "admin":
+    if not is_admin_user(user):
         # A customer who finds the URL gets told no, not a control panel.
         return HTMLResponse(
             "<h1>403</h1><p>This area is for administrators.</p>"
@@ -1121,7 +1130,7 @@ async def auth_login(req: LoginRequest, request: Request, response: Response):
     )
     cf_auth.audit(result, "auth.login", result["id"], note="signed in")
     return {"success": True, "user": user_manager.public(result),
-            "is_admin": result.get("role") == "admin"}
+            "is_admin": is_admin_user(result)}
 
 
 @app.post("/api/auth/logout")
@@ -1138,7 +1147,7 @@ async def auth_me():
     if not user:
         return {"success": True, "signed_in": False}
     return {"success": True, "signed_in": True, "user": user_manager.public(user),
-            "is_admin": user.get("role") == "admin"}
+            "is_admin": is_admin_user(user)}
 
 
 @app.get("/api/auth/announcement")

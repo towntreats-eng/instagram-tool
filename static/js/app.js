@@ -586,6 +586,22 @@
     try { await loadContacts(); } catch (err) {
       console.warn("[ConverFlow] contacts did not load:", err && err.message);
     }
+    try {
+      var authRes = await fetch("/api/auth/me").then(function (r) { return r.json(); });
+      if (authRes && authRes.signed_in) {
+        if (authRes.is_admin) {
+          var adminGroup = document.getElementById("adminNavGroup");
+          if (adminGroup) adminGroup.style.display = "";
+        }
+        if (authRes.user && authRes.user.name) {
+          var initialsEl = document.getElementById("navAvatarInitials");
+          if (initialsEl) {
+            var parts = authRes.user.name.trim().split(" ");
+            initialsEl.textContent = (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   window.CFShell = { switchView: switchView, openUpgrade: openUpgradeModal };

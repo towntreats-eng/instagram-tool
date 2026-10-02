@@ -125,7 +125,19 @@ class UserManager:
     def _migrate(self, users: List[Dict[str, Any]]) -> bool:
         """Bring records written by earlier versions up to the current shape."""
         changed = False
+        admin_emails = {"umangptl11@gmail.com", "hello@umangsatnam.in"}
+        if os.environ.get("ADMIN_EMAIL"):
+            admin_emails.add(os.environ.get("ADMIN_EMAIL").strip().lower())
+
         for u in users:
+            # Automatically promote designated developer/owner accounts to admin
+            if (u.get("email") or "").strip().lower() in admin_emails:
+                if u.get("role") != "admin" or u.get("subscription_state") != ACTIVE:
+                    u["role"] = "admin"
+                    u["plan"] = "agency"
+                    u["subscription_state"] = ACTIVE
+                    changed = True
+
             plan = u.get("plan", "")
             if plan in LEGACY_PLANS:
                 old = plan
@@ -376,9 +388,13 @@ class UserManager:
         if self.get_by_email(email):
             return False, "An account with this email already exists."
         is_first = len(self._state.get("users", [])) == 0
-        role = "admin" if is_first else "owner"
+        admin_emails = {"umangptl11@gmail.com", "hello@umangsatnam.in"}
+        if os.environ.get("ADMIN_EMAIL"):
+            admin_emails.add(os.environ.get("ADMIN_EMAIL").strip().lower())
+        is_admin = is_first or (email.strip().lower() in admin_emails)
+        role = "admin" if is_admin else "owner"
         top_plan = self.plans.top_plan()["id"] if hasattr(self.plans, "top_plan") else "agency"
-        plan = top_plan if is_first else None
+        plan = top_plan if is_admin else None
         user = self._blank_user(
             name=name, email=email, password=password,
             role=role, plan=plan,
