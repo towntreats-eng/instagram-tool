@@ -125,8 +125,11 @@
     }).join("");
 
     // Repair is only offered when it is the thing that would actually help.
+    // Both subscription levels are repairable; the rest (account type, a
+    // paused flow) are things only the merchant can change.
+    var REPAIRABLE = { app_webhook: 1, webhook_sub: 1 };
     var broken = out.checks.filter(function (c) {
-      return c.key === "webhook_sub" && c.state !== "pass";
+      return REPAIRABLE[c.key] && c.state !== "pass";
     }).length > 0;
     show($("#btnChainRepair"), broken);
   }
@@ -537,7 +540,14 @@
       rb.disabled = true; rb.textContent = "Repairing...";
       var r = await api("/api/instagram/repair-webhook", { method: "POST" });
       rb.disabled = false; rb.textContent = "Repair";
-      toast(r.success ? r.message : (r.error || "Could not repair"), !r.success);
+      // Repair touches two levels. Saying only "failed" hides which one, and
+      // which one it is decides what the merchant has to do next.
+      var failed = (r.steps || []).filter(function (s) { return !s.ok; });
+      if (failed.length && !r.success) {
+        toast(failed[0].label + ": " + failed[0].detail, true);
+      } else {
+        toast(r.message || r.error || "Could not repair", !r.success);
+      }
       await loadChain();
       return;
     }

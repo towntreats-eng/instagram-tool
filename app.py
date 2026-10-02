@@ -2110,40 +2110,98 @@ async def admin_storage():
 # ===========================================================================
 
 def _webhook_url(request: Request) -> str:
+    """The address Meta should deliver to.
+
+    Behind a proxy (Railway, Render, any load balancer) `request.base_url`
+    reports the *internal* scheme, which is http. Meta refuses an http
+    callback outright, so the registration failed with an error that pointed
+    nowhere near the real cause. Trust the forwarded scheme, and never
+    downgrade a public host to http.
+    """
     cfg = platform_settings.meta_app()
-    return (cfg.get("webhook_url") or "").strip() or str(request.base_url).rstrip("/") + "/api/meta/webhook"
+    fixed = (cfg.get("webhook_url") or "").strip()
+    if fixed:
+        return fixed
+    base = str(request.base_url).rstrip("/")
+    proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+    host = request.headers.get("x-forwarded-host", "").split(",")[0].strip() \
+        or request.headers.get("host", "").split(",")[0].strip()
+    if host:
+        local = host.split(":")[0] in ("localhost", "127.0.0.1", "0.0.0.0", "::1")
+        scheme = proto or ("http" if local else "https")
+        if not local and scheme != "https":
+            scheme = "https"
+        base = f"{scheme}://{host}"
+    return base + "/api/meta/webhook"
+
+
+def _meta_app_creds() -> dict:
+    """The Meta app id, secret and verify token - from wherever they are.
+
+    These live in two places for historical reasons: the admin screen writes
+    to platform settings, and the older Meta client keeps its own config file.
+    An install that connected before the admin screen existed has the real
+    credentials only in the second one, so reading just the first reports "not
+    configured" about an app that is plainly working. Prefer the admin values,
+    fall back to the client's, and never let a blank overwrite a real one.
+    """
+    cfg = dict(platform_settings.meta_app() or {})
+    legacy = dict(getattr(meta_client, "config", {}) or {})
+    for key in ("app_id", "app_secret", "verify_token"):
+        if not str(cfg.get(key) or "").strip():
+            val = str(legacy.get(key) or "").strip()
+            if val:
+                cfg[key] = val
+    return cfg
 
 
 @app.get("/api/instagram/diagnose")
 async def instagram_diagnose(request: Request):
     user = require_user()
+    # Use the product's own predicate, not just "a token exists". A workspace
+    # that disconnected still has a stale token on it, and the chain used to
+    # report "connected" while the dashboard showed the connect gate.
+    if not instagram_account.connected(user):
+        return {"success": True, "ok": False, "verdict": "Not connected yet.",
+                "checks": [{"key": "connected",
+                            "label": "Instagram account connected", "state": "fail",
+                            "detail": "No account is linked to this workspace.",
+                            "fix": "Connect Instagram from the Home screen."}]}
     mine = [r for r in automation_engine.get_all() if r.get("created_by") == user["id"]]
     return {"success": True,
-            **webhook_setup.diagnose(user, mine, _webhook_url(request))}
+            **webhook_setup.diagnose(user, mine, _webhook_url(request),
+                                     _meta_app_creds())}
 
 
 @app.post("/api/instagram/repair-webhook")
-async def instagram_repair_webhook():
-    """Re-subscribe this account to comment and message events."""
+async def instagram_repair_webhook(request: Request):
+    """Re-register the app's webhook AND re-subscribe this account.
+
+    Doing only the second is what the first version did, and it cannot work
+    on its own: Instagram will not hand an account's comment events to an app
+    that never asked for comment events.
+    """
     user = require_user()
+    # A workspace that disconnected keeps its old token on the record. Without
+    # this check, Repair happily re-subscribed an account the merchant had
+    # deliberately unlinked.
+    if not instagram_account.connected(user):
+        return {"success": False, "error": "Connect an Instagram account first."}
     token = ((user.get("instagram") or {}).get("access_token") or "")
     if not token:
         return {"success": False, "error": "Connect an Instagram account first."}
-    ok, out = webhook_setup.subscribe(token)
-    if not ok:
-        admin_store.log("ERROR", "instagram", f"Repair failed for {user['email']}: {out}")
-        return {"success": False, "error": str(out)}
-    got_ok, fields = webhook_setup.subscribed_fields(token)
+
+    out = webhook_setup.repair(token, _meta_app_creds(),
+                               _webhook_url(request))
+
+    for step in out.get("steps", []):
+        admin_store.log("SUCCESS" if step["ok"] else "ERROR", "instagram",
+                        f"{user['email']} repair [{step['level']}]: {step['detail']}")
     cf_auth.audit(user, "instagram.webhook_repaired", user["id"], None,
-                  {"fields": fields}, "re-subscribed to Instagram events")
-    admin_store.log("SUCCESS", "instagram", f"{user['email']} re-subscribed: {', '.join(fields)}")
-    return {"success": True,
-            "subscribed": fields,
-            "comments": "comments" in fields,
-            "message": ("Subscribed. A comment on a live post will now reach ConverFlow."
-                        if "comments" in fields else
-                        "Instagram accepted the request but did not list 'comments'. "
-                        "Check that your Meta app has the comments webhook field enabled.")}
+                  {"fields": out.get("subscribed", []),
+                   "steps": out.get("steps", [])},
+                  "re-registered the Instagram event chain")
+    return out
 
 
 @app.get("/api/admin/webhook-health")
@@ -2152,6 +2210,25 @@ async def admin_webhook_health(request: Request):
     require_admin()
     rows = []
     all_rules = automation_engine.get_all()
+    # The app-level webhook is one fact for the whole platform. When it is
+    # wrong, every row below is wrong for the same reason, so report it once
+    # at the top instead of letting each workspace look individually broken.
+    creds = _meta_app_creds()
+    hook = _webhook_url(request)
+    app_ok, app_state = webhook_setup.app_instagram_state(
+        creds.get("app_id", ""), creds.get("app_secret", ""))
+    app_level = {"readable": app_ok, "comments": False, "fields": [],
+                 "callback_url": "", "matches": False,
+                 "error": "" if app_ok else str(app_state.get("error", ""))}
+    if app_ok:
+        app_level.update({
+            "present": app_state["present"],
+            "comments": "comments" in app_state["fields"],
+            "fields": app_state["fields"],
+            "callback_url": app_state["callback_url"],
+            "active": app_state["active"],
+            "matches": (app_state["callback_url"] or "").rstrip("/") == hook.rstrip("/"),
+        })
     for u in user_manager.all():
         ig = u.get("instagram") or {}
         if not ig.get("access_token"):
@@ -2165,4 +2242,5 @@ async def admin_webhook_health(request: Request):
             "live_flows": sum(1 for r in all_rules
                               if r.get("created_by") == u["id"] and r.get("is_active")),
         })
-    return {"success": True, "rows": rows, "webhook_url": _webhook_url(request)}
+    return {"success": True, "rows": rows, "webhook_url": hook,
+            "app_level": app_level}
