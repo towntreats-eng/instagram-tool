@@ -484,6 +484,12 @@ async def meta_webhook_event(request: Request):
 
                     logger.info(f"[WEBHOOK COMMENT] From: @{username} ({user_id}), Text: '{text}', Media: {media_id}, CommentID: {comment_id}")
 
+                    all_rules = automation_engine.get_all()
+                    active_rules = [r for r in all_rules if r.get("is_active") and r.get("type") == "comment_to_dm"]
+                    logger.info(f"[WEBHOOK RULES STATUS] Total active comment rules: {len(active_rules)}")
+                    for r in active_rules:
+                        logger.info(f"  -> Rule ID: {r.get('id')}, Name: '{r.get('name')}', Target MediaID: {r.get('post_media_id')}, Incoming Media: {media_id}, Keywords: {r.get('trigger_keywords')}, Scope: {r.get('trigger_scope')}")
+
                     def _rank(rule):
                         post_id = rule.get("post_media_id")
                         kws = [k for k in (rule.get("trigger_keywords") or []) if k and k != "*"]
