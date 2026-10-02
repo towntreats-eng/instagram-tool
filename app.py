@@ -456,7 +456,9 @@ async def meta_webhook_event(request: Request):
     """
     try:
         body = await request.json()
-    except Exception:
+        logger.info(f"[WEBHOOK EVENT RECEIVED] {body}")
+    except Exception as e:
+        logger.error(f"[WEBHOOK ERROR] Invalid JSON body: {e}")
         return {"status": "ignored"}
 
     entries = body.get("entry", [])
@@ -475,16 +477,8 @@ async def meta_webhook_event(request: Request):
                 user_id = from_user.get("id")
                 media_id = val.get("media", {}).get("id")
 
-                # Pick the MOST SPECIFIC rule, not the first one in the file.
-                #
-                # Without this, an old catch-all rule (keywords ["*"], bound to
-                # no post) swallows every comment on every post — so the flow a
-                # merchant carefully built for one reel never fires and the
-                # commenter gets somebody else's message. Specificity wins:
-                #   1. this exact post + this keyword
-                #   2. this exact post, any comment
-                #   3. any post + this keyword
-                #   4. any post, any comment
+                logger.info(f"[WEBHOOK COMMENT] From: @{username} ({user_id}), Text: '{text}', Media: {media_id}, CommentID: {comment_id}")
+
                 def _rank(rule):
                     post_id = rule.get("post_media_id")
                     kws = [k for k in (rule.get("trigger_keywords") or []) if k and k != "*"]
@@ -510,71 +504,82 @@ async def meta_webhook_event(request: Request):
                     candidates.append(rule)
                 candidates.sort(key=_rank)
 
+                if not candidates:
+                    logger.warning(f"[WEBHOOK] No active rule matched for comment '{text}' on media {media_id}")
+                    campaign_manager.add_log("INFO", f"Comment '{text}' received from @{username} but no active automation rule matched.")
+
                 for rule in candidates:
-                    if True:
-                        # Workspace token for this rule
-                        rule_user = user_manager.get(rule.get("created_by", ""))
-                        user_token = ((rule_user or {}).get("instagram") or {}).get("access_token")
+                    logger.info(f"[WEBHOOK MATCHED RULE] Rule ID: {rule.get('id')}, Name: '{rule.get('name')}'")
+                    # Workspace token for this rule
+                    rule_user = user_manager.get(rule.get("created_by", ""))
+                    user_token = ((rule_user or {}).get("instagram") or {}).get("access_token") or meta_client.config.get("access_token")
 
-                        # 1. Public comment reply (Boosts Instagram algorithmic engagement)
-                        pub_reply = rule.get("public_comment_reply")
-                        if pub_reply and comment_id:
-                            actual_reply = SpintaxEngine.spin(pub_reply)
-                            meta_client.reply_to_comment(comment_id, actual_reply, access_token=user_token)
+                    # 1. Public comment reply (Boosts Instagram algorithmic engagement)
+                    pub_reply = rule.get("public_comment_reply")
+                    if pub_reply and comment_id:
+                        actual_reply = SpintaxEngine.spin(pub_reply)
+                        pub_res = meta_client.reply_to_comment(comment_id, actual_reply, access_token=user_token)
+                        if pub_res.get("success"):
+                            logger.info(f"[WEBHOOK PUBLIC REPLY SENT] Comment: {comment_id}, Reply: '{actual_reply}'")
+                        else:
+                            logger.error(f"[WEBHOOK PUBLIC REPLY ERROR] {pub_res.get('error')}")
+                            campaign_manager.add_log("WARNING", f"Public comment reply failed: {pub_res.get('error')}")
 
-                        # 2. Follow-gate — hold the link until they follow.
-                        # Three outcomes, not two. "Instagram would not tell us"
-                        # is NOT the same as "they do not follow": reading the
-                        # first as the second blocks the account's real
-                        # followers and makes the product look broken.
-                        require_follow = rule.get("require_follow", False)
-                        account_name = follow_gate.owner_handle(rule, rule_user)
+                    # 2. Follow-gate — hold the link until they follow.
+                    require_follow = rule.get("require_follow", False)
+                    account_name = follow_gate.owner_handle(rule, rule_user)
 
-                        if require_follow and user_id:
-                            state, why = follow_gate.status(user_id, user_token)
-                            if state!= follow_gate.FOLLOWS:
-                                known = state == follow_gate.NOT_FOLLOWING
-                                gate_msg = SpintaxEngine.spin(
-                                    follow_gate.prompt_text(rule, account_name, username, known))
-                                meta_client.send_instagram_dm(
-                                    user_id,
-                                    gate_msg,
-                                    (f"Follow @{account_name}" if account_name else None),
-                                    (f"https://instagram.com/{account_name}" if account_name else None),
-                                    access_token=user_token
-                                )
-                                campaign_manager.add_log(
-                                    "INFO",
-                                    f"Follow-gate held the link for @{username} "
-                                    f"({'not following' if known else 'follow status unknown'} — {why})")
-                                contacts_manager.upsert_contact(
-                                    username=username, name=username,
-                                    source=f"Comment on {media_id}",
-                                    tags=["Comment Lead", "Awaiting follow"],
-                                    interaction_text=text)
-                                processed_count += 1
-                                break
+                    if require_follow and user_id:
+                        state, why = follow_gate.status(user_id, user_token)
+                        if state != follow_gate.FOLLOWS:
+                            known = state == follow_gate.NOT_FOLLOWING
+                            gate_msg = SpintaxEngine.spin(
+                                follow_gate.prompt_text(rule, account_name, username, known))
+                            gate_res = meta_client.send_instagram_dm(
+                                user_id,
+                                gate_msg,
+                                (f"Follow @{account_name}" if account_name else None),
+                                (f"https://instagram.com/{account_name}" if account_name else None),
+                                access_token=user_token
+                            )
+                            campaign_manager.add_log(
+                                "INFO",
+                                f"Follow-gate held the link for @{username} "
+                                f"({'not following' if known else 'follow status unknown'} — {why})")
+                            contacts_manager.upsert_contact(
+                                username=username, name=username,
+                                source=f"Comment on {media_id}",
+                                tags=["Comment Lead", "Awaiting follow"],
+                                interaction_text=text)
+                            processed_count += 1
+                            break
 
-                        # 3. User is following (or Follow-Gate disabled) -> Dispatch Main DM & Link!
-                        raw_dm = rule.get("opening_dm") or rule.get("dm_message", "")
-                        dm_msg = raw_dm.replace("{name}", username).replace("{first_name}", username).replace("{username}", username)
-                        dm_msg = SpintaxEngine.spin(dm_msg)
-                        btn_text = rule.get("button_text")
-                        deliv_link = rule.get("delivery_link")
-                        if user_id:
-                            meta_client.send_instagram_dm(user_id, dm_msg, btn_text, deliv_link, access_token=user_token)
+                    # 3. User is following (or Follow-Gate disabled) -> Dispatch Main DM & Link!
+                    raw_dm = rule.get("opening_dm") or rule.get("dm_message", "")
+                    dm_msg = raw_dm.replace("{name}", username).replace("{first_name}", username).replace("{username}", username)
+                    dm_msg = SpintaxEngine.spin(dm_msg)
+                    btn_text = rule.get("button_text")
+                    deliv_link = rule.get("delivery_link")
+                    if user_id:
+                        dm_res = meta_client.send_instagram_dm(user_id, dm_msg, btn_text, deliv_link, access_token=user_token)
+                        if dm_res.get("success"):
+                            logger.info(f"[WEBHOOK DM SENT] To @{username} ({user_id})")
+                            campaign_manager.add_log("SUCCESS", f"Automated reply and DM sent to @{username} on Reel ({text})")
+                        else:
+                            logger.error(f"[WEBHOOK DM ERROR] {dm_res.get('error')}")
+                            campaign_manager.add_log("ERROR", f"Failed to send DM to @{username}: {dm_res.get('error')}")
 
-                        # Record CRM lead
-                        contacts_manager.upsert_contact(
-                            username=username,
-                            name=username,
-                            source=f"Meta Webhook (Reel {media_id})",
-                            tags=rule.get("tags", ["Meta Lead", "Follower Verified" if require_follow else "Comment Lead"]),
-                            interaction_text=text
-                        )
-                        processed_count += 1
-                        campaign_manager.add_log("SUCCESS", f" Meta Webhook: Automated reply and DM sent to @{username} on Reel ({text})")
-                        break
+                    # Record CRM lead
+                    contacts_manager.upsert_contact(
+                        username=username,
+                        name=username,
+                        source=f"Meta Webhook (Reel {media_id})",
+                        tags=rule.get("tags", ["Meta Lead", "Follower Verified" if require_follow else "Comment Lead"]),
+                        interaction_text=text
+                    )
+                    processed_count += 1
+                    break
+
 
         # 2. Instagram Direct Messages (DM keyword triggers)
         for msg_item in entry.get("messaging", []):
