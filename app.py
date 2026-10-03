@@ -325,8 +325,11 @@ async def meta_data_deletion(request: Request):
         except Exception:
             signed = ""
 
-    secret = (_meta_app_creds().get("app_secret") or "").strip()
-    ok, payload = data_deletion.parse_signed_request(signed, secret)
+    ok, payload = False, "No app secret configured, so this cannot be verified."
+    for secret in _signing_secrets():
+        ok, payload = data_deletion.parse_signed_request(signed, secret)
+        if ok:
+            break
     if not ok:
         admin_store.log("ERROR", "instagram", f"Data deletion refused: {payload}")
         raise HTTPException(status_code=400, detail=str(payload))
@@ -390,10 +393,18 @@ async def meta_deauthorize(request: Request):
         except Exception:
             signed = ""
 
-    if signed:
-        secret = (_meta_app_creds().get("app_secret") or "").strip()
+    ok, payload = False, "No app secret configured, so this cannot be verified."
+    for secret in _signing_secrets():
         ok, payload = data_deletion.parse_signed_request(signed, secret)
-        if ok and isinstance(payload, dict):
+        if ok:
+            break
+    if not ok:
+        # Anyone can POST here. Answering "success" to a forgery did no harm,
+        # but it hid the one case worth seeing: Meta's own call failing
+        # because the saved secret is not this app's.
+        admin_store.log("ERROR", "instagram", f"Deauthorize refused: {payload}")
+        raise HTTPException(status_code=400, detail=str(payload))
+    if isinstance(payload, dict):
             meta_user_id = str(payload.get("user_id") or "")
             target = next((u for u in user_manager.all()
                            if str(((u.get("instagram") or {}).get("user_id") or "")) == meta_user_id
@@ -660,27 +671,47 @@ class InternalDelivery:
         return self._payload
 
 
+def _signing_secrets() -> List[str]:
+    """Every secret a genuine Meta payload may be signed with, best first.
+
+    Meta uses two secrets for an Instagram Login app and the docs blur them:
+    OAuth wants the Instagram app secret (Instagram > API setup), while
+    webhook and signed_request payloads are signed with the Meta app secret
+    (App settings > Basic). Checking only the first refused every real
+    comment with "signature did not match". Accepting either is no weaker -
+    both are secrets of the same app - and it survives whichever one an
+    admin happens to paste where.
+    """
+    cfg = platform_settings.meta_app() or {}
+    out: List[str] = []
+    for val in (cfg.get("webhook_secret"),
+                os.environ.get("META_APP_SECRET"),
+                _meta_app_creds().get("app_secret")):
+        val = str(val or "").strip()
+        if val and val not in out:
+            out.append(val)
+    return out
+
+
 def _webhook_signature_ok(raw: bytes, header: str) -> Tuple[bool, str]:
     """Is this really from Meta?
 
-    The callback URL is public - it is printed in the dashboard and the repo is
-    open - and the handler below sends DMs on whatever it is told. Without this,
-    anyone could POST a forged comment and have the app message any Instagram
-    user, on the merchant's own account and quota.
-
-    Meta signs every delivery with the app secret. When we have no secret we
-    cannot check, so we accept and say so loudly rather than silently trusting.
+    The callback URL is public and the handler sends DMs on whatever it is
+    told, so an unsigned or wrongly signed delivery is refused.
     """
-    secret = (_meta_app_creds().get("app_secret") or "").strip()
-    if not secret:
+    secrets = _signing_secrets()
+    if not secrets:
         return True, "no app secret configured - delivery not verified"
     if not header:
         return False, "no signature header"
     sent = header.split("=", 1)[-1].strip()
-    want = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
-    if hmac.compare_digest(sent, want):
-        return True, ""
-    return False, "signature did not match the app secret"
+    for secret in secrets:
+        want = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+        if hmac.compare_digest(sent, want):
+            return True, ""
+    return False, ("signature did not match the app secret. Webhooks are signed "
+                   "with the Meta App Secret from App settings > Basic - paste it "
+                   "into Admin > Instagram API > Webhook secret")
 
 
 @app.post("/api/meta/webhook")

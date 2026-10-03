@@ -726,6 +726,7 @@
 
     $("#mApp").value = app.app_id || "";
     $("#mSecret").value = app.app_secret || "";
+    if ($("#mWebhookSecret")) $("#mWebhookSecret").value = app.webhook_secret || "";
     $("#mRedirect").value = app.redirect_uri || "";
     $("#mVerify").value = app.verify_token || "";
     $("#mVersion").value = app.api_version || "v21.0";

@@ -23,7 +23,7 @@ SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 TEMPLATES_FILE = os.path.join(DATA_DIR, "templates.json")
 
 ISO = "%Y-%m-%dT%H:%M:%S"
-SECRET_FIELDS = {("meta_app", "app_secret"), ("billing", "razorpay_key_secret"),
+SECRET_FIELDS = {("meta_app", "app_secret"), ("meta_app", "webhook_secret"), ("billing", "razorpay_key_secret"),
                  ("billing", "razorpay_webhook_secret")}
 
 # Permissions the Connect-Instagram flow asks Instagram for.
@@ -87,7 +87,11 @@ class PlatformSettings:
             "meta_app": {
                 "enabled": True,
                 "app_id": "1087830127189044",
-                "app_secret": "1c5050bf8a475ffefe7bb346be4d72c1",
+                "app_secret": "",
+                # Meta signs webhooks with the app secret from App settings >
+                # Basic, NOT the Instagram app secret used for OAuth. Two
+                # different secrets for two different jobs.
+                "webhook_secret": "",
                 "redirect_uri": "https://instagram-tool-production-c3f0.up.railway.app/api/instagram/callback",
                 "verify_token": "converflow_webhook_token",
                 "webhook_url": "https://instagram-tool-production-c3f0.up.railway.app/api/meta/webhook",
