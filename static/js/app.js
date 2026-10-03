@@ -152,20 +152,15 @@
   // the rest of the dashboard from wiring itself up.
 
   function setupNavigation() {
-    navItems.forEach(item => {
+    document.querySelectorAll("[data-view]").forEach(item => {
       item.addEventListener("click", (e) => {
-        e.preventDefault();
         const targetViewId = item.getAttribute("data-view");
-        switchView(targetViewId);
-      });
-    });
-
-    const mobileNavItems = document.querySelectorAll(".mobile-nav-item");
-    mobileNavItems.forEach(m => {
-      m.addEventListener("click", (e) => {
-        e.preventDefault();
-        const targetViewId = m.getAttribute("data-view");
-        switchView(targetViewId);
+        if (targetViewId) {
+          e.preventDefault();
+          switchView(targetViewId);
+          const am = document.getElementById("accountDropdownMenu");
+          if (am) am.hidden = true;
+        }
       });
     });
 
@@ -413,26 +408,35 @@
 
     const btnAddLeadQuick = document.getElementById("btnAddLeadQuick");
     if (btnAddLeadQuick) {
-      btnAddLeadQuick.addEventListener("click", () => {
-        const username = prompt("Enter Instagram handle for new lead (e.g. rohit_creator):");
+      btnAddLeadQuick.addEventListener("click", async () => {
+        const username = prompt("Enter Instagram handle for new contact (e.g. your_customer):");
         if (!username) return;
         const cleanUser = username.replace("@", "").trim();
-        const newContact = {
-          username: cleanUser,
-          name: cleanUser.replace(/_/g, " "),
-          source: "Manual Capture",
-          tags: ["New Lead", "Manual"],
-          last_interaction: "Just now",
-          messages_count: 1,
-          status: "active"
-        };
-        cachedContactsList.unshift(newContact);
-        filterAndRenderContacts();
-        alert(` Lead @${cleanUser} added to Contacts & CRM!`);
+        if (!cleanUser) return;
+        try {
+          const res = await fetch("/api/contacts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: cleanUser,
+              name: cleanUser.replace(/_/g, " "),
+              source: "Manual Capture",
+              tags: ["New Lead", "Manual"]
+            })
+          }).then(r => r.json());
+          if (res.success) {
+            await loadContacts();
+            alert(`Contact @${cleanUser} saved to CRM!`);
+          } else {
+            alert(res.error || "Could not save contact");
+          }
+        } catch (_) {
+          alert("Network error saving contact");
+        }
       });
     }
 
-    const tabPills = document.querySelectorAll(".contacts-table-card.tab-pill");
+    const tabPills = document.querySelectorAll(".contacts-table-card .tab-pill");
     tabPills.forEach(pill => {
       pill.addEventListener("click", () => {
         tabPills.forEach(p => p.classList.remove("active"));
@@ -445,29 +449,56 @@
 
   async function loadContacts(search = "") {
     try {
-      const url = search? `/api/contacts?search=${encodeURIComponent(search)}`: "/api/contacts";
+      const url = search ? `/api/contacts?search=${encodeURIComponent(search)}` : "/api/contacts";
       const res = await fetch(url);
       const data = await res.json();
       const serverContacts = data.contacts || [];
 
-      // Only real contacts. This used to top the list up with invented people,
-      // which meant a merchant could open a DM to somebody who did not exist.
       cachedContactsList = serverContacts;
       const totalCount = cachedContactsList.length;
       if (navContactsCount) navContactsCount.innerText = totalCount;
       const statContactsTotal = document.getElementById("statContactsTotal");
       if (statContactsTotal) statContactsTotal.innerText = totalCount;
 
+      // Real KPI calculations from genuine captured leads
+      const activeLeads = cachedContactsList.filter(c => c.status === "active" || c.status === "converted" || (c.tags && c.tags.some(t => t.toLowerCase().includes("lead")))).length;
+      const statContactsActive = document.getElementById("statContactsActive");
+      if (statContactsActive) statContactsActive.innerText = activeLeads;
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const newToday = cachedContactsList.filter(c => (c.last_interaction || "").startsWith(todayStr) || (c.first_seen || "").startsWith(todayStr)).length;
+      const statContactsToday = document.getElementById("statContactsToday");
+      if (statContactsToday) statContactsToday.innerText = newToday;
+
+      const clickedOffers = cachedContactsList.filter(c => (c.tags || []).some(t => /link|click|offer|order|convert/i.test(t))).length;
+      const ctrPct = totalCount > 0 ? ((clickedOffers / totalCount) * 100).toFixed(1) + "%" : "0.0%";
+      const statContactsCtr = document.getElementById("statContactsCtr");
+      if (statContactsCtr) statContactsCtr.innerText = ctrPct;
+
+      // Dynamic tab counters
+      const reelCount = cachedContactsList.filter(c => (c.source || "").toLowerCase().includes("reel")).length;
+      const storyCount = cachedContactsList.filter(c => (c.source || "").toLowerCase().includes("story")).length;
+      const dmCount = cachedContactsList.filter(c => (c.source || "").toLowerCase().includes("dm") || (c.source || "").toLowerCase().includes("direct")).length;
+
+      const tabFilterAll = document.getElementById("tabFilterAll");
+      if (tabFilterAll) tabFilterAll.innerText = `All Contacts (${totalCount})`;
+      const tabFilterReel = document.getElementById("tabFilterReel");
+      if (tabFilterReel) tabFilterReel.innerText = `Reel Leads (${reelCount})`;
+      const tabFilterStory = document.getElementById("tabFilterStory");
+      if (tabFilterStory) tabFilterStory.innerText = `Story Mentions (${storyCount})`;
+      const tabFilterDm = document.getElementById("tabFilterDm");
+      if (tabFilterDm) tabFilterDm.innerText = `Direct DMs (${dmCount})`;
+
       filterAndRenderContacts();
     } catch (e) {
       console.error(e);
-      cachedContactsList = []; // an error shows an empty list, never fake people
+      cachedContactsList = [];
       filterAndRenderContacts();
     }
   }
 
   function filterAndRenderContacts() {
-    const searchVal = contactsSearch? contactsSearch.value.trim().toLowerCase(): "";
+    const searchVal = contactsSearch ? contactsSearch.value.trim().toLowerCase() : "";
     let filtered = cachedContactsList;
 
     if (contactsActiveFilter === "reel") {
@@ -492,8 +523,14 @@
     if (filtered.length === 0) {
       contactsTableBody.innerHTML = `
         <tr class="empty-row">
-          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 36px;">
-            No matching contacts found.
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 48px 24px;">
+            <div style="max-width: 440px; margin: 0 auto;">
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--ink-050); border: 1px solid var(--ink-200); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: var(--ink-600);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <h4 style="margin: 0 0 6px 0; font-size: 15px; font-weight: 700; color: var(--ink-950);">No Contacts Captured Yet</h4>
+              <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">When users comment on your connected Instagram account posts with matching keywords, DM Flow automatically replies, delivers DMs, and captures them here in real-time.</p>
+            </div>
           </td>
         </tr>
       `;
@@ -503,11 +540,11 @@
     const colors = ["#0a0a0b", "#2e2e35", "#47474f", "#62626a", "#8a8a93", "#b0b0b8"];
 
     contactsTableBody.innerHTML = filtered.map((c, idx) => {
-      const initials = (c.name? c.name.split(" ").map(w => w[0]).join(""): c.username.slice(0, 2)).toUpperCase();
+      const initials = (c.name ? c.name.split(" ").map(w => w[0]).join("") : c.username.slice(0, 2)).toUpperCase();
       const color = colors[idx % colors.length];
       const tagsHtml = (c.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join(" ");
-      const statusClass = c.status === "active"? "active": (c.status === "converted"? "converted": "followed");
-      const statusLabel = c.status? (c.status.charAt(0).toUpperCase() + c.status.slice(1)): "Active";
+      const statusClass = c.status === "active" ? "active" : (c.status === "converted" ? "converted" : "followed");
+      const statusLabel = c.status ? (c.status.charAt(0).toUpperCase() + c.status.slice(1)) : "Active";
 
       return `
         <tr>
@@ -521,15 +558,15 @@
             </div>
           </td>
           <td>
-            <span class="source-badge"> ${escapeHtml(c.source || 'Reel Comments')}</span>
+            <span class="source-badge">${escapeHtml(c.source || 'Reel Comments')}</span>
           </td>
           <td>${tagsHtml || '<span style="color:var(--text-faint);">-</span>'}</td>
           <td><small style="color:var(--text-muted);">${escapeHtml(c.last_interaction || 'Recent')}</small></td>
           <td><span class="badge badge-sent">${c.messages_count || 1} msg</span></td>
           <td><span class="lead-status-pill ${statusClass}">${statusLabel}</span></td>
           <td style="text-align: right;">
-            <button class="btn-table-action" onclick="window.openInboxWithUser('${escapeHtml(c.username)}')">
-               Chat
+            <button class="btn-table-action" style="color: #c62828;" onclick="window.deleteContactRecord(${c.id || 0})">
+              Delete
             </button>
           </td>
         </tr>
@@ -537,120 +574,20 @@
     }).join("");
   }
 
-  window.openInboxWithUser = (handle) => {
-    switchView("view-home");
-    selectInboxThread(handle);
+  window.deleteContactRecord = async (id) => {
+    if (!id) return;
+    if (!confirm("Are you sure you want to remove this contact from your CRM?")) return;
+    try {
+      await fetch(`/api/contacts/${id}`, { method: "DELETE" });
+      await loadContacts();
+    } catch (_) {
+      alert("Error removing contact");
+    }
   };
 
-  // =========================================================================
-  // --- LIVE INSTAGRAM DM INBOX (3-Pane Unified Messenger) ---
-  // =========================================================================
-  const inboxThreadsData = [
-    {
-      handle: "sarah_growth",
-      name: "Sarah Jenkins",
-      avatar: "SG",
-      color: "#101014",
-      time: "2m",
-      status: "Active now · Follows you",
-      leadStatus: "Hot Lead",
-      source: "Reel #1: 50 Canva Pack",
-      messagesCount: 3,
-      linkClicks: 1,
-      deliveryPct: "100%",
-      notes: "Requested Canva offer pack. Very high intent for website design service.",
-      messages: [
-        { type: "divider", text: "TODAY" },
-        { type: "incoming", text: 'Commented on your Reel: <strong>"link pls! "</strong>' },
-        { type: "outgoing", text: 'Hey there! I\'m so happy you\'re here, thanks so much for your interest <br><br>Click below and I\'ll send you the link in just a sec ', button: "Send me the link" },
-        { type: "incoming-btn", text: 'Clicked <strong>"Send me the link"</strong>' },
-        { type: "outgoing", text: 'Here is your link <br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank"> https://satnamwebservices.com/offer</a>' }
-      ]
-    },
-    {
-      handle: "rahul_marketing",
-      name: "Rahul Sharma",
-      avatar: "RM",
-      color: "#232329",
-      time: "14m",
-      status: "Active 14m ago · Follows you",
-      leadStatus: "Client",
-      source: "Reel #1: 50 Canva Pack",
-      messagesCount: 2,
-      linkClicks: 1,
-      deliveryPct: "100%",
-      notes: "Agency owner looking to scale client acquisition funnel.",
-      messages: [
-        { type: "divider", text: "TODAY" },
-        { type: "incoming", text: 'Commented on your Reel: <strong>"canva templates"</strong>' },
-        { type: "outgoing", text: 'Hey Rahul! Here is the direct link to the 50 Canva Pack for your marketing team <br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank"> https://satnamwebservices.com/offer</a>' },
-        { type: "incoming", text: 'Thanks for the link! Looking at the offer now.' }
-      ]
-    },
-    {
-      handle: "mike_dev",
-      name: "Michael Ross",
-      avatar: "MD",
-      color: "#3a3a41",
-      time: "1h",
-      status: "Active 1h ago",
-      leadStatus: "Developer",
-      source: "Story Mention",
-      messagesCount: 4,
-      linkClicks: 2,
-      deliveryPct: "100%",
-      notes: "Asked about Python Meta Webhook integration source code.",
-      messages: [
-        { type: "divider", text: "TODAY" },
-        { type: "incoming", text: 'Mentioned you in a Story: <em>"Loving the automation tool!"</em>' },
-        { type: "outgoing", text: 'Hey Michael! Thanks a ton for the shoutout Let me know if you need any assistance.' },
-        { type: "incoming", text: 'Does this include the source code for Meta Graph API?' }
-      ]
-    },
-    {
-      handle: "clara_design",
-      name: "Clara Dupont",
-      avatar: "CD",
-      color: "#62626a",
-      time: "3h",
-      status: "Active 3h ago",
-      leadStatus: "Designer",
-      source: "Reel: Design Tips",
-      messagesCount: 1,
-      linkClicks: 1,
-      deliveryPct: "100%",
-      notes: "Freelance UI designer in Paris.",
-      messages: [
-        { type: "divider", text: "YESTERDAY" },
-        { type: "incoming", text: 'Commented on Reel: <strong>"link"</strong>' },
-        { type: "outgoing", text: 'Here are the design assets & wireframe blueprint <br><a href="https://satnamwebservices.com/offer" class="inbox-link-card" target="_blank"> https://satnamwebservices.com/offer</a>' }
-      ]
-    }
-  ];
-
-  let currentInboxUser = "sarah_growth";
-  let isBotModeActive = true;
-
   function setupModalsUI() {
-    const profileModal = document.getElementById("profileModal");
-    const btnCloseProfileModal = document.getElementById("btnCloseProfileModal");
-    const btnProfileUpgrade = document.getElementById("btnProfileUpgrade");
-
     const helpModal = document.getElementById("helpModal");
     const btnCloseHelpModal = document.getElementById("btnCloseHelpModal");
-
-    if (btnCloseProfileModal) {
-      btnCloseProfileModal.addEventListener("click", () => {
-        if (profileModal) profileModal.classList.remove("active");
-      });
-    }
-
-    if (btnProfileUpgrade) {
-      btnProfileUpgrade.addEventListener("click", () => {
-        if (profileModal) profileModal.classList.remove("active");
-        openUpgradeModal();
-      });
-    }
 
     if (btnCloseHelpModal) {
       btnCloseHelpModal.addEventListener("click", () => {
@@ -795,11 +732,11 @@
       if (dropEmail) dropEmail.textContent = user.email || "";
       if (dropRole) dropRole.textContent = authRes.is_admin ? "Administrator" : "Workspace Owner";
 
-      const initials = (user.name || user.business || "S").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
-      if (bigAvatar) bigAvatar.textContent = initials || "S";
-      if (topAvatar) topAvatar.textContent = initials || "S";
+      const initials = (user.name || user.business || "W").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+      if (bigAvatar) bigAvatar.textContent = initials || "W";
+      if (topAvatar) topAvatar.textContent = initials || "W";
       const initialsNav = document.getElementById("navAvatarInitials");
-      if (initialsNav) initialsNav.textContent = initials || "S";
+      if (initialsNav) initialsNav.textContent = initials || "W";
       if (roleChip) roleChip.textContent = authRes.is_admin ? "ADMIN" : "OWNER";
 
       // Fill Instagram details

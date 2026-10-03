@@ -1082,6 +1082,31 @@ async def export_contacts():
         headers={"Content-Disposition": 'attachment; filename="converflow_contacts.csv"'}
     )
 
+class ContactCreateRequest(BaseModel):
+    username: str
+    name: Optional[str] = None
+    tags: Optional[List[str]] = None
+    source: Optional[str] = "Manual Capture"
+
+@app.post("/api/contacts")
+async def create_contact(req: ContactCreateRequest):
+    require_user()
+    if not req.username or not req.username.strip():
+        raise HTTPException(status_code=400, detail="Username is required")
+    contact = contacts_manager.record_interaction(
+        username=req.username.strip(),
+        name=req.name or req.username.strip(),
+        source=req.source or "Manual Capture",
+        tags=req.tags or ["New Lead"]
+    )
+    return {"success": True, "contact": contact}
+
+@app.delete("/api/contacts/{contact_id}")
+async def delete_contact(contact_id: int):
+    require_user()
+    removed = contacts_manager.remove_where(lambda c: c.get("id") == contact_id)
+    return {"success": True, "removed": removed}
+
 # --- Comment Watcher Background Task ---
 
 @app.post("/api/watcher/start")

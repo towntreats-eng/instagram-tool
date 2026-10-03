@@ -29,41 +29,8 @@ class ContactsManager:
 
     def _load(self) -> List[Dict[str, Any]]:
         if not store.exists(self.file_path):
-            # Seed with sample captured contacts CRM works
-            seed_data = [
-                {
-                    "id": 1,
-                    "username": "sarah_growth",
-                    "name": "Sarah Jenkins",
-                    "tags": ["Hot Lead", "Reel Comment", "Ebook Downloaded"],
-                    "source": "Comment on Reel: 'Growth Tips 2026'",
-                    "first_seen": "2026-03-15 14:22:10",
-                    "last_interaction": "2026-03-18 18:45:00",
-                    "messages_count": 3
-                },
-                {
-                    "id": 2,
-                    "username": "mike_dev",
-                    "name": "Mike Ross",
-                    "tags": ["Pricing Inquiry", "DM"],
-                    "source": "DM Keyword: 'PRICE'",
-                    "first_seen": "2026-03-16 09:12:44",
-                    "last_interaction": "2026-03-18 20:10:15",
-                    "messages_count": 2
-                },
-                {
-                    "id": 3,
-                    "username": "clara_design",
-                    "name": "Clara Vance",
-                    "tags": ["Lead Magnet", "VIP"],
-                    "source": "Comment: 'LINK'",
-                    "first_seen": "2026-03-17 11:05:30",
-                    "last_interaction": "2026-03-17 11:06:05",
-                    "messages_count": 1
-                }
-            ]
-            self._save_raw(seed_data)
-            return seed_data
+            self._save_raw([])
+            return []
         try:
             return store.read(self.file_path)
         except Exception:
