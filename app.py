@@ -369,6 +369,49 @@ async def meta_data_deletion(request: Request):
             "confirmation_code": code}
 
 
+@app.get("/api/meta/data-deletion")
+async def meta_data_deletion_get():
+    return RedirectResponse(url="/deletion")
+
+
+@app.post("/api/meta/deauthorize")
+async def meta_deauthorize(request: Request):
+    """Meta's deauthorize callback URL.
+    Called when a user removes the app in Instagram/Facebook account settings.
+    """
+    try:
+        form = await request.form()
+        signed = form.get("signed_request", "")
+    except Exception:
+        signed = ""
+    if not signed:
+        try:
+            signed = (await request.json()).get("signed_request", "")
+        except Exception:
+            signed = ""
+
+    if signed:
+        secret = (_meta_app_creds().get("app_secret") or "").strip()
+        ok, payload = data_deletion.parse_signed_request(signed, secret)
+        if ok and isinstance(payload, dict):
+            meta_user_id = str(payload.get("user_id") or "")
+            target = next((u for u in user_manager.all()
+                           if str(((u.get("instagram") or {}).get("user_id") or "")) == meta_user_id
+                           or str(((u.get("instagram") or {}).get("instagram_account_id") or "")) == meta_user_id),
+                          None)
+            if target:
+                instagram_account.forget(target["id"])
+                user_manager.disconnect_instagram(target["id"])
+                admin_store.log("WARN", "instagram", f"User {target['email']} deauthorized app via Instagram")
+
+    return {"success": True}
+
+
+@app.get("/api/meta/deauthorize")
+async def meta_deauthorize_get():
+    return {"success": True, "message": "DM Flow Meta Deauthorization Endpoint"}
+
+
 @app.get("/api/deletion-status")
 async def deletion_status(code: str = ""):
     """Public on purpose. The confirmation code is the only thing that opens it,
