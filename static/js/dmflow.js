@@ -747,9 +747,9 @@
       {
         label: "Comment watcher is running",
         pass: !!health.watcher,
-        desc: "Something is listening for new comments.",
-        why: "The watcher is idle, so comments are not being picked up.",
-        fix: "Open Automations and press Start Live Watcher."
+        desc: health.watcher ? "Live cloud poller & Meta Webhooks are listening for new comments 24/7." : "Something is listening for new comments.",
+        why: "Neither Meta Webhooks nor the background poller is running.",
+        fix: "Ensure Meta Graph API is connected under Settings > Instagram API."
       },
       {
         label: "At least one automation is live",

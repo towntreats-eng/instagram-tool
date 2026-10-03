@@ -389,8 +389,8 @@
             <div class="card-body">
               <form id="metaForm">
                 <div class="field-row">
-                  <div class="field"><label for="mApp">App ID</label><input class="input" id="mApp" name="app_id" placeholder="1234567890123456"></div>
-                  <div class="field"><label for="mSecret">App Secret</label><input class="input" id="mSecret" name="app_secret" placeholder="••••••••"></div>
+                  <div class="field"><label for="mApp">Instagram App ID</label><input class="input" id="mApp" name="app_id" placeholder="1234567890123456"><span class="hint">From Instagram &rarr; API setup with Instagram login. Not the Facebook app id at the top of the dashboard.</span></div>
+                  <div class="field"><label for="mSecret">Instagram App Secret</label><input class="input" id="mSecret" name="app_secret" placeholder="••••••••"><span class="hint">From the same screen as the Instagram app id.</span></div>
                 </div>
                 <div class="field">
                   <label for="mRedirect">Redirect URI</label>
@@ -422,7 +422,7 @@
                 <li><b>Paste the Redirect URI</b><span>Instagram API with Instagram Login → Settings → Valid OAuth Redirect URIs → Paste the URL shown on the left</span></li>
                 <li><b>Configure Webhook</b><span>Instagram → Webhooks → Paste Webhook Callback URL &amp; Verify Token → Subscribe to <code>comments</code> &amp; <code>messages</code></span></li>
                 <li><b>Permissions &amp; Scopes</b><span>Instagram Login uses: <code>instagram_business_basic</code>, <code>instagram_business_manage_messages</code>, <code>instagram_business_manage_comments</code></span></li>
-                <li><b>Enter App ID &amp; App Secret</b><span>Copy from App Settings &gt; Basic → Paste here and click <b>Save credentials</b></span></li>
+                <li><b>Enter the Instagram App ID &amp; Secret</b><span>Copy from <b>Instagram &rarr; API setup with Instagram login</b> — <b>not</b> App Settings &gt; Basic. Instagram Login has its own id and secret, and pasting the Facebook ones makes the connection fail with "Error validating verification code". Paste here and click <b>Save credentials</b>.</span></li>
               </ol>
               <div class="muted" style="font-size:12.5px;line-height:1.7;margin-top:14px">
                 In Development mode, add your own Instagram account under <b>Instagram API with Instagram Login → Roles / User Token Generator</b> to test immediately.

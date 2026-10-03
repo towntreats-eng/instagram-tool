@@ -1979,8 +1979,35 @@ async def instagram_callback(request: Request, code: Optional[str] = None,
 
     ok, result = meta_oauth.complete(code, state)
     if not ok:
-        admin_store.log("ERROR", "instagram", f"Connect failed: {result}")
-        return page("Could not connect", str(result), False)
+        # Meta's message for this failure names redirect_uri but never says
+        # which one we sent, so the merchant is left comparing a value they
+        # cannot see against one in another tab. Say it out loud.
+        cfg = _meta_app_creds()
+        sent = (platform_settings.meta_app().get("redirect_uri") or "").strip().rstrip("/")
+        admin_store.log("ERROR", "instagram",
+                        f"Connect failed: {result} | app_id={cfg.get('app_id', '')} "
+                        f"redirect_uri={sent!r}")
+        extra = ""
+        if "redirect_uri" in str(result).lower() or "verification code" in str(result).lower():
+            # Meta names redirect_uri in this error, but the usual cause is a
+            # different field entirely: Instagram Login has its OWN app id and
+            # secret, separate from the Facebook ones at the top of the
+            # dashboard. Paste the Facebook pair and this is the error you get.
+            extra = (
+                f"<br><br><b>App id in use:</b> <code>{cfg.get('app_id') or '(not set)'}</code>"
+                f"<br><b>Redirect URI we sent:</b><br><code>{sent or '(not set)'}</code>"
+                f"<br><br>Check these three, in this order:"
+                f"<br><br>1. The id and secret must be the <b>Instagram</b> ones, from "
+                f"<b>App Dashboard &rarr; Instagram &rarr; API setup with Instagram login</b>. "
+                f"They are different numbers from the Facebook app id shown at the top of "
+                f"the dashboard — using the Facebook pair gives exactly this error."
+                f"<br>2. The redirect URI above must match one in <b>Valid OAuth Redirect "
+                f"URIs</b> character for character. Meta sometimes adds a trailing slash "
+                f"when you save it, so open the list and look."
+                f"<br>3. If both already match, the code was used twice. Start again from "
+                f"the dashboard instead of reloading this page."
+            )
+        return page("Could not connect", str(result) + extra, False)
 
     user = user_manager.set_instagram(result["user_id"], result["connection"])
     conn = result["connection"]
@@ -2044,7 +2071,8 @@ async def get_insights():
     """Funnel, safety headroom, reply speed and system health in one call."""
     require_user()
     user = current_workspace()
-    watcher = comment_watcher.status
+    is_live = POLL_ENABLED or bool(meta_client.config.get("enabled")) or comment_watcher.status in ("running", "active", "on")
+    watcher = "running" if is_live else comment_watcher.status
     connected = bool(meta_client.config.get("enabled")) or bool(
         (user or {}).get("instagram", {}).get("connected"))
 
