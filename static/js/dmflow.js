@@ -855,8 +855,10 @@
     "view-billing": renderBilling,
     "view-broadcast": renderBroadcast,
     "view-analytics": renderAnalytics,
-    "view-settings": function () { renderConnect(); renderDoctor(); renderSettingsPlan(); }
+    "view-settings": function () { renderConnect(); renderDoctor(); renderSettingsPlan(); },
+    "view-profile": function () { if (window.CFShell && window.CFShell.loadProfile) window.CFShell.loadProfile(); }
   };
+  window.CFRender = RENDER;
 
   function renderFor(viewId) {
     var fn = RENDER[viewId];
@@ -869,7 +871,7 @@
   });
   window.addEventListener("hashchange", function () {
     var map = { "#billing": "view-billing", "#broadcast": "view-broadcast",
-                "#analytics": "view-analytics", "#settings": "view-settings" };
+                "#analytics": "view-analytics", "#settings": "view-settings", "#profile": "view-profile" };
     renderFor(map[window.location.hash]);
   });
   $("#anRefresh") && $("#anRefresh").addEventListener("click", renderAnalytics);

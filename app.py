@@ -1365,6 +1365,44 @@ async def auth_announcement():
     return {"success": True, "announcement": admin_store.latest_published()}
 
 
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    business: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+
+
+@app.post("/api/auth/profile")
+async def auth_update_profile(req: ProfileUpdateRequest):
+    """Update name, workspace name, or change password for the signed-in user."""
+    user = signed_in_user()
+    if not user:
+        raise HTTPException(status_code=401, detail="Please sign in first")
+
+    patch = {}
+    if req.name and req.name.strip():
+        patch["name"] = req.name.strip()
+    if req.business is not None:
+        patch["business"] = req.business.strip()
+
+    if req.new_password and req.new_password.strip():
+        if len(req.new_password.strip()) < 6:
+            return {"success": False, "error": "New password must be at least 6 characters"}
+        if not req.current_password or not user_manager.verify_password(req.current_password, user.get("password_hash", "")):
+            return {"success": False, "error": "Current password is incorrect"}
+        patch["password"] = req.new_password.strip()
+
+    if not patch:
+        return {"success": True, "message": "No changes made", "user": user_manager.public(user)}
+
+    updated = user_manager.update(user["id"], patch)
+    if not updated:
+        return {"success": False, "error": "Could not update profile"}
+
+    admin_store.log("INFO", "user", f"{user['email']} updated profile details")
+    return {"success": True, "message": "Profile updated successfully", "user": user_manager.public(updated)}
+
+
 # =============================================================================
 # ADMIN — business control room
 # =============================================================================

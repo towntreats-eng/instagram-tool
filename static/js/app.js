@@ -22,7 +22,8 @@
     "view-contacts": { title: "People", sub: "Everyone your automations have captured, and where they came from." },
     "view-analytics": { title: "Results", sub: "Not how many messages went out — how many turned into something." },
     "view-billing": { title: "Plan & billing", sub: "What you're on, what you've used, and what upgrading unlocks." },
-    "view-settings": { title: "Settings", sub: "Your Instagram connection and how DM Flow signs in on your behalf." }
+    "view-settings": { title: "Settings", sub: "Your Instagram connection and how DM Flow signs in on your behalf." },
+    "view-profile": { title: "Profile & Account", sub: "Manage your personal profile, connected Instagram account, security, and session." }
   };
 
   function escapeHtml(str) {
@@ -253,9 +254,63 @@
     if (linkUserProfile) {
       linkUserProfile.addEventListener("click", (e) => {
         e.preventDefault();
-        openProfileModal();
+        switchView("view-profile");
       });
     }
+
+    const navItemProfile = document.getElementById("navItemProfile");
+    if (navItemProfile) {
+      navItemProfile.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchView("view-profile");
+      });
+    }
+
+    const btnSidebarLogout = document.getElementById("btnSidebarLogout");
+    if (btnSidebarLogout) {
+      btnSidebarLogout.addEventListener("click", (e) => {
+        e.preventDefault();
+        performLogout();
+      });
+    }
+
+    // Top Account Selector & Dropdown
+    const accountBox = document.getElementById("accountSelectorBox");
+    const accountMenu = document.getElementById("accountDropdownMenu");
+    if (accountBox && accountMenu) {
+      accountBox.addEventListener("click", (e) => {
+        e.stopPropagation();
+        accountMenu.hidden = !accountMenu.hidden;
+      });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".account-selector-wrapper")) {
+          accountMenu.hidden = true;
+        }
+      });
+    }
+    const btnDropdownLogout = document.getElementById("btnDropdownLogout");
+    if (btnDropdownLogout) {
+      btnDropdownLogout.addEventListener("click", (e) => {
+        e.preventDefault();
+        performLogout();
+      });
+    }
+
+    // Profile page action buttons
+    const btnProfileTopLogout = document.getElementById("btnProfileTopLogout");
+    if (btnProfileTopLogout) btnProfileTopLogout.addEventListener("click", performLogout);
+
+    const btnProfileLogoutMain = document.getElementById("btnProfileLogoutMain");
+    if (btnProfileLogoutMain) btnProfileLogoutMain.addEventListener("click", performLogout);
+
+    const btnProfileDisconnectIg = document.getElementById("btnProfileDisconnectIg");
+    if (btnProfileDisconnectIg) btnProfileDisconnectIg.addEventListener("click", performDisconnectIg);
+
+    const btnProfileRefresh = document.getElementById("btnProfileRefresh");
+    if (btnProfileRefresh) btnProfileRefresh.addEventListener("click", loadProfile);
+
+    const formUserProfile = document.getElementById("formUserProfile");
+    if (formUserProfile) formUserProfile.addEventListener("submit", handleProfileSave);
 
     const linkHelp = document.getElementById("linkHelp");
     if (linkHelp) {
@@ -272,20 +327,73 @@
     if (btnToggleWatcher) btnToggleWatcher.addEventListener("click", toggleWatcher);
   }
 
+  function getAllViewElements() {
+    return document.querySelectorAll(".content-view, .view-section, [id^='view-']");
+  }
+
   function switchView(viewId) {
-    navItems.forEach(n => n.classList.toggle("active", n.getAttribute("data-view") === viewId));
-    const mobileNavItems = document.querySelectorAll(".mobile-nav-item");
-    mobileNavItems.forEach(m => m.classList.toggle("active", m.getAttribute("data-view") === viewId));
+    if (!viewId) return;
+    if (!viewId.startsWith("view-")) viewId = "view-" + viewId.replace(/^#/, "");
 
-    contentViews.forEach(v => v.classList.toggle("active", v.id === viewId));
-
-    if (viewHeaders[viewId]) {
-      if (viewTitle) viewTitle.innerText = viewHeaders[viewId].title;
-      if (viewSubtitle) viewSubtitle.innerText = viewHeaders[viewId].sub;
+    // Top progress bar pulse
+    const prg = document.getElementById("pageTopProgress");
+    if (prg) {
+      prg.style.opacity = "1";
+      prg.style.width = "40%";
+      setTimeout(() => { if (prg) prg.style.width = "100%"; }, 60);
+      setTimeout(() => { if (prg) { prg.style.opacity = "0"; prg.style.width = "0%"; } }, 320);
     }
 
-    if (viewId === "view-home") loadAutomations();
-    if (viewId === "view-contacts") loadContacts();
+    const targetHash = "#" + viewId.replace("view-", "");
+
+    // Toggle active on all navigation items
+    document.querySelectorAll(".nav-item, .sidebar-footer-link").forEach(n => {
+      const match = n.getAttribute("data-view") === viewId || n.getAttribute("href") === targetHash;
+      n.classList.toggle("active", Boolean(match));
+    });
+
+    document.querySelectorAll(".mobile-nav-item").forEach(m => {
+      const match = m.getAttribute("data-view") === viewId || m.getAttribute("href") === targetHash;
+      m.classList.toggle("active", Boolean(match));
+    });
+
+    // Toggle visibility on all view containers
+    const allViews = getAllViewElements();
+    allViews.forEach(v => {
+      const isTarget = v.id === viewId;
+      v.classList.toggle("active", isTarget);
+    });
+
+    // Update document title and header if configured
+    if (VIEW_META[viewId]) {
+      if (viewTitle) viewTitle.innerText = VIEW_META[viewId].title;
+      if (viewSubtitle) viewSubtitle.innerText = VIEW_META[viewId].sub;
+    }
+
+    // Keep URL hash updated
+    if (window.location.hash !== targetHash) {
+      history.replaceState(null, "", targetHash);
+    }
+
+    // Reset window scroll
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    // Close account dropdown
+    const menu = document.getElementById("accountDropdownMenu");
+    if (menu) menu.hidden = true;
+
+    // View-specific data fetching
+    if (viewId === "view-home") {
+      loadAutomations();
+    } else if (viewId === "view-contacts") {
+      loadContacts();
+    } else if (viewId === "view-profile") {
+      loadProfile();
+    } else if (viewId === "view-analytics" || viewId === "view-billing" || viewId === "view-settings") {
+      if (window.CFRender && window.CFRender[viewId]) {
+        try { window.CFRender[viewId](); } catch (e) { console.error(e); }
+      }
+    }
   }
 
   // --- Account State ---
@@ -552,8 +660,7 @@
   }
 
   function openProfileModal() {
-    const profileModal = document.getElementById("profileModal");
-    if (profileModal) profileModal.classList.add("active");
+    switchView("view-profile");
   }
 
   function openHelpModal() {
@@ -561,7 +668,223 @@
     if (helpModal) helpModal.classList.add("active");
   }
 
-  // --- Broadcast / Outreach UI (Integrated from previous phase) ---
+  async function performLogout() {
+    if (!confirm("Are you sure you want to log out of DM Flow?")) return;
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (_) {}
+    window.location.href = "/login";
+  }
+
+  async function performDisconnectIg() {
+    if (!confirm("Are you sure you want to disconnect your Instagram account?\n\nAutomated comment replies and DMs will stop firing immediately until reconnected.")) {
+      return;
+    }
+    const btn = document.getElementById("btnProfileDisconnectIg");
+    if (btn) { btn.disabled = true; btn.textContent = "Disconnecting…"; }
+    try {
+      const res = await fetch("/api/instagram/disconnect", { method: "POST" }).then(r => r.json());
+      if (res.success) {
+        if (window.CF && window.CF.flash) window.CF.flash("Instagram account disconnected");
+        else alert("Instagram account disconnected");
+        await loadProfile();
+        if (window.CFAccount && window.CFAccount.reload) window.CFAccount.reload();
+      } else {
+        alert(res.error || "Could not disconnect account");
+      }
+    } catch (e) {
+      alert("Error disconnecting account");
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Disconnect Instagram Account"; }
+    }
+  }
+
+  async function handleProfileSave(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById("btnSaveProfile");
+    const msg = document.getElementById("profileFormMsg");
+    const name = (document.getElementById("inputProfileName") ? document.getElementById("inputProfileName").value : "").trim();
+    const business = (document.getElementById("inputProfileBusiness") ? document.getElementById("inputProfileBusiness").value : "").trim();
+    const currentPass = document.getElementById("inputCurrentPassword") ? document.getElementById("inputCurrentPassword").value : "";
+    const newPass = document.getElementById("inputNewPassword") ? document.getElementById("inputNewPassword").value : "";
+
+    if (!name) {
+      if (msg) { msg.textContent = "Name cannot be empty"; msg.style.color = "#b42318"; }
+      return;
+    }
+    if (newPass && newPass.length < 6) {
+      if (msg) { msg.textContent = "New password must be at least 6 characters"; msg.style.color = "#b42318"; }
+      return;
+    }
+    if (newPass && !currentPass) {
+      if (msg) { msg.textContent = "Please enter your current password to set a new password"; msg.style.color = "#b42318"; }
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+    if (msg) msg.textContent = "";
+
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name,
+          business: business,
+          current_password: currentPass || undefined,
+          new_password: newPass || undefined
+        })
+      }).then(r => r.json());
+
+      if (res.success) {
+        if (msg) { msg.textContent = "Profile updated successfully!"; msg.style.color = "#2e7d32"; }
+        if (document.getElementById("inputCurrentPassword")) document.getElementById("inputCurrentPassword").value = "";
+        if (document.getElementById("inputNewPassword")) document.getElementById("inputNewPassword").value = "";
+
+        const sbName = document.getElementById("sidebarAccountName");
+        if (sbName) sbName.textContent = business || name;
+        const dispName = document.getElementById("profileDisplayName");
+        if (dispName) dispName.textContent = business || name;
+
+        setTimeout(() => { if (msg) msg.textContent = ""; }, 3000);
+      } else {
+        if (msg) { msg.textContent = res.error || "Update failed"; msg.style.color = "#b42318"; }
+      }
+    } catch (err) {
+      if (msg) { msg.textContent = "Network error. Please try again."; msg.style.color = "#b42318"; }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Save Changes"; }
+    }
+  }
+
+  async function loadProfile() {
+    const formMsg = document.getElementById("profileFormMsg");
+    if (formMsg) formMsg.textContent = "";
+
+    try {
+      const [authRes, billRes, igRes] = await Promise.all([
+        fetch("/api/auth/me").then(r => r.json()).catch(() => ({})),
+        fetch("/api/billing/status").then(r => r.json()).catch(() => ({})),
+        fetch("/api/instagram/profile").then(r => r.json()).catch(() => ({}))
+      ]);
+
+      const user = authRes.user || {};
+      const billing = (billRes && billRes.billing) || {};
+      const usage = billing.usage || {};
+
+      // Fill Profile Info
+      const nameInput = document.getElementById("inputProfileName");
+      const busInput = document.getElementById("inputProfileBusiness");
+      const emailInput = document.getElementById("inputProfileEmail");
+      const dispName = document.getElementById("profileDisplayName");
+      const dispEmail = document.getElementById("profileDisplayEmail");
+      const bigAvatar = document.getElementById("profileBigAvatar");
+      const roleChip = document.getElementById("profileWorkspaceRole");
+      const topAvatar = document.getElementById("sidebarAvatarIcon");
+      const sideName = document.getElementById("sidebarAccountName");
+      const dropEmail = document.getElementById("dropdownUserEmail");
+      const dropRole = document.getElementById("dropdownUserRole");
+
+      const effectiveName = user.business || user.name || "Workspace Profile";
+      if (nameInput) nameInput.value = user.name || "";
+      if (busInput) busInput.value = user.business || "";
+      if (emailInput) emailInput.value = user.email || "";
+      if (dispName) dispName.textContent = effectiveName;
+      if (dispEmail) dispEmail.textContent = user.email || "";
+      if (sideName) sideName.textContent = effectiveName;
+      if (dropEmail) dropEmail.textContent = user.email || "";
+      if (dropRole) dropRole.textContent = authRes.is_admin ? "Administrator" : "Workspace Owner";
+
+      const initials = (user.name || user.business || "S").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+      if (bigAvatar) bigAvatar.textContent = initials || "S";
+      if (topAvatar) topAvatar.textContent = initials || "S";
+      const initialsNav = document.getElementById("navAvatarInitials");
+      if (initialsNav) initialsNav.textContent = initials || "S";
+      if (roleChip) roleChip.textContent = authRes.is_admin ? "ADMIN" : "OWNER";
+
+      // Fill Instagram details
+      const igConnected = Boolean(igRes.connected && igRes.success && igRes.profile);
+      const igConnBox = document.getElementById("profileIgConnectedBox");
+      const igDiscBox = document.getElementById("profileIgDisconnectedBox");
+      const igChip = document.getElementById("profileIgStatusChip");
+
+      if (igConnected) {
+        if (igConnBox) igConnBox.style.display = "block";
+        if (igDiscBox) igDiscBox.style.display = "none";
+        if (igChip) {
+          igChip.textContent = "CONNECTED";
+          igChip.className = "pro-chip is-live";
+          igChip.style.background = "#e8f5e9";
+          igChip.style.color = "#2e7d32";
+        }
+        const p = igRes.profile || {};
+        const hEl = document.getElementById("profileIgHandle");
+        if (hEl) hEl.textContent = p.username ? "@" + p.username : "Connected";
+        const metaEl = document.getElementById("profileIgMeta");
+        if (metaEl) metaEl.textContent = (p.account_type || "Business").toLowerCase().replace("_", " ") + " account";
+
+        const fEl = document.getElementById("profileIgFollowers");
+        if (fEl) fEl.textContent = p.followers_count != null ? Number(p.followers_count).toLocaleString("en-IN") : "—";
+        const mEl = document.getElementById("profileIgPosts");
+        if (mEl) mEl.textContent = p.media_count != null ? Number(p.media_count).toLocaleString("en-IN") : "—";
+        const tEl = document.getElementById("profileIgType");
+        if (tEl) tEl.textContent = (p.account_type || "Business").toUpperCase();
+
+        const img = document.getElementById("profileIgAvatar");
+        const placeholder = document.getElementById("profileIgPlaceholder");
+        if (img && p.profile_picture_url) {
+          img.src = p.profile_picture_url;
+          img.style.display = "block";
+          if (placeholder) placeholder.style.display = "none";
+        } else if (img) {
+          img.style.display = "none";
+          if (placeholder) placeholder.style.display = "flex";
+        }
+      } else {
+        if (igConnBox) igConnBox.style.display = "none";
+        if (igDiscBox) igDiscBox.style.display = "block";
+        if (igChip) {
+          igChip.textContent = "DISCONNECTED";
+          igChip.className = "pro-chip";
+          igChip.style.background = "#fbe9e7";
+          igChip.style.color = "#c62828";
+        }
+      }
+
+      // Fill Quotas & Plan
+      const pName = document.getElementById("profilePlanName");
+      const pSub = document.getElementById("profilePlanSub");
+      const pBadge = document.getElementById("profilePlanBadge");
+      const sideBadge = document.getElementById("sidebarPlanBadge");
+      const planTitle = billing.plan_name || "Free Trial";
+      if (pName) pName.textContent = planTitle;
+      if (pBadge) pBadge.textContent = planTitle.toUpperCase();
+      if (sideBadge) sideBadge.textContent = (billing.plan_id || "FREE").toUpperCase();
+      if (pSub) pSub.textContent = billing.trial_days_left ? billing.trial_days_left + " days trial remaining" : "Active workspace plan";
+
+      // Quota bars
+      const au = usage.automations || {};
+      const auText = document.getElementById("profileQuotaFlows");
+      const auBar = document.getElementById("profileQuotaFlowsBar");
+      if (auText) auText.textContent = (au.used != null ? au.used : "0") + " / " + (au.unlimited ? "∞" : (au.limit || "1"));
+      if (auBar) auBar.style.width = au.unlimited ? "20%" : Math.min(100, Math.round(((au.used || 0) / (au.limit || 1)) * 100)) + "%";
+
+      const dm = usage.dms_per_month || {};
+      const dmText = document.getElementById("profileQuotaDms");
+      const dmBar = document.getElementById("profileQuotaDmsBar");
+      if (dmText) dmText.textContent = (dm.used != null ? Number(dm.used).toLocaleString("en-IN") : "0") + " / " + (dm.unlimited ? "∞" : Number(dm.limit || 200).toLocaleString("en-IN"));
+      if (dmBar) dmBar.style.width = dm.unlimited ? "20%" : Math.min(100, Math.round(((dm.used || 0) / (dm.limit || 200)) * 100)) + "%";
+
+      const co = usage.contacts || {};
+      const coText = document.getElementById("profileQuotaContacts");
+      const coBar = document.getElementById("profileQuotaContactsBar");
+      if (coText) coText.textContent = (co.used != null ? co.used : "0") + " / " + (co.unlimited ? "∞" : (co.limit || "25"));
+      if (coBar) coBar.style.width = co.unlimited ? "20%" : Math.min(100, Math.round(((co.used || 0) / (co.limit || 25)) * 100)) + "%";
+
+    } catch (err) {
+      console.warn("[DM Flow] Could not load profile:", err);
+    }
+  }
 
   // --- Bridges to the modules that replaced the deleted code ----------------
   function loadAutomations() { return window.CFAccount? window.CFAccount.reload(): Promise.resolve(); }
@@ -583,28 +906,34 @@
     safely("navigation", setupNavigation);
     safely("contacts", setupContactsUI);
     safely("modals", setupModalsUI);
+
+    window.addEventListener("hashchange", () => {
+      const h = window.location.hash;
+      if (h) switchView("view-" + h.replace(/^#/, ""));
+    });
+
     try { await loadContacts(); } catch (err) {
       console.warn("[DM Flow] contacts did not load:", err && err.message);
     }
+
     try {
-      var authRes = await fetch("/api/auth/me").then(function (r) { return r.json(); });
-      if (authRes && authRes.signed_in) {
-        if (authRes.is_admin) {
-          var adminGroup = document.getElementById("adminNavGroup");
-          if (adminGroup) adminGroup.style.display = "";
-        }
-        if (authRes.user && authRes.user.name) {
-          var initialsEl = document.getElementById("navAvatarInitials");
-          if (initialsEl) {
-            var parts = authRes.user.name.trim().split(" ");
-            initialsEl.textContent = (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
-          }
-        }
-      }
+      await loadProfile();
     } catch (_) {}
+
+    // Check initial hash route
+    const initialHash = window.location.hash;
+    if (initialHash && initialHash !== "#home") {
+      switchView("view-" + initialHash.replace(/^#/, ""));
+    }
   }
 
-  window.CFShell = { switchView: switchView, openUpgrade: openUpgradeModal };
+  window.CFShell = {
+    switchView: switchView,
+    openUpgrade: openUpgradeModal,
+    loadProfile: loadProfile,
+    logout: performLogout
+  };
+
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
