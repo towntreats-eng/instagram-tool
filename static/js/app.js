@@ -1,11 +1,11 @@
 /* ===========================================================================
-   ConverFlow — dashboard shell.
+   DM Flow — dashboard shell.
 
    What this file is allowed to do: switch views, render the contacts table,
    open the profile/help modals. That is all that is left of it.
 
    The account screen (connect, posts, flows) lives in flows.js; plan, billing
-   and analytics live in converflow.js. Roughly 1,900 lines of simulator,
+   and analytics live in dmflow.js. Roughly 1,900 lines of simulator,
    inbox, AI-assist and broadcast demo code were deleted rather than hidden —
    none of it moved real data, and a control that does nothing is worse than
    no control at all.
@@ -22,7 +22,7 @@
     "view-contacts": { title: "People", sub: "Everyone your automations have captured, and where they came from." },
     "view-analytics": { title: "Results", sub: "Not how many messages went out — how many turned into something." },
     "view-billing": { title: "Plan & billing", sub: "What you're on, what you've used, and what upgrading unlocks." },
-    "view-settings": { title: "Settings", sub: "Your Instagram connection and how ConverFlow signs in on your behalf." }
+    "view-settings": { title: "Settings", sub: "Your Instagram connection and how DM Flow signs in on your behalf." }
   };
 
   function escapeHtml(str) {
@@ -576,7 +576,7 @@
   }
 
   function safely(label, fn) {
-    try { fn(); } catch (err) { console.warn("[ConverFlow] " + label + " skipped:", err && err.message); }
+    try { fn(); } catch (err) { console.warn("[DM Flow] " + label + " skipped:", err && err.message); }
   }
 
   async function init() {
@@ -584,7 +584,7 @@
     safely("contacts", setupContactsUI);
     safely("modals", setupModalsUI);
     try { await loadContacts(); } catch (err) {
-      console.warn("[ConverFlow] contacts did not load:", err && err.message);
+      console.warn("[DM Flow] contacts did not load:", err && err.message);
     }
     try {
       var authRes = await fetch("/api/auth/me").then(function (r) { return r.json(); });

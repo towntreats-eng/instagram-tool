@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ConverFlow — the account screen.
+   DM Flow — the account screen.
    Connect -> see your real posts -> pick one -> set the DM -> on.
 
    Rule this file keeps: nothing is ever invented. If the API cannot answer,

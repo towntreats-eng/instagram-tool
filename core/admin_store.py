@@ -1,5 +1,5 @@
 """
-ConverFlow — Admin Store
+DM Flow — Admin Store
 ========================
 Announcements (in-app notices broadcast to users) and the platform event log
 that powers the System Health tab of the admin dashboard.

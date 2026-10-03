@@ -1,5 +1,5 @@
 """
-PostgreSQL connection and schema for ConverFlow.
+PostgreSQL connection and schema for DM Flow.
 
 Design decision worth stating plainly, because it is a staged migration and
 not a full relational rewrite:

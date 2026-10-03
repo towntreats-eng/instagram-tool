@@ -1,5 +1,5 @@
 """
-ConverFlow — Plans, Pricing & Offers
+DM Flow — Plans, Pricing & Offers
 ====================================
 The pricing catalogue is data, not code. Everything the admin edits in
 Admin > Plans & Pricing lands in data/plans.json and is read live by the
@@ -51,7 +51,7 @@ FEATURE_KEYS = [
     ("ai_assist", "AI flow & hook generator"),
     ("analytics", "Campaign analytics"),
     ("csv_export", "CSV export"),
-    ("remove_branding", "Remove ConverFlow branding"),
+    ("remove_branding", "Remove DM Flow branding"),
     ("priority_support", "Priority WhatsApp support"),
     ("white_label", "White-label for clients"),
 ]

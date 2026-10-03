@@ -1,4 +1,4 @@
-# ConverFlow — Instagram comment-to-DM automation for Indian D2C brands
+# DM Flow — Instagram comment-to-DM automation for Indian D2C brands
 
 An Instagram marketing automation platform featuring **Comment-to-DM Growth Tools**, **DM Keyword Auto-Responders**, **Visual Flow Builder**, an **Interactive Mobile Flow Simulator**, **Contacts & Lead CRM**, and an **Outreach Broadcast Engine** with anti-ban protection.
 
@@ -43,7 +43,7 @@ Or via terminal:
 ```powershell
 python run.py
 ```
-Your browser will open `http://localhost:8000` with the ConverFlow dashboard.
+Your browser will open `http://localhost:8000` with the DM Flow dashboard.
 
 ---
 

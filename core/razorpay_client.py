@@ -1,5 +1,5 @@
 """
-Razorpay for ConverFlow — plain REST, no SDK.
+Razorpay for DM Flow — plain REST, no SDK.
 
 Why no SDK: one dependency fewer to break a deploy, and the three calls we
 actually make (create an order, verify a signature, verify a webhook) are

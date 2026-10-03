@@ -1,4 +1,4 @@
-# ConverFlow — Competitive Strategy
+# DM Flow — Competitive Strategy
 **Where ManyChat and every rival leaks, and exactly what we build instead**
 
 Prepared: 20 September 2026 · Owner: Umang · Status: this is the build spec for the dashboard redesign
@@ -8,7 +8,7 @@ Prepared: 20 September 2026 · Owner: Umang · Status: this is the build spec fo
 ## 0. The one-line thesis
 
 > ManyChat is a **messaging platform that bills you for growing**.
-> ConverFlow is a **revenue tool that bills you a flat fee and shows you the money**.
+> DM Flow is a **revenue tool that bills you a flat fee and shows you the money**.
 
 Everything below is evidence for why that wins, and what it forces us to build.
 
@@ -30,7 +30,7 @@ Everything below is evidence for why that wins, and what it forces us to build.
 | QuickDM | ₹399 | flat, 185 DM/hr | ✓ UPI |
 | ReplyKaro | ₹99 | flat, basic | ✓ UPI |
 | UnlockDM | ₹299–1,499 | **per campaign** | ✓ UPI |
-| **ConverFlow** | **₹0 / 399 / 799 / 1,999** | **flat, contacts included** | **✓ UPI + GST + INR** |
+| **DM Flow** | **₹0 / 399 / 799 / 1,999** | **flat, contacts included** | **✓ UPI + GST + INR** |
 
 Add to every USD tool: **2–3.5% forex markup + 18% GST**, and currency-conversion spreads reported up to 15%.
 ManyChat Pro's real landed cost for an Indian buyer is closer to **₹4,400/month**.

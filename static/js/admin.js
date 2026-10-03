@@ -1,5 +1,5 @@
 /* =============================================================================
-   ConverFlow — Admin Console
+   DM Flow — Admin Console
    ========================================================================== */
 (function () {
   "use strict";
@@ -800,13 +800,13 @@
 
   // ------------------------------------------------------------------ views
   var TITLES = {
-    overview: ["Business overview", "Everything happening across ConverFlow right now"],
+    overview: ["Business overview", "Everything happening across DM Flow right now"],
     users: ["Users & subscriptions", "Every workspace, plan and lifetime value"],
     revenue: ["Revenue", "MRR, ARR and the full payment ledger"],
     plans: ["Plans & pricing", "Build the ladder — prices, limits and what each tier unlocks"],
     offers: ["Offers & coupons", "Discount codes, festive offers and trial extensions"],
     instagram: ["Instagram API", "One Meta app here, one-click connect for every customer"],
-    templates: ["Email templates", "What ConverFlow says to your customers"],
+    templates: ["Email templates", "What DM Flow says to your customers"],
     health: ["System health", "Automation runs, sessions and error logs"],
     announcements: ["Announcements", "Broadcast a notice to your users"],
     settings: ["Plan settings", "Pricing constants and data exports"]

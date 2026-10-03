@@ -1,5 +1,5 @@
 """
-Main entry point alias for ConverFlow / Instagram Tool.
+Main entry point alias for DM Flow / Instagram Tool.
 Re-exports the FastAPI 'app' instance from app.py so both
 'uvicorn main:app' and 'uvicorn app:app' work seamlessly.
 """

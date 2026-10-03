@@ -1,4 +1,4 @@
-# ConverFlow — production readiness audit
+# DM Flow — production readiness audit
 **1 October 2026 · Phase 1 of 3 complete**
 
 This is the report the brief asks for. It is honest about what is done and what

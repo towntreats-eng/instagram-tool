@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ConverFlow — Ink Design System
+   DM Flow — Ink Design System
    Monochrome by decision, not by accident. One ink scale carries every surface,
    border and label. Emphasis comes from weight, size and space; state comes
    from FORM (filled dot = live, ring = paused, hatch = unknown) rather than hue.
@@ -2677,7 +2677,7 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-   CONVERFLOW REDESIGNED VIEWS: CONTACTS, AUTOMATIONS, AI ASSIST, INBOX, MODALS
+   DM FLOW REDESIGNED VIEWS: CONTACTS, AUTOMATIONS, AI ASSIST, INBOX, MODALS
    Pure White Background (#ffffff), Crisp Black Font, Emerald Green Accents
    ========================================================================== */
 
@@ -3861,7 +3861,7 @@ input:checked + .slider:before {
 
 
 /* ==========================================================================
-   ConverFlow v3 — Flow Tester, Instagram connect, plan meters & new pages
+   DM Flow v3 — Flow Tester, Instagram connect, plan meters & new pages
    ========================================================================== */
 
 /* ------------------------------------------------- panels (shared shell) */
@@ -4134,7 +4134,7 @@ input:checked + .slider:before {
 .section-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.65; margin-bottom: 18px; }
 
 /* ==========================================================================
-   ConverFlow v4 — components built against COMPETITIVE_STRATEGY.md
+   DM Flow v4 — components built against COMPETITIVE_STRATEGY.md
    Each block here exists to close a named competitor leak. Don't delete one
    without reading why it's there.
    ========================================================================== */
@@ -4843,7 +4843,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink-950); }
 }
 .flow-dm { font-size: 12.8px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* ==========================================================================
-   CONVERFLOW — ACCOUNT SCREEN
+   DM FLOW — ACCOUNT SCREEN
    ========================================================================== */
 
 /* -- Profile strip (International SaaS Level) -- */
@@ -5751,3 +5751,13 @@ img.ig-avatar, .ig-avatar {
 
 /* A note on an informational step is guidance, not a fault. */
 .chain-fix.is-note { color: var(--text-muted); border-left-color: var(--border-strong); }
+
+/* Three actions no longer fit beside the heading on a phone. Side by side they
+   squeezed "Is it working?" into a four-line column and pushed the last button
+   off the panel, so below this width the actions get their own row. */
+@media (max-width: 620px) {
+  .chain-head { flex-direction: column; align-items: stretch; gap: 12px; }
+  .chain-head h2 { font-size: 16px; }
+  .chain-actions { flex-wrap: wrap; }
+  .chain-actions .btn { flex: 1 1 auto; min-width: 0; }
+}

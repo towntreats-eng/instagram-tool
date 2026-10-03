@@ -1,5 +1,5 @@
 /* =============================================================================
-   ConverFlow v3 — Instagram connect, Plan & billing, Broadcast, Analytics
+   DM Flow v3 — Instagram connect, Plan & billing, Broadcast, Analytics
    Loaded after app.js; owns only the views app.js does not touch.
    ========================================================================== */
 (function () {
@@ -244,7 +244,7 @@
       amount: order.amount,
       currency: order.currency,
       order_id: order.order_id,
-      name: (STATE.brand && STATE.brand.name) || "ConverFlow",
+      name: (STATE.brand && STATE.brand.name) || "DM Flow",
       description: order.plan_name + " — monthly",
       theme: { color: "#0a0a0b" },
       modal: { ondismiss: function () { done("Payment cancelled"); setTimeout(function () { done(); }, 1800); } },
@@ -603,8 +603,8 @@
     wildcard_trigger: ["Any-comment trigger", "Catch every comment on a post, not just chosen keywords."],
     analytics: ["Campaign analytics", "See which keyword earns and where people drop off."],
     priority_support: ["Priority WhatsApp support", "A real person on WhatsApp, not a ticket queue."],
-    white_label: ["White-label", "Run client brands without ConverFlow's name on it."],
-    remove_branding: ["No ConverFlow branding", "Your DMs look like yours."]
+    white_label: ["White-label", "Run client brands without DM Flow's name on it."],
+    remove_branding: ["No DM Flow branding", "Your DMs look like yours."]
   };
 
   async function fillUpgradeModal() {
@@ -721,7 +721,7 @@
 
     var plan = [
       {
-        label: "ConverFlow can talk to Meta",
+        label: "DM Flow can talk to Meta",
         pass: out.platform_ready,
         desc: out.platform_ready
           ? "The platform's Meta app is configured and accepted."

@@ -1,5 +1,5 @@
 """
-ConverFlow — Instagram Connect (Instagram Login API)
+DM Flow — Instagram Connect (Instagram Login API)
 =====================================================
 The owner registers ONE Meta app in Admin > Instagram API. After that every
 customer connects their own Instagram account with a single click:

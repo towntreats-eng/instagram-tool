@@ -127,6 +127,19 @@ class ContactsManager:
             self._save()
             return record
 
+    def remove_where(self, match) -> int:
+        """Delete every contact `match(contact)` says yes to. Returns the count.
+
+        Added for Meta's data-deletion callback, which has to actually remove
+        the records captured from a merchant's comments rather than claim to.
+        """
+        before = len(self._contacts)
+        self._contacts = [c for c in self._contacts if not match(c)]
+        removed = before - len(self._contacts)
+        if removed:
+            self._save()
+        return removed
+
     def export_csv(self) -> str:
         output = StringIO()
         writer = csv.writer(output)

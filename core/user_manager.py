@@ -1,5 +1,5 @@
 """
-ConverFlow — Multi-tenant User & Subscription Store
+DM Flow — Multi-tenant User & Subscription Store
 ====================================================
 Single source of truth for every workspace on the platform.
 Backed by data/users.json (swap for Postgres later without touching callers).

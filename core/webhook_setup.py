@@ -55,7 +55,7 @@ WEBHOOK_OBJECT = "instagram"
 
 def _call(url: str, method: str = "GET", body: Dict[str, Any] = None) -> Tuple[bool, Any]:
     data = None
-    headers = {"User-Agent": "ConverFlow"}
+    headers = {"User-Agent": "DMFlow"}
     if method == "POST":
         data = urllib.parse.urlencode(body or {}).encode()
         headers["Content-Type"] = "application/x-www-form-urlencoded"

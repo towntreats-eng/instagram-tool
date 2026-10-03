@@ -66,7 +66,7 @@ def main():
     for name, url in endpoints:
         print(f"Testing [{name}]...")
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "ConverFlow-Tester"})
+            req = urllib.request.Request(url, headers={"User-Agent": "DMFlow-Tester"})
             with urllib.request.urlopen(req, timeout=15) as res:
                 body = json.loads(res.read().decode())
                 print(f"  [SUCCESS 200 OK]")

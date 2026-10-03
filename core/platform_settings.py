@@ -1,5 +1,5 @@
 """
-ConverFlow — Platform Settings
+DM Flow — Platform Settings
 ==============================
 Everything the owner configures once and every workspace inherits:
 brand details, billing setup, safety defaults, the Meta app used for
@@ -60,7 +60,7 @@ class PlatformSettings:
     def _defaults(self) -> Dict[str, Any]:
         return {
             "brand": {
-                "name": "ConverFlow",
+                "name": "DM Flow",
                 "tagline": "Turn every Instagram comment into a paying customer",
                 "support_email": "hello@umangsatnam.in",
                 "whatsapp": "+91 88498 66193",
@@ -87,7 +87,7 @@ class PlatformSettings:
             },
             "meta_app": {
                 "enabled": True,
-                "app_id": "874373775643660",
+                "app_id": "1087830127189044",
                 "app_secret": "bcab0149ec7f0ff2b389cdfe2b712798",
                 "redirect_uri": "https://instagram-tool-production-c3f0.up.railway.app/api/instagram/callback",
                 "verify_token": "converflow_webhook_token",
@@ -155,9 +155,9 @@ class PlatformSettings:
                 "id": "welcome",
                 "name": "Welcome",
                 "when": "Sent right after someone creates a workspace",
-                "subject": "Your ConverFlow workspace is ready, {{first_name}}",
+                "subject": "Your DM Flow workspace is ready, {{first_name}}",
                 "body": ("Hi {{first_name}},\n\n"
-                         "Your ConverFlow workspace for {{business}} is live. You're on the "
+                         "Your DM Flow workspace for {{business}} is live. You're on the "
                          "{{plan_name}} plan with {{trial_days}} days free.\n\n"
                          "Three things worth doing first:\n"
                          "1. Connect your Instagram account\n"
@@ -173,7 +173,7 @@ class PlatformSettings:
                 "when": "Sent when a workspace links its Instagram account",
                 "subject": "@{{ig_handle}} is connected",
                 "body": ("Hi {{first_name}},\n\n"
-                         "@{{ig_handle}} is now connected to ConverFlow. Comment and DM triggers "
+                         "@{{ig_handle}} is now connected to DM Flow. Comment and DM triggers "
                          "will start firing as soon as you switch an automation on.\n\n"
                          "{{brand_name}}"),
                 "enabled": True,
@@ -182,7 +182,7 @@ class PlatformSettings:
                 "id": "trial_ending",
                 "name": "Trial ending",
                 "when": "Sent 3 days before a trial expires",
-                "subject": "{{days_left}} days left on your ConverFlow trial",
+                "subject": "{{days_left}} days left on your DM Flow trial",
                 "body": ("Hi {{first_name}},\n\n"
                          "Your trial ends on {{expiry_date}}. Your automations captured "
                          "{{contacts}} contacts and sent {{dms_sent}} DMs so far — all of that "
@@ -219,7 +219,7 @@ class PlatformSettings:
                 "id": "suspended",
                 "name": "Workspace suspended",
                 "when": "Sent when an account is suspended",
-                "subject": "Your ConverFlow workspace is on hold",
+                "subject": "Your DM Flow workspace is on hold",
                 "body": ("Hi {{first_name}},\n\n"
                          "We've put your workspace on hold. Your data is safe and nothing has "
                          "been deleted.\n\n"

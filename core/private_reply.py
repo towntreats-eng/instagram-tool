@@ -51,7 +51,7 @@ def _post(url: str, payload: Dict[str, Any]) -> Tuple[bool, Any]:
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
         url, data=data, method="POST",
-        headers={"Content-Type": "application/json", "User-Agent": "ConverFlow"})
+        headers={"Content-Type": "application/json", "User-Agent": "DMFlow"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as res:
             return True, json.loads(res.read().decode() or "{}")

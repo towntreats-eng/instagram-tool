@@ -6,12 +6,12 @@ import uvicorn
 
 def open_browser():
     time.sleep(1.8)
-    print("\n Opening ConverFlow in your browser...")
+    print("\n Opening DM Flow in your browser...")
     webbrowser.open("http://localhost:8000")
 
 if __name__ == "__main__":
     print("=" * 62)
-    print(" ConverFlow - Instagram Automation, CRM & Outreach Suite")
+    print(" DM Flow - Instagram Automation, CRM & Outreach Suite")
     print("=" * 62)
     print(" Landing page -> http://localhost:8000/")
     print(" Pricing -> http://localhost:8000/pricing")

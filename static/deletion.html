@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Data Deletion Instructions — ConverFlow</title>
-<meta name="description" content="ConverFlow User Data Deletion Instructions. How to request complete removal of your data and Meta Platform account permissions.">
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<title>Data Deletion Instructions — DM Flow</title>
+<meta name="description" content="DM Flow User Data Deletion Instructions. How to request complete removal of your data and Meta Platform account permissions.">
 <link rel="canonical" href="https://converflow.in/deletion">
 <meta name="theme-color" content="#0a0a0b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +23,7 @@
       <span class="brand-mark" aria-hidden="true">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h8l-1 8 11-13h-8z"/></svg>
       </span>
-      ConverFlow
+      DM Flow
     </a>
     <nav class="nav-links" aria-label="Main">
       <a href="/#how">How it works</a>
@@ -45,7 +47,7 @@
     <span class="legal-badge">Meta User Data Deletion Callback & Instructions</span>
     <h1 class="legal-title">Data Deletion Instructions</h1>
     <div class="legal-meta">
-      <span><strong>Service:</strong> ConverFlow</span>
+      <span><strong>Service:</strong> DM Flow</span>
       <span><strong>Company:</strong> Satnam Web Services, Unjha, Gujarat, India</span>
       <span><strong>Compliance:</strong> Meta Platform Terms & GDPR Article 17</span>
     </div>
@@ -56,7 +58,7 @@
 <main class="wrap" style="padding: 48px 0 96px; max-width: 860px;">
   <div class="legal-content">
     <p>
-      At <strong>ConverFlow</strong>, we respect your data sovereignty and privacy. In compliance with <strong>Meta's Platform Terms</strong>, the <strong>General Data Protection Regulation (GDPR)</strong>, and the <strong>Digital Personal Data Protection Act (DPDP)</strong>, you have the full legal right to request the permanent deletion of any data associated with your Facebook / Instagram account or ConverFlow workspace.
+      At <strong>DM Flow</strong>, we respect your data sovereignty and privacy. In compliance with <strong>Meta's Platform Terms</strong>, the <strong>General Data Protection Regulation (GDPR)</strong>, and the <strong>Digital Personal Data Protection Act (DPDP)</strong>, you have the full legal right to request the permanent deletion of any data associated with your Facebook / Instagram account or DM Flow workspace.
     </p>
 
     <div class="legal-box">
@@ -66,17 +68,17 @@
       </p>
     </div>
 
-    <h2>Option 1: Disconnect & Remove ConverFlow via Meta (Recommended)</h2>
-    <p>You can revoke all ConverFlow access directly from your Facebook or Instagram security settings in under 60 seconds:</p>
+    <h2>Option 1: Disconnect & Remove DM Flow via Meta (Recommended)</h2>
+    <p>You can revoke all DM Flow access directly from your Facebook or Instagram security settings in under 60 seconds:</p>
     
     <div class="legal-box">
       <h4>Through Facebook Desktop / Mobile:</h4>
       <ol style="margin-left: 20px; margin-top: 10px;">
         <li>Log into your Facebook account and go to <strong>Settings &amp; Privacy &gt; Settings</strong>.</li>
         <li>In the left sidebar, navigate to <strong>Apps and Websites</strong>.</li>
-        <li>Locate <strong>ConverFlow</strong> in the active applications list.</li>
+        <li>Locate <strong>DM Flow</strong> in the active applications list.</li>
         <li>Click <strong>Remove</strong>.</li>
-        <li>Check the confirmation box: <em>"Delete posts, videos or events that ConverFlow posted on your timeline"</em> and confirm.</li>
+        <li>Check the confirmation box: <em>"Delete posts, videos or events that DM Flow posted on your timeline"</em> and confirm.</li>
       </ol>
     </div>
 
@@ -85,7 +87,7 @@
       <ol style="margin-left: 20px; margin-top: 10px;">
         <li>Open Instagram and tap your Profile icon &gt; Menu (top right) &gt; <strong>Settings and privacy</strong>.</li>
         <li>Scroll down to <strong>Website permissions</strong> and select <strong>Apps and websites</strong>.</li>
-        <li>Tap the <strong>Active</strong> tab, locate <strong>ConverFlow</strong>, and tap <strong>Remove</strong>.</li>
+        <li>Tap the <strong>Active</strong> tab, locate <strong>DM Flow</strong>, and tap <strong>Remove</strong>.</li>
       </ol>
     </div>
 
@@ -123,6 +125,45 @@
       <a href="/">Home</a>
     </p>
   </div>
+  <!-- Meta hands the person a URL with ?code=... after a deletion runs. This
+       is where that lands, so the code resolves into a real answer rather than
+       a generic page that says nothing about their request. -->
+  <section id="delStatus" class="legal-section" hidden>
+    <h2>Your deletion request</h2>
+    <div id="delBody"></div>
+  </section>
+  <script>
+    (function () {
+      var code = new URLSearchParams(location.search).get("code");
+      if (!code) return;
+      var box = document.getElementById("delStatus");
+      var body = document.getElementById("delBody");
+      box.hidden = false;
+      body.textContent = "Checking...";
+      fetch("/api/deletion-status?code=" + encodeURIComponent(code))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.success) { body.textContent = d.error || "Not found."; return; }
+          var r = d.removed || {};
+          var when = d.at ? new Date(d.at * 1000).toLocaleString() : "";
+          body.innerHTML =
+            "<p><b>Confirmation code:</b> " + code + "</p>" +
+            "<p><b>Status:</b> completed" + (when ? " on " + when : "") + "</p>" +
+            "<ul>" +
+              "<li>Instagram connection and access token: " +
+                (r.connection ? "removed" : "none was stored") + "</li>" +
+              "<li>Contacts captured from comments on your posts: " +
+                (r.contacts || 0) + " removed</li>" +
+              "<li>Event records naming your workspace: " +
+                (r.events || 0) + " removed</li>" +
+            "</ul>" +
+            "<p>Your DM Flow login and billing history are not Instagram data " +
+            "and were kept. To delete those as well, email " +
+            "<a href=\"mailto:info@satnamwebservices.in\">info@satnamwebservices.in</a>.</p>";
+        })
+        .catch(function () { body.textContent = "Could not check that code right now."; });
+    })();
+  </script>
 </main>
 
 <!-- FOOTER -->
@@ -134,7 +175,7 @@
           <span class="brand-mark" aria-hidden="true">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h8l-1 8 11-13h-8z"/></svg>
           </span>
-          ConverFlow
+          DM Flow
         </span>
         <p class="foot-note">Instagram comment-to-DM automation, built in Unjha for Indian D2C brands and creators.</p>
       </div>

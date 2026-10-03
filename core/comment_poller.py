@@ -70,6 +70,48 @@ def _get(url: str) -> Tuple[bool, Any]:
         return False, str(exc)
 
 
+# Deliberately a separate file from the poll state. Once the Meta app is
+# published, both paths run at once: a webhook can arrive for a comment the
+# poller is about to read. The handler writes here the moment it handles one,
+# and the poller checks here before delivering. Keeping it out of the poll
+# state file means a poll pass saving its own state cannot overwrite an id the
+# handler recorded while that pass was running - which would have cost the
+# commenter a second, duplicate DM.
+HANDLED_FILE = "data/handled_comments.json"
+KEEP_HANDLED = 2000
+
+
+def mark_handled(comment_id: str) -> None:
+    if not comment_id:
+        return
+    try:
+        ids = store.read(HANDLED_FILE, []) if store.exists(HANDLED_FILE) else []
+        ids = ids if isinstance(ids, list) else []
+        cid = str(comment_id)
+        if cid in ids:
+            return
+        ids.append(cid)
+        store.write(HANDLED_FILE, ids[-KEEP_HANDLED:])
+    except Exception:
+        pass
+
+
+def was_handled(comment_id: str) -> bool:
+    try:
+        ids = store.read(HANDLED_FILE, []) if store.exists(HANDLED_FILE) else []
+        return str(comment_id) in (ids if isinstance(ids, list) else [])
+    except Exception:
+        return False
+
+
+def handled_set() -> set:
+    try:
+        ids = store.read(HANDLED_FILE, []) if store.exists(HANDLED_FILE) else []
+        return set(str(i) for i in (ids if isinstance(ids, list) else []))
+    except Exception:
+        return set()
+
+
 def _state() -> Dict[str, Any]:
     try:
         s = store.read(STATE_FILE, {}) if store.exists(STATE_FILE) else {}
@@ -150,6 +192,7 @@ def poll_user(user: Dict[str, Any], rules: List[Dict[str, Any]],
 
     stats = {"polled": 0, "new": 0, "primed": 0, "errors": []}
     now = time.time()
+    already = handled_set()
 
     for mid in media_ids[:10]:
         ok, out = comments(mid, token)
@@ -170,6 +213,8 @@ def poll_user(user: Dict[str, Any], rules: List[Dict[str, Any]],
             if not cid or cid in seen:
                 continue
             seen.add(cid)
+            if cid in already:
+                continue  # a webhook already answered this one
             if first_time:
                 stats["primed"] += 1
                 continue

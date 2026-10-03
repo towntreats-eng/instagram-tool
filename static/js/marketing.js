@@ -1,4 +1,4 @@
-/* ConverFlow — marketing pages behaviour (nav, FAQ, reveal, auth forms) */
+/* DM Flow — marketing pages behaviour (nav, FAQ, reveal, auth forms) */
 (function () {
   "use strict";
 
@@ -85,7 +85,7 @@
           btn.disabled = false; btn.textContent = "Start 15-day free trial";
         }
       } catch (err) {
-        showMsg(box, "Server unreachable. Is ConverFlow running?", "err");
+        showMsg(box, "Server unreachable. Is DM Flow running?", "err");
         btn.disabled = false; btn.textContent = "Start 15-day free trial";
       }
     });
@@ -114,7 +114,7 @@
           btn.disabled = false; btn.textContent = "Sign in";
         }
       } catch (err) {
-        showMsg(box, "Server unreachable. Is ConverFlow running?", "err");
+        showMsg(box, "Server unreachable. Is DM Flow running?", "err");
         btn.disabled = false; btn.textContent = "Sign in";
       }
     });
@@ -159,7 +159,7 @@
     wildcard_trigger: "Wildcard (any comment) trigger", story_mention: "Story mention trigger",
     broadcast: "Broadcast / cold DM engine", ai_assist: "AI flow & hook generator",
     analytics: "Campaign analytics", csv_export: "CSV export",
-    remove_branding: "No ConverFlow branding", priority_support: "Priority WhatsApp support",
+    remove_branding: "No DM Flow branding", priority_support: "Priority WhatsApp support",
     white_label: "White-label for clients"
   };
 

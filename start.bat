@@ -1,8 +1,8 @@
 @echo off
-title ConverFlow - Instagram Automation for D2C
+title DM Flow - Instagram Automation for D2C
 color 0f
 echo ================================================================
-echo        CONVERFLOW - INSTAGRAM AUTOMATION SUITE
+echo        DM FLOW - INSTAGRAM AUTOMATION SUITE
 echo ================================================================
 echo.
 echo  [1/2] Checking Python environment...
@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo  [2/2] Launching ConverFlow...
+echo  [2/2] Launching DM Flow...
 echo.
 python run.py
 if %errorlevel% neq 0 (
