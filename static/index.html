@@ -187,10 +187,17 @@
               </div>
               <div class="chain-actions">
                 <button class="btn btn-secondary btn-sm" id="btnChainCheck">Re-check</button>
+                <button class="btn btn-secondary btn-sm" id="btnPollNow">Read comments now</button>
                 <button class="btn btn-primary btn-sm" id="btnChainRepair" hidden>Repair</button>
               </div>
             </div>
             <ol class="chain-list" id="chainList"></ol>
+            <!-- What actually arrived. Without this, "nothing happened" and
+                 "it arrived and no flow matched" look identical. -->
+            <div class="chain-feed" id="chainFeed" hidden>
+              <div class="chain-feed-head">Recent events</div>
+              <ul class="chain-feed-list" id="chainFeedList"></ul>
+            </div>
           </div>
 
           <div class="sec-head">

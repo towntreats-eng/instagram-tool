@@ -1,6 +1,9 @@
 import os
 import json
+import hmac
+import hashlib
 import asyncio
+import time
 import threading
 import contextvars
 import logging
@@ -13,7 +16,7 @@ logger = logging.getLogger("ConverFlow")
 # Admin -> Instagram API.
 DEFAULT_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "converflow_webhook_token")
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, StreamingResponse, PlainTextResponse, RedirectResponse
 from fastapi import Response
@@ -37,6 +40,9 @@ from core.razorpay_client import RazorpayClient
 from core import instagram_account
 from core import follow_gate
 from core import webhook_setup
+from core import event_log
+from core import private_reply
+from core import comment_poller
 from core import auth as cf_auth
 from core import db as cf_db
 from core import store as cf_store
@@ -66,10 +72,48 @@ async def _bind_request(request: Request, call_next):
         _request_ctx.reset(token)
 
 
+# How often to read comments ourselves. Meta delivers no production webhooks
+# to an unpublished app - its own dashboard says so - so until App Review
+# passes this loop is the only thing that makes comment -> DM work at all.
+POLL_SECONDS = int(os.environ.get("POLL_SECONDS", "60") or 60)
+POLL_ENABLED = (os.environ.get("POLL_ENABLED", "1") or "1").strip() not in ("0", "false", "no")
+_poll_stats: Dict[str, Any] = {"last_run": 0, "last": None, "runs": 0}
+
+
+def _poll_once() -> Dict[str, Any]:
+    """One pass, synchronous. Runs on a worker thread; the delivery it causes
+    is handed back to the event loop, because the handler is async."""
+    loop = asyncio.get_event_loop()
+    return comment_poller.poll_all(
+        user_manager.all(), automation_engine.get_all(),
+        lambda payload: asyncio.run_coroutine_threadsafe(
+            meta_webhook_event(InternalDelivery(payload)), loop).result(timeout=90))
+
+
+async def _poll_loop():
+    # A first pass only ever primes: it marks what is already there as seen so
+    # the merchant's whole comment history is not answered on boot.
+    await asyncio.sleep(8)
+    while True:
+        try:
+            stats = await asyncio.get_event_loop().run_in_executor(None, _poll_once)
+            _poll_stats.update({"last_run": time.time(), "last": stats,
+                                "runs": _poll_stats["runs"] + 1})
+            if stats.get("new") or stats.get("errors"):
+                logger.info(f"[POLL] {stats}")
+        except Exception as exc:
+            logger.error(f"[POLL ERROR] {exc}")
+        await asyncio.sleep(POLL_SECONDS)
+
+
 @app.on_event("startup")
 async def _startup():
     ok, msg = cf_db.init()
     print(f"[ConverFlow] storage: {'PostgreSQL' if ok else 'JSON files'} — {msg}")
+    if POLL_ENABLED:
+        asyncio.create_task(_poll_loop())
+        print(f"[ConverFlow] comment polling every {POLL_SECONDS}s "
+              f"(needed until the Meta app is published)")
 
 # Core instances
 campaign_manager = CampaignManager()
@@ -453,13 +497,76 @@ async def meta_webhook_challenge(
         return Response(content=hub_challenge or "", media_type="text/plain")
     return Response(content="Verification token mismatch", status_code=403)
 
+class InternalDelivery:
+    """Lets the poller hand an event to the real handler.
+
+    When Advanced Access is not granted yet, Meta sends no comment webhooks at
+    all, so the poller builds the same payload Meta would have sent. Routing it
+    through this one handler is deliberate: a second copy of the matching,
+    follow-gate and send logic would drift from this one within a week, and the
+    polled path would quietly start behaving differently from the live path.
+    """
+    internal = True
+    headers: Dict[str, str] = {}
+
+    def __init__(self, payload: Dict[str, Any]):
+        self._payload = payload
+
+    async def body(self) -> bytes:
+        return json.dumps(self._payload).encode()
+
+    async def json(self) -> Dict[str, Any]:
+        return self._payload
+
+
+def _webhook_signature_ok(raw: bytes, header: str) -> Tuple[bool, str]:
+    """Is this really from Meta?
+
+    The callback URL is public - it is printed in the dashboard and the repo is
+    open - and the handler below sends DMs on whatever it is told. Without this,
+    anyone could POST a forged comment and have the app message any Instagram
+    user, on the merchant's own account and quota.
+
+    Meta signs every delivery with the app secret. When we have no secret we
+    cannot check, so we accept and say so loudly rather than silently trusting.
+    """
+    secret = (_meta_app_creds().get("app_secret") or "").strip()
+    if not secret:
+        return True, "no app secret configured - delivery not verified"
+    if not header:
+        return False, "no signature header"
+    sent = header.split("=", 1)[-1].strip()
+    want = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+    if hmac.compare_digest(sent, want):
+        return True, ""
+    return False, "signature did not match the app secret"
+
+
 @app.post("/api/meta/webhook")
 async def meta_webhook_event(request: Request):
     """
     Receives real-time incoming comments & messages from Meta Webhooks in 0.5s!
     """
+    internal = getattr(request, "internal", False)
     try:
-        body = await request.json()
+        raw = await request.body()
+    except Exception as e:
+        logger.error(f"[WEBHOOK ERROR] Could not read body: {e}")
+        return {"status": "ignored"}
+
+    if not internal:
+        sig_ok, sig_note = _webhook_signature_ok(
+            raw, request.headers.get("x-hub-signature-256", "")
+            or request.headers.get("X-Hub-Signature-256", ""))
+        if not sig_ok:
+            logger.warning(f"[WEBHOOK REJECTED] {sig_note}")
+            event_log.record("webhook", event_log.REJECTED, note=sig_note)
+            raise HTTPException(status_code=403, detail="Invalid signature")
+        if sig_note:
+            logger.warning(f"[WEBHOOK UNVERIFIED] {sig_note}")
+
+    try:
+        body = json.loads(raw.decode() or "{}")
         logger.info(f"[WEBHOOK EVENT RECEIVED] {body}")
     except Exception as e:
         logger.error(f"[WEBHOOK ERROR] Invalid JSON body: {e}")
@@ -518,12 +625,35 @@ async def meta_webhook_event(request: Request):
                     if not candidates:
                         logger.warning(f"[WEBHOOK] No active rule matched for comment '{text}' on media {media_id}")
                         campaign_manager.add_log("INFO", f"Comment '{text}' received from @{username} but no active automation rule matched.")
+                        event_log.record(
+                            "poll" if getattr(request, "internal", False) else "webhook",
+                            event_log.NO_RULE, field="comments", username=username,
+                            text=text, media_id=str(media_id or ""),
+                            note="It arrived, but no live flow matched this post or keyword.")
 
                     for rule in candidates:
                         logger.info(f"[WEBHOOK MATCHED RULE] Rule ID: {rule.get('id')}, Name: '{rule.get('name')}'")
                         # Workspace token for this rule
                         rule_user = user_manager.get(rule.get("created_by", ""))
                         user_token = ((rule_user or {}).get("instagram") or {}).get("access_token") or meta_client.config.get("access_token")
+
+                        # The merchant testing their own flow comments from the
+                        # account that owns the post. Acting on that means the
+                        # account DMs itself, which Instagram refuses, and the
+                        # merchant reads the silence as "it does not work".
+                        owner_ig = str(((rule_user or {}).get("instagram") or {}).get("user_id") or "")
+                        if owner_ig and str(user_id or "") == owner_ig:
+                            logger.info(f"[WEBHOOK] Skipping @{username}: the account's own comment")
+                            event_log.record(
+                                "poll" if getattr(request, "internal", False) else "webhook",
+                                event_log.IGNORED, field="comments", username=username,
+                                text=text, media_id=str(media_id or ""),
+                                workspace=(rule_user or {}).get("email", ""),
+                                note=("This comment is from the connected account itself. "
+                                      "Instagram does not let an account DM itself - test "
+                                      "by commenting from a different account."))
+                            processed_count += 1
+                            break
 
                         # 1. Public comment reply (Boosts Instagram algorithmic engagement)
                         pub_reply = rule.get("public_comment_reply")
@@ -546,17 +676,26 @@ async def meta_webhook_event(request: Request):
                                 known = state == follow_gate.NOT_FOLLOWING
                                 gate_msg = SpintaxEngine.spin(
                                     follow_gate.prompt_text(rule, account_name, username, known))
-                                gate_res = meta_client.send_instagram_dm(
-                                    user_id,
-                                    gate_msg,
+                                # A private reply, not a plain DM: this person
+                                # commented, they never messaged us, so the
+                                # ordinary 24-hour window is not open for them.
+                                gate_res = private_reply.send(
+                                    user_token, comment_id, gate_msg,
                                     (f"Follow @{account_name}" if account_name else None),
                                     (f"https://instagram.com/{account_name}" if account_name else None),
-                                    access_token=user_token
+                                    fallback_user_id=user_id,
                                 )
                                 campaign_manager.add_log(
                                     "INFO",
                                     f"Follow-gate held the link for @{username} "
                                     f"({'not following' if known else 'follow status unknown'} — {why})")
+                                event_log.record(
+                                    "poll" if getattr(request, "internal", False) else "webhook",
+                                    event_log.HELD, field="comments", username=username,
+                                    text=text, media_id=str(media_id or ""),
+                                    workspace=(rule_user or {}).get("email", ""),
+                                    note=f"Follow-gate held the link ({why}). "
+                                         f"Gate message {'sent' if gate_res.get('success') else 'FAILED: ' + str(gate_res.get('error'))}.")
                                 contacts_manager.upsert_contact(
                                     username=username, name=username,
                                     source=f"Comment on {media_id}",
@@ -571,14 +710,27 @@ async def meta_webhook_event(request: Request):
                         dm_msg = SpintaxEngine.spin(dm_msg)
                         btn_text = rule.get("button_text")
                         deliv_link = rule.get("delivery_link")
-                        if user_id:
-                            dm_res = meta_client.send_instagram_dm(user_id, dm_msg, btn_text, deliv_link, access_token=user_token)
+                        if comment_id or user_id:
+                            dm_res = private_reply.send(
+                                user_token, comment_id, dm_msg, btn_text, deliv_link,
+                                fallback_user_id=user_id)
+                            src = "poll" if getattr(request, "internal", False) else "webhook"
                             if dm_res.get("success"):
                                 logger.info(f"[WEBHOOK DM SENT] To @{username} ({user_id})")
                                 campaign_manager.add_log("SUCCESS", f"Automated reply and DM sent to @{username} on Reel ({text})")
+                                event_log.record(src, event_log.SENT, field="comments",
+                                                 username=username, text=text,
+                                                 media_id=str(media_id or ""),
+                                                 workspace=(rule_user or {}).get("email", ""),
+                                                 note=f"DM sent for flow '{rule.get('name', '')}'.")
                             else:
                                 logger.error(f"[WEBHOOK DM ERROR] {dm_res.get('error')}")
                                 campaign_manager.add_log("ERROR", f"Failed to send DM to @{username}: {dm_res.get('error')}")
+                                event_log.record(src, event_log.FAILED, field="comments",
+                                                 username=username, text=text,
+                                                 media_id=str(media_id or ""),
+                                                 workspace=(rule_user or {}).get("email", ""),
+                                                 note=str(dm_res.get("error")))
 
                         # Record CRM lead
                         contacts_manager.upsert_contact(
@@ -2142,9 +2294,47 @@ async def instagram_diagnose(request: Request):
                             "detail": "No account is linked to this workspace.",
                             "fix": "Connect Instagram from the Home screen."}]}
     mine = [r for r in automation_engine.get_all() if r.get("created_by") == user["id"]]
-    return {"success": True,
-            **webhook_setup.diagnose(user, mine, _webhook_url(request),
-                                     _meta_app_creds())}
+    out = webhook_setup.diagnose(user, mine, _webhook_url(request), _meta_app_creds())
+
+    # The step every other step exists to produce. Meta can say a subscription
+    # is perfect and still send nothing - Advanced Access gates comment
+    # delivery - so the only honest answer is whether anything has ever come.
+    last = event_log.last()
+    if last is None:
+        step = {"key": "events", "label": "Events are actually arriving", "state": "fail",
+                "detail": "No comment has been handled yet.",
+                "fix": ("Comment on one of your posts from a DIFFERENT account, "
+                        "then press 'Read comments now'. Until your Meta app is "
+                        "published, Meta sends no live webhooks to anyone - not "
+                        "even to you - so ConverFlow reads the comments itself "
+                        f"every {POLL_SECONDS}s instead.")}
+    elif last.get("verdict") == event_log.REJECTED:
+        step = {"key": "events", "label": "Events are actually arriving", "state": "fail",
+                "detail": f"Last delivery was refused {event_log.ago(last['at'])}: {last.get('note', '')}",
+                "fix": ("The signature did not match the app secret. Check the "
+                        "secret in Admin -> Instagram API against the Meta app.")}
+    else:
+        state = "pass" if last.get("verdict") in (event_log.SENT, event_log.HELD) else "unknown"
+        who = f"@{last['username']}" if last.get("username") else "someone"
+        said = f' "{last["text"]}"' if last.get("text") else ""
+        verdict_word = {
+            event_log.SENT: "and a DM went out",
+            event_log.HELD: "and the follow-gate held the link",
+            event_log.NO_RULE: "but no live flow matched it",
+            event_log.IGNORED: "and it was skipped",
+            event_log.FAILED: "but the DM failed",
+        }.get(last.get("verdict"), "")
+        step = {"key": "events", "label": "Events are actually arriving", "state": state,
+                "detail": f"{event_log.ago(last['at'])}: {who} commented{said} - {verdict_word}.",
+                "fix": last.get("note", "") if state != "pass" else ""}
+
+    checks = out.get("checks", [])
+    at = next((i for i, c in enumerate(checks) if c["key"] == "automation"), len(checks))
+    checks.insert(at, step)
+    if step["state"] == "fail" and out.get("ok"):
+        out["ok"] = False
+        out["verdict"] = step["detail"]
+    return {"success": True, **out, "events": event_log.recent(8)}
 
 
 @app.post("/api/instagram/repair-webhook")
@@ -2176,6 +2366,42 @@ async def instagram_repair_webhook(request: Request):
                    "steps": out.get("steps", [])},
                   "re-registered the Instagram event chain")
     return out
+
+
+@app.post("/api/instagram/poll-now")
+async def instagram_poll_now():
+    """Read comments right now instead of waiting for the next cycle."""
+    user = require_user()
+    if not instagram_account.connected(user):
+        return {"success": False, "error": "Connect an Instagram account first."}
+    mine = [r for r in automation_engine.get_all() if r.get("created_by") == user["id"]]
+    if not any(r.get("is_active") and r.get("type") == "comment_to_dm" for r in mine):
+        return {"success": False, "error": "Turn a comment flow on first."}
+
+    loop = asyncio.get_event_loop()
+    state = comment_poller._state()
+
+    def run():
+        return comment_poller.poll_user(
+            user, mine,
+            lambda payload: asyncio.run_coroutine_threadsafe(
+                meta_webhook_event(InternalDelivery(payload)), loop).result(timeout=90),
+            state)
+
+    stats = await loop.run_in_executor(None, run)
+    comment_poller._save(state)
+
+    if stats["primed"]:
+        msg = (f"First look at {stats['polled']} post(s). {stats['primed']} existing "
+               f"comment(s) marked as already handled - old comments are never "
+               f"answered. New ones from here on will be.")
+    elif stats["new"]:
+        msg = f"{stats['new']} new comment(s) processed. See Recent events below."
+    elif stats["errors"]:
+        msg = f"Instagram refused: {stats['errors'][0]}"
+    else:
+        msg = f"Checked {stats['polled']} post(s). No new comments."
+    return {"success": not stats["errors"], "stats": stats, "message": msg}
 
 
 @app.get("/api/admin/webhook-health")

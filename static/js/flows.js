@@ -120,18 +120,57 @@
         '<div class="chain-body">' +
           '<div class="chain-label">' + esc(c.label) + '</div>' +
           '<div class="chain-detail">' + esc(c.detail) + '</div>' +
-          (c.fix && c.state !== "pass" ? '<div class="chain-fix">' + esc(c.fix) + '</div>' : "") +
+          // An "info" row is not a problem, so its note must not be styled
+          // like one — red text next to a working step reads as a failure.
+          (c.fix && c.state !== "pass"
+            ? '<div class="chain-fix' + (c.state === "info" ? " is-note" : "") + '">' +
+              esc(c.fix) + '</div>'
+            : "") +
         '</div></li>';
     }).join("");
 
     // Repair is only offered when it is the thing that would actually help.
     // Both subscription levels are repairable; the rest (account type, a
     // paused flow) are things only the merchant can change.
+    paintFeed(out.events || []);
     var REPAIRABLE = { app_webhook: 1, webhook_sub: 1 };
     var broken = out.checks.filter(function (c) {
       return REPAIRABLE[c.key] && c.state !== "pass";
     }).length > 0;
     show($("#btnChainRepair"), broken);
+  }
+
+  var VERDICT = {
+    sent:     ["DM sent", "ok"],
+    held:     ["Follow-gate held it", "ok"],
+    no_rule:  ["No flow matched", "warn"],
+    ignored:  ["Skipped", "warn"],
+    failed:   ["DM failed", "bad"],
+    rejected: ["Refused", "bad"]
+  };
+
+  function since(ts) {
+    var s = Math.max(0, Math.round(Date.now() / 1000 - ts));
+    if (s < 60) return s + "s ago";
+    if (s < 3600) return Math.floor(s / 60) + "m ago";
+    if (s < 86400) return Math.floor(s / 3600) + "h ago";
+    return Math.floor(s / 86400) + "d ago";
+  }
+
+  function paintFeed(rows) {
+    var wrap = $("#chainFeed"), list = $("#chainFeedList");
+    if (!wrap || !list) return;
+    show(wrap, rows.length > 0);
+    list.innerHTML = rows.map(function (r) {
+      var v = VERDICT[r.verdict] || [r.verdict, "warn"];
+      return '<li class="feed-row">' +
+        '<span class="feed-when">' + esc(since(r.at)) + '</span>' +
+        '<span class="feed-who">' + esc(r.username ? "@" + r.username : "—") + '</span>' +
+        '<span class="feed-text">' + esc(r.text || "") + '</span>' +
+        '<span class="feed-verdict ' + v[1] + '">' + esc(v[0]) + '</span>' +
+        (r.note ? '<span class="feed-note">' + esc(r.note) + '</span>' : "") +
+        '</li>';
+    }).join("");
   }
 
   /* ------------------------------------------------------------------ media */
@@ -533,6 +572,15 @@
       cb.disabled = true; cb.textContent = "Checking...";
       await loadChain();
       cb.disabled = false; cb.textContent = "Re-check";
+      return;
+    }
+    if (ev.target.closest("#btnPollNow")) {
+      var pb = ev.target.closest("#btnPollNow");
+      pb.disabled = true; pb.textContent = "Reading...";
+      var pr = await api("/api/instagram/poll-now", { method: "POST" });
+      pb.disabled = false; pb.textContent = "Read comments now";
+      toast(pr.message || pr.error || "Could not read comments", !pr.success);
+      await loadChain();
       return;
     }
     if (ev.target.closest("#btnChainRepair")) {

@@ -5713,3 +5713,41 @@ img.ig-avatar, .ig-avatar {
   padding-left: 11px; border-left: 2px solid var(--danger-border);
 }
 .chain-step.is-fail .chain-label { color: var(--danger); }
+
+/* ---------------------------------------------------------------- chain feed
+   What actually arrived, under the chain. Monochrome like the rest of the app,
+   with one coloured word per row carrying the verdict — the eye should be able
+   to scan the right-hand column alone and know whether anything is wrong. */
+.chain-feed { margin-top: 18px; border-top: 1px solid var(--border-subtle); padding-top: 14px; }
+.chain-feed-head {
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.chain-feed-list { list-style: none; margin: 0; padding: 0; }
+.feed-row {
+  display: grid;
+  grid-template-columns: 62px 120px 1fr auto;
+  gap: 10px; align-items: baseline;
+  padding: 7px 0; border-top: 1px solid var(--border-subtle); font-size: 12.5px;
+}
+.feed-row:first-child { border-top: none; }
+.feed-when { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.feed-who  { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-text { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-verdict { font-weight: 600; white-space: nowrap; }
+.feed-verdict.ok   { color: var(--ink-950); }
+.feed-verdict.warn { color: var(--text-muted); }
+.feed-verdict.bad  { color: var(--danger); }
+/* The explanation belongs under the row it explains, across the full width. */
+.feed-note {
+  grid-column: 1 / -1; color: var(--text-muted); font-size: 12px;
+  line-height: 1.5; padding-left: 72px;
+}
+@media (max-width: 640px) {
+  .feed-row { grid-template-columns: 56px 1fr auto; }
+  .feed-text { display: none; }
+  .feed-note { padding-left: 0; }
+}
+
+/* A note on an informational step is guidance, not a fault. */
+.chain-fix.is-note { color: var(--text-muted); border-left-color: var(--border-strong); }
