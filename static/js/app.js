@@ -315,6 +315,14 @@
       });
     }
 
+    const linkFooterHelp = document.getElementById("linkFooterHelp");
+    if (linkFooterHelp) {
+      linkFooterHelp.addEventListener("click", (e) => {
+        e.preventDefault();
+        openHelpModal();
+      });
+    }
+
     if (btnSidebarLogin) btnSidebarLogin.addEventListener("click", triggerOpenLogin);
     if (btnSettingsLogin) btnSettingsLogin.addEventListener("click", triggerOpenLogin);
     if (btnSettingsRefresh) btnSettingsRefresh.addEventListener("click", refreshAccountStatus);

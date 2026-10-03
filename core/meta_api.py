@@ -68,7 +68,7 @@ class MetaAPIClient:
         # 1. Try Instagram Login API directly (graph.instagram.com)
         try:
             ig_resp = requests.get(
-                f"https://graph.instagram.com/me?fields=id,username,name,profile_pic&access_token={token}",
+                f"https://graph.instagram.com/me?fields=id,username,name,account_type,profile_picture_url,media_count&access_token={token}",
                 timeout=10
             )
             ig_data = ig_resp.json()
@@ -79,8 +79,10 @@ class MetaAPIClient:
                     "page_access_token": token,
                     "ig_id": str(ig_data.get("id")),
                     "ig_username": ig_data.get("username", "instagram_user"),
-                    "ig_name": ig_data.get("name", ig_data.get("username", "")),
-                    "profile_picture": ig_data.get("profile_pic", "")
+                    "ig_name": ig_data.get("name") or ig_data.get("username", ""),
+                    "profile_picture": ig_data.get("profile_picture_url", ""),
+                    "account_type": ig_data.get("account_type", "BUSINESS"),
+                    "media_count": ig_data.get("media_count", 0),
                 }
                 self.save_config({
                     "enabled": True,

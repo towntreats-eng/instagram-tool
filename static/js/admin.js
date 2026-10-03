@@ -1157,8 +1157,25 @@
         '<td>' + esc(w.plan) + '</td></tr>';
     }).join("");
   }
-  document.addEventListener("click", function (ev) {
+  document.addEventListener("click", async function (ev) {
     if (ev.target.closest("#btnConnRefresh")) load();
+    if (ev.target.closest("#btnConnSync")) {
+      var btn = ev.target.closest("#btnConnSync");
+      var orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Syncing...";
+      try {
+        var res = await fetch("/api/admin/connections/sync", { method: "POST" }).then(function (x) { return x.json(); });
+        if (window.toast) window.toast(res.message || "Synchronized with Instagram", res.success ? "success" : "error");
+        else alert(res.message || "Synchronized with Instagram");
+        await load();
+      } catch (e) {
+        if (window.toast) window.toast("Failed to sync connection", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
     var nav = ev.target.closest('[data-view="connections"]');
     if (nav) setTimeout(load, 60);
   });

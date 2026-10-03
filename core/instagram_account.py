@@ -56,12 +56,30 @@ def _get(url: str) -> Tuple[bool, Any]:
 
 
 def _token(user: Dict[str, Any]) -> str:
-    return ((user or {}).get("instagram") or {}).get("access_token") or ""
+    token = ((user or {}).get("instagram") or {}).get("access_token") or ""
+    if not token:
+        try:
+            from core.meta_api import MetaAPIClient
+            mc = MetaAPIClient()
+            if mc.config.get("enabled") and mc.config.get("access_token"):
+                token = mc.config.get("access_token") or ""
+        except Exception:
+            pass
+    return token
 
 
 def connected(user: Dict[str, Any]) -> bool:
     ig = (user or {}).get("instagram") or {}
-    return bool(ig.get("connected") and ig.get("access_token"))
+    if bool(ig.get("connected") and ig.get("access_token")):
+        return True
+    try:
+        from core.meta_api import MetaAPIClient
+        mc = MetaAPIClient()
+        if mc.config.get("enabled") and mc.config.get("access_token"):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def profile(user: Dict[str, Any], force: bool = False) -> Tuple[bool, Any]:

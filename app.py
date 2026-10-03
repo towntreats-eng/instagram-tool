@@ -547,6 +547,20 @@ async def save_meta_config(req: MetaConfigRequest):
     require_admin()
     saved = meta_client.save_config(req.dict(exclude_unset=True))
     campaign_manager.add_log("SUCCESS", "Updated Facebook Developer / Meta API configuration.")
+    admin_u = current_workspace()
+    if admin_u and saved.get("access_token"):
+        conn = {
+            "connected": bool(saved.get("enabled", True)),
+            "provider": "meta_graph_api",
+            "access_token": saved.get("access_token"),
+            "connected_at": _now(),
+            "page_id": saved.get("page_id", ""),
+            "instagram_account_id": saved.get("instagram_account_id", ""),
+            "username": saved.get("connected_account_username", ""),
+            "display_name": saved.get("connected_account_name", ""),
+        }
+        user_manager.set_instagram(admin_u["id"], conn)
+        instagram_account.forget(admin_u["id"])
     return {"success": True, "config": saved}
 
 @app.post("/api/meta/test")
@@ -1258,6 +1272,20 @@ async def connect_meta(req: MetaConnectRequest):
     if result.get("success"):
         if req.verify_token:
             meta_client.save_config({"verify_token": req.verify_token})
+        admin_u = current_workspace()
+        if admin_u:
+            conn = {
+                "connected": True,
+                "provider": "meta_graph_api",
+                "access_token": req.access_token,
+                "connected_at": _now(),
+                "page_id": meta_client.config.get("page_id", ""),
+                "instagram_account_id": result.get("account", {}).get("ig_id", ""),
+                "username": result.get("account", {}).get("ig_username", ""),
+                "display_name": result.get("account", {}).get("ig_name", ""),
+            }
+            user_manager.set_instagram(admin_u["id"], conn)
+            instagram_account.forget(admin_u["id"])
         campaign_manager.add_log("INFO", f"Official Meta Graph API connected to @{result['account']['ig_username']}")
     return result
 
@@ -1273,8 +1301,12 @@ async def disconnect_meta():
         "connected_account_name": "",
         "connected_account_username": ""
     })
+    admin_u = current_workspace()
+    if admin_u:
+        user_manager.disconnect_instagram(admin_u["id"])
+        instagram_account.forget(admin_u["id"])
     campaign_manager.add_log("INFO", "Meta Graph API disconnected.")
-    return {"success": True}
+    return {"success": True, "message": "Meta API disconnected."}
 
 
 
@@ -1837,9 +1869,26 @@ async def instagram_status(user_id: Optional[str] = None):
     user = user_manager.get(user_id) if user_id else current_workspace()
     if not user:
         raise HTTPException(status_code=404, detail="No workspace")
-    ig = {k: v for k, v in user.get("instagram", {}).items()
-          if k not in ("access_token", "page_access_token")}
-    return {"success": True, "instagram": ig,
+    ig = dict(user.get("instagram", {}))
+    # Keep admin workspace connection in sync with Meta platform configuration
+    if not (ig.get("connected") and ig.get("access_token")) and meta_client.config.get("enabled") and meta_client.config.get("access_token") and is_admin_user(user):
+        conn = {
+            "connected": True,
+            "provider": meta_client.config.get("provider", "meta_graph_api"),
+            "access_token": meta_client.config.get("access_token"),
+            "connected_at": meta_client.config.get("updated_at") or _now(),
+            "page_id": meta_client.config.get("page_id", ""),
+            "instagram_account_id": meta_client.config.get("instagram_account_id", ""),
+            "username": meta_client.config.get("connected_account_username", "satnamwebservices"),
+            "display_name": meta_client.config.get("connected_account_name", "Satnam web services"),
+        }
+        user_manager.set_instagram(user["id"], conn)
+        user = user_manager.get(user["id"]) or user
+        ig = dict(user.get("instagram", {}))
+
+    clean_ig = {k: v for k, v in ig.items()
+                if k not in ("access_token", "page_access_token")}
+    return {"success": True, "instagram": clean_ig,
             "platform_ready": platform_settings.meta_ready(),
             "allow_browser_login": platform_settings.section("flags").get("allow_browser_login", True)}
 
@@ -2325,8 +2374,21 @@ async def admin_connections():
     require_admin()
     rows, stuck, live = [], 0, 0
     all_rules = automation_engine.get_all()
+    meta_enabled = bool(meta_client.config.get("enabled"))
+    meta_tok = meta_client.config.get("access_token") or ""
+    meta_uname = meta_client.config.get("connected_account_username") or "satnamwebservices"
+
     for u in user_manager.all():
-        ig = u.get("instagram") or {}
+        ig = dict(u.get("instagram") or {})
+        # If admin workspace and platform has a valid Meta connection, sync if missing
+        if is_admin_user(u) and (not ig.get("connected") or not ig.get("access_token")):
+            if meta_enabled and meta_tok:
+                ig["connected"] = True
+                ig["access_token"] = meta_tok
+                ig["username"] = ig.get("username") or meta_uname
+                ig["connected_at"] = ig.get("connected_at") or meta_client.config.get("updated_at") or u.get("created_at")
+                user_manager.set_instagram(u["id"], ig)
+
         flows = [r for r in all_rules if r.get("created_by") == u["id"]]
         active = sum(1 for r in flows if r.get("is_active"))
         if ig.get("connected") and ig.get("access_token"):
@@ -2335,7 +2397,7 @@ async def admin_connections():
             state = "token_missing"
         else:
             state = "never_connected"
-        if state!= "connected":
+        if state != "connected":
             stuck += 1
         else:
             live += 1
@@ -2344,7 +2406,7 @@ async def admin_connections():
             "name": u.get("name", ""),
             "email": u.get("email", ""),
             "plan": u.get("plan", ""),
-            "handle": ig.get("username") or u.get("ig_handle") or "",
+            "handle": ig.get("username") or u.get("ig_handle") or (meta_uname if (is_admin_user(u) and meta_enabled) else ""),
             "state": state,
             "connected_at": ig.get("connected_at") or "",
             "flows": len(flows),
@@ -2355,6 +2417,37 @@ async def admin_connections():
     rows.sort(key=lambda r: (order.get(r["state"], 9), r["email"]))
     return {"success": True, "rows": rows, "working": live, "needs_help": stuck,
             "platform_ready": platform_settings.meta_ready()}
+
+
+@app.post("/api/admin/connections/sync")
+async def admin_sync_connections():
+    require_admin()
+    tok = meta_client.config.get("access_token")
+    uname = meta_client.config.get("connected_account_username", "satnamwebservices")
+    name = meta_client.config.get("connected_account_name", "Satnam web services")
+    ig_id = meta_client.config.get("instagram_account_id", "")
+    page_id = meta_client.config.get("page_id", "")
+    if not tok:
+        return {"success": False, "message": "No active Meta Platform token configured. Please enter access token under Instagram API."}
+
+    synced = 0
+    for u in user_manager.all():
+        if is_admin_user(u):
+            conn = {
+                "connected": True,
+                "provider": "platform_sync",
+                "access_token": tok,
+                "connected_at": _now(),
+                "page_id": page_id,
+                "instagram_account_id": ig_id,
+                "username": uname,
+                "display_name": name,
+            }
+            user_manager.set_instagram(u["id"], conn)
+            instagram_account.forget(u["id"])
+            synced += 1
+
+    return {"success": True, "message": f"Successfully synchronized {synced} admin workspace(s) with @{uname}."}
 
 
 @app.get("/api/admin/users/{user_id}/workspace")

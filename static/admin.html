@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/admin.css">
 <link rel="icon" href="/static/favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="/static/apple-touch-icon.png"><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 </head>
 <body>
 
@@ -83,6 +83,13 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
         Marketing site
       </a>
+      <div class="side-legal-links">
+        <a href="/privacy" target="_blank" rel="noopener">Privacy</a>
+        <span>&bull;</span>
+        <a href="/terms" target="_blank" rel="noopener">Terms</a>
+        <span>&bull;</span>
+        <a href="/deletion" target="_blank" rel="noopener">Deletion</a>
+      </div>
     </div>
   </aside>
 
@@ -212,7 +219,10 @@
               <h3>Who is actually working</h3>
               <div class="sub">A workspace that never connected Instagram is a refund waiting to happen. This is the support queue, worst first.</div>
             </div>
-            <button class="btn btn-ghost" id="btnConnRefresh">Refresh</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-green btn-sm" id="btnConnSync" title="Synchronize platform Instagram connection to all admin workspaces">Sync Platform Account</button>
+              <button class="btn btn-ghost btn-sm" id="btnConnRefresh">Refresh</button>
+            </div>
           </div>
           <div class="card-body">
             <div class="conn-summary" id="connSummary"></div>
@@ -537,6 +547,27 @@
           </div>
         </div>
       </section>
+
+    <!-- Admin Universal Global Footer -->
+    <footer class="admin-global-footer">
+      <div class="agf-left">
+        <span class="agf-status-dot"></span>
+        <span class="agf-status-text">Meta Graph API v21.0 Active &bull; Satnam Web Services Production Node</span>
+        <span class="agf-sep">&bull;</span>
+        <span class="agf-copy">&copy; 2026 DM Flow Inc. All rights reserved.</span>
+      </div>
+      <div class="agf-right">
+        <a href="/app" class="agf-link">Open Customer Web</a>
+        <span class="agf-sep">&bull;</span>
+        <a href="/privacy" target="_blank" rel="noopener" class="agf-link">Privacy Policy</a>
+        <span class="agf-sep">&bull;</span>
+        <a href="/terms" target="_blank" rel="noopener" class="agf-link">Terms</a>
+        <span class="agf-sep">&bull;</span>
+        <a href="/deletion" target="_blank" rel="noopener" class="agf-link">Data Deletion</a>
+        <span class="agf-sep">&bull;</span>
+        <span class="agf-tag">Admin v2.4</span>
+      </div>
+    </footer>
 
     </div>
   </div>

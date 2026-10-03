@@ -5998,3 +5998,251 @@ img.ig-avatar, .ig-avatar {
   transition: width 0.3s ease;
 }
 
+/* ==========================================================================
+   UNIVERSAL SAAS COMPLIANCE FOOTER
+   ========================================================================== */
+.saas-footer {
+  margin-top: auto;
+  background-color: #ffffff;
+  border-top: 1px solid var(--border-subtle);
+  padding: 44px 36px 28px 36px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.saas-footer-content {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 1fr 1.2fr;
+  gap: 36px;
+  margin-bottom: 32px;
+}
+
+.sf-brand-col {
+  padding-right: 28px;
+}
+
+.sf-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.sf-brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--ink-950);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sf-brand-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--ink-950);
+}
+
+.sf-brand-pill {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: var(--ink-100);
+  color: var(--ink-700);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.sf-desc {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  max-width: 380px;
+}
+
+.sf-trust-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-700);
+  background: var(--ink-050);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.sf-badge svg {
+  color: var(--ink-900);
+}
+
+.sf-heading {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-900);
+  margin-bottom: 14px;
+}
+
+.sf-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sf-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.15s ease;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.sf-links a:hover {
+  color: var(--ink-950);
+  text-decoration: underline;
+}
+
+.saas-footer-bottom {
+  border-top: 1px solid var(--border-light);
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sf-bottom-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sf-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #027a48;
+  background: #ecfdf3;
+  border: 1px solid #d1fadf;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.sf-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #12b76a;
+  box-shadow: 0 0 0 2px rgba(18, 183, 106, 0.2);
+  display: inline-block;
+}
+
+.sf-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sf-bottom-right a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.sf-bottom-right a:hover {
+  color: var(--ink-950);
+  text-decoration: underline;
+}
+
+.sf-sep {
+  color: var(--ink-300);
+  font-size: 10px;
+}
+
+.sf-version-tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-500);
+  background: var(--ink-050);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+}
+
+/* Sidebar legal compliance bar */
+.sidebar-legal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 8px 4px 2px 4px;
+}
+
+.sidebar-legal-bar a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.sidebar-legal-bar a:hover {
+  color: var(--ink-900);
+  text-decoration: underline;
+}
+
+.sidebar-legal-bar .sep {
+  color: var(--ink-300);
+  font-size: 8px;
+}
+
+@media (max-width: 960px) {
+  .saas-footer-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .sf-brand-col {
+    grid-column: 1 / -1;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .saas-footer {
+    padding: 24px 16px 80px 16px;
+  }
+  .saas-footer-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .saas-footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
