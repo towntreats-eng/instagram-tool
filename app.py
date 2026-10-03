@@ -686,6 +686,10 @@ def _signing_secrets() -> List[str]:
     out: List[str] = []
     for val in (cfg.get("webhook_secret"),
                 os.environ.get("META_APP_SECRET"),
+                os.environ.get("INSTAGRAM_APP_SECRET"),
+                os.environ.get("META_SECRET"),
+                os.environ.get("APP_SECRET"),
+                cfg.get("app_secret"),
                 _meta_app_creds().get("app_secret")):
         val = str(val or "").strip()
         if val and val not in out:
