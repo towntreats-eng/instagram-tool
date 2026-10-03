@@ -11,7 +11,7 @@ App: **1087830127189044** · Live: **https://instagram-tool-production-c3f0.up.r
 
 | # | Thing | Why it matters | Status |
 |---|---|---|---|
-| 1 | **Rotate the app secret** | `bcab0149…` is in the public GitHub repo's history. Anyone holding it can forge webhook deliveries and re-point your app's webhook. | **Not done** |
+| 1 | **Rotate the app secret** | Rotated and updated to new app secret (`1c5050…`). | **Done** |
 | 2 | **Drop `instagram_business_content_publish`** | The app never publishes to Instagram. Meta's own rejection rule: *"If you request permissions or features that your app does not use … your submission will not be approved."* | Fixed locally — **set it in Admin → Instagram API on production too** |
 | 3 | **Reviewer test account** | Meta needs working credentials. It must be on a plan that allows at least one live flow, or the reviewer hits an upgrade wall and fails you. | **Not done** |
 | 4 | **App icon** | Required field, 1024×1024. | Done — `static/app-icon-1024.png` |
