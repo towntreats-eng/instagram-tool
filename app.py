@@ -2,6 +2,8 @@ import os
 import json
 import hmac
 import hashlib
+import urllib.parse
+import urllib.request
 import asyncio
 import time
 import threading
@@ -1817,10 +1819,55 @@ async def admin_save_settings(req: SettingsPayload):
     return {"success": True, "section": req.section, "values": platform_settings.public().get(req.section, section)}
 
 
+def _looks_like_facebook_pair(app_id: str, app_secret: str) -> bool:
+    """Is this the Facebook app id and secret rather than the Instagram ones?
+
+    `{app-id}|{app-secret}` is a Facebook app access token. If Meta answers to
+    it, the pair came from App Settings > Basic. Instagram Login needs the
+    separate id and secret under Instagram > API setup with Instagram login,
+    and pasting the Facebook pair fails much later with an error that blames
+    redirect_uri - which is how an afternoon disappears.
+    """
+    if not (app_id and app_secret):
+        return False
+    token = urllib.parse.quote(f"{app_id}|{app_secret}")
+    try:
+        base = os.environ.get("FB_GRAPH_BASE", "https://graph.facebook.com/v21.0").rstrip("/")
+        url = (f"{base}/{urllib.parse.quote(str(app_id))}"
+               f"?fields=id,name&access_token={token}")
+        req = urllib.request.Request(url, headers={"User-Agent": "DMFlow"})
+        with urllib.request.urlopen(req, timeout=12) as res:
+            return bool(json.loads(res.read().decode()).get("id"))
+    except Exception:
+        return False
+
+
 @app.post("/api/admin/meta-app/test")
 async def admin_test_meta_app():
     require_admin()
     result = meta_oauth.test_app()
+
+    # test_app() falls back to "the id is digits and the secret is long
+    # enough" and reports success. That green tick is worth nothing, and it
+    # is what let the wrong credentials sit here looking correct. Check the
+    # one thing that actually distinguishes them, and never claim more than
+    # was verified.
+    cfg = platform_settings.meta_app()
+    app_id = str(cfg.get("app_id") or "").strip()
+    app_secret = str(cfg.get("app_secret") or "").strip()
+    if app_id and app_secret and _looks_like_facebook_pair(app_id, app_secret):
+        result = {
+            "success": False,
+            "error": (f"These are the Facebook app credentials for app {app_id}. "
+                      f"Instagram Login needs its own pair - open App Dashboard "
+                      f"\u2192 Instagram \u2192 API setup with Instagram login and copy the "
+                      f"Instagram App ID and Instagram App Secret from there."),
+        }
+    elif result.get("success") and not result.get("app_id"):
+        result["message"] = ("Saved. Meta would not confirm these from here, which is "
+                             "normal for Instagram Login credentials - the real test is "
+                             "pressing Connect on the dashboard.")
+
     admin_store.log("SUCCESS" if result.get("success") else "ERROR", "instagram",
                     result.get("message") or result.get("error", "Meta app test"))
     return result
@@ -2565,11 +2612,27 @@ def _meta_app_creds() -> dict:
     """
     cfg = dict(platform_settings.meta_app() or {})
     legacy = dict(getattr(meta_client, "config", {}) or {})
+    cfg_id = str(cfg.get("app_id") or "").strip()
+    legacy_id = str(legacy.get("app_id") or "").strip()
+    # The legacy file may be trusted for a secret in two cases: it describes
+    # the same app, or the settings name no app at all and it is the only
+    # record there is. It must never be trusted when the two name DIFFERENT
+    # apps - that is the mix this guard exists to prevent.
+    same_app = (not cfg_id) or (cfg_id == legacy_id)
+
     for key in ("app_id", "app_secret", "verify_token"):
-        if not str(cfg.get(key) or "").strip():
-            val = str(legacy.get(key) or "").strip()
-            if val:
-                cfg[key] = val
+        if str(cfg.get(key) or "").strip():
+            continue
+        # An id from one app and a secret from another is the single worst
+        # thing this function could return: every signature check would fail
+        # and every token exchange would be refused, with an error that
+        # points at redirect_uri instead. So a secret is only borrowed from
+        # the legacy file when that file is about the SAME app.
+        if key == "app_secret" and not same_app:
+            continue
+        val = str(legacy.get(key) or "").strip()
+        if val:
+            cfg[key] = val
     return cfg
 
 

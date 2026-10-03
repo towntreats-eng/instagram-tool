@@ -11,20 +11,22 @@ App: **1087830127189044** · Live: **https://instagram-tool-production-c3f0.up.r
 
 | # | Thing | Why it matters | Status |
 |---|---|---|---|
-| 1 | **Rotate the app secret** | Rotated and updated to new app secret (`1c5050…`). | **Done** |
-| 2 | **Drop `instagram_business_content_publish`** | The app never publishes to Instagram. Meta's own rejection rule: *"If you request permissions or features that your app does not use … your submission will not be approved."* | Fixed locally — **set it in Admin → Instagram API on production too** |
-| 3 | **Reviewer test account** | Meta needs working credentials. It must be on a plan that allows at least one live flow, or the reviewer hits an upgrade wall and fails you. | **Not done** |
-| 4 | **App icon** | Required field, 1024×1024. | Done — `static/app-icon-1024.png` |
-| 5 | **Business email** | Where the review result is sent. | Set `info@satnamwebservices.in` |
-| 6 | **Rename the Meta app to "DM Flow"** | The app name Meta shows on the authorisation screen must match the site, the privacy policy and the screencast. A mismatch is a cheap rejection. | **Not done** |
-| 7 | **Set the brand name on production** | The site name comes from a setting, and production reads it from Postgres, not from the repo. Admin → Branding → Name → `DM Flow`. | **Not done** |
+| 1 | **Use the INSTAGRAM app id and secret** | Instagram Login has its own pair, under **App Dashboard → Instagram → API setup with Instagram login**. It is *not* the Facebook pair at the top of the dashboard. Pasting the Facebook pair fails at the token exchange with *"Error validating verification code"* — an error that blames `redirect_uri` and sends you looking in the wrong place. | **Verify this first** |
+| 2 | **Reviewer test account** | Meta needs working credentials. Put it on a plan that allows at least one live flow, or the reviewer hits an upgrade wall and fails you. | **Not done** |
+| 3 | **Rename the Meta app to "DM Flow"** | The name on the authorisation screen must match the site, the privacy policy and the screencast. | **Not done** |
+| 4 | **Configure the webhook on the new app** | Callback URL, verify token and the `comments` field are per app, and the new app has none of it. Connect, then press **Repair** once. | **Not done** |
+| 5 | **Remove any Facebook / Pages use case** | `pages_show_list`, `pages_read_engagement` and friends come from a Facebook use case this product never calls. (`public_profile` is granted to every app and cannot be removed — ignore it.) | **Check** |
+| 6 | **Set the brand name on production** | Production reads it from Postgres, not the repo. Admin → Branding → Name → `DM Flow`. | **Not done** |
+| 7 | App icon | Required field, 1024×1024. | Done — `static/app-icon-1024.png` |
+| 8 | Business email | Where the review result is sent. | Set `info@satnamwebservices.in` |
+| 9 | Only three permissions requested | The new app has exactly the three this product uses. | Done |
 
-### Rotating the secret, in order (3 minutes of downtime)
+### Switching to the new app, in order
 
-1. Meta app → **App settings → Basic → App secret → Reset**.
-2. Paste the new secret into **Admin → Instagram API** in DM Flow, save.
-3. **Disconnect and reconnect** the Instagram account — the old token was
-   issued against the old secret.
+1. Meta app → **Instagram → API setup with Instagram login** → copy the **Instagram App ID** and **Instagram App Secret**.
+2. Paste both into **Admin → Instagram API** in DM Flow, save, and press **Test**. It now refuses the Facebook pair instead of showing a green tick.
+3. **Disconnect and reconnect** the Instagram account — the old token belongs
+   to the old app `874373775643660` and is worthless to the new one.
 4. Press **Repair**, then **Read comments now**, and confirm the panel is green.
 
 Do this *before* submitting. A reviewer hitting a signature failure sees a
