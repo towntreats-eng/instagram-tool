@@ -9,7 +9,7 @@ import contextvars
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ConverFlow")
+logger = logging.getLogger("DM Flow")
 
 # Webhook verify token fallback. The old default was a guessable literal that
 # also carried a competitor's name; the real value is set per-install in
@@ -43,6 +43,7 @@ from core import webhook_setup
 from core import event_log
 from core import private_reply
 from core import comment_poller
+from core import data_deletion
 from core import auth as cf_auth
 from core import db as cf_db
 from core import store as cf_store
@@ -50,7 +51,7 @@ from core import store as cf_store
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-app = FastAPI(title="ConverFlow", version="4.0.0")
+app = FastAPI(title="DM Flow", version="4.0.0")
 
 # Enable CORS
 app.add_middleware(
@@ -80,10 +81,10 @@ POLL_ENABLED = (os.environ.get("POLL_ENABLED", "1") or "1").strip() not in ("0",
 _poll_stats: Dict[str, Any] = {"last_run": 0, "last": None, "runs": 0}
 
 
-def _poll_once() -> Dict[str, Any]:
-    """One pass, synchronous. Runs on a worker thread; the delivery it causes
-    is handed back to the event loop, because the handler is async."""
-    loop = asyncio.get_event_loop()
+def _poll_once(loop: "asyncio.AbstractEventLoop") -> Dict[str, Any]:
+    """One pass, synchronous. Runs on a worker thread, which has no event loop
+    of its own - so the loop is passed in rather than looked up here, and each
+    delivery is handed back to it because the handler is async."""
     return comment_poller.poll_all(
         user_manager.all(), automation_engine.get_all(),
         lambda payload: asyncio.run_coroutine_threadsafe(
@@ -94,9 +95,10 @@ async def _poll_loop():
     # A first pass only ever primes: it marks what is already there as seen so
     # the merchant's whole comment history is not answered on boot.
     await asyncio.sleep(8)
+    loop = asyncio.get_running_loop()
     while True:
         try:
-            stats = await asyncio.get_event_loop().run_in_executor(None, _poll_once)
+            stats = await loop.run_in_executor(None, _poll_once, loop)
             _poll_stats.update({"last_run": time.time(), "last": stats,
                                 "runs": _poll_stats["runs"] + 1})
             if stats.get("new") or stats.get("errors"):
@@ -109,10 +111,10 @@ async def _poll_loop():
 @app.on_event("startup")
 async def _startup():
     ok, msg = cf_db.init()
-    print(f"[ConverFlow] storage: {'PostgreSQL' if ok else 'JSON files'} — {msg}")
+    print(f"[DM Flow] storage: {'PostgreSQL' if ok else 'JSON files'} — {msg}")
     if POLL_ENABLED:
         asyncio.create_task(_poll_loop())
-        print(f"[ConverFlow] comment polling every {POLL_SECONDS}s "
+        print(f"[DM Flow] comment polling every {POLL_SECONDS}s "
               f"(needed until the Meta app is published)")
 
 # Core instances
@@ -279,7 +281,7 @@ def _page(filename: str, fallback: str = "Page not found") -> HTMLResponse:
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_landing():
-    return _page("landing.html", "ConverFlow landing page missing")
+    return _page("landing.html", "DM Flow landing page missing")
 
 @app.get("/pricing", response_class=HTMLResponse)
 async def serve_pricing():
@@ -301,6 +303,86 @@ async def serve_privacy():
 async def serve_terms():
     return _page("terms.html", "Terms of service page missing")
 
+@app.post("/api/meta/data-deletion")
+async def meta_data_deletion(request: Request):
+    """Meta's data deletion callback. Registered in the app's Instagram settings.
+
+    This has to be real: a reviewer tests it, and the deletion page already
+    promised it exists. Everything this app learned from Meta about the
+    requesting account is removed; the DM Flow login is not, because that is
+    not Meta's data and the person may want to reconnect.
+    """
+    try:
+        form = await request.form()
+        signed = form.get("signed_request", "")
+    except Exception:
+        signed = ""
+    if not signed:
+        try:
+            signed = (await request.json()).get("signed_request", "")
+        except Exception:
+            signed = ""
+
+    secret = (_meta_app_creds().get("app_secret") or "").strip()
+    ok, payload = data_deletion.parse_signed_request(signed, secret)
+    if not ok:
+        admin_store.log("ERROR", "instagram", f"Data deletion refused: {payload}")
+        raise HTTPException(status_code=400, detail=str(payload))
+
+    meta_user_id = str(payload.get("user_id") or "")
+    code = data_deletion.code_for(meta_user_id)
+    removed = {"connection": False, "contacts": 0, "events": 0, "flows_unbound": 0}
+
+    target = next((u for u in user_manager.all()
+                   if str(((u.get("instagram") or {}).get("user_id") or "")) == meta_user_id),
+                  None)
+    if target:
+        # Which posts were this workspace's, so their contacts can be found.
+        media_ids = {str(r.get("post_media_id")) for r in automation_engine.get_all()
+                     if r.get("created_by") == target["id"] and r.get("post_media_id")}
+
+        instagram_account.forget(target["id"])
+        user_manager.disconnect_instagram(target["id"])
+        removed["connection"] = True
+
+        if media_ids:
+            removed["contacts"] = contacts_manager.remove_where(
+                lambda c: any(m in str(c.get("source", "")) for m in media_ids))
+
+        try:
+            before = event_log.recent(event_log.KEEP)
+            rows = [r for r in before if r.get("workspace") != target.get("email")]
+            cf_store.write(event_log.FILE, rows)
+            removed["events"] = len(before) - len(rows)
+        except Exception:
+            pass
+
+        admin_store.log("WARN", "instagram",
+                        f"Meta data deletion completed for {target['email']} "
+                        f"({removed['contacts']} contacts removed)")
+
+    data_deletion.record(code, meta_user_id,
+                         (target or {}).get("email", "unknown"), removed)
+    return {"url": f"{_base_url(request)}/deletion?code={code}",
+            "confirmation_code": code}
+
+
+@app.get("/api/deletion-status")
+async def deletion_status(code: str = ""):
+    """Public on purpose. The confirmation code is the only thing that opens it,
+    and it is what Meta hands the person, so it cannot sit behind a login."""
+    row = data_deletion.lookup((code or "").strip())
+    if not row:
+        return {"success": False, "error": "No deletion request matches that code."}
+    return {"success": True, "code": row["code"], "status": row.get("status", "completed"),
+            "at": row.get("at"), "removed": row.get("removed", {})}
+
+
+def _base_url(request: Request) -> str:
+    hook = _webhook_url(request)
+    return hook.replace("/api/meta/webhook", "")
+
+
 @app.get("/deletion", response_class=HTMLResponse)
 async def serve_deletion():
     return _page("deletion.html", "Data deletion instructions page missing")
@@ -312,13 +394,13 @@ async def serve_app():
     # A stranger typing /app used to get somebody else's dashboard.
     if not signed_in_user():
         return RedirectResponse("/login?next=/app", status_code=303)
-    return _page("index.html", "ConverFlow dashboard loading...")
+    return _page("index.html", "DM Flow dashboard loading...")
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard_alias():
     if not signed_in_user():
         return RedirectResponse("/login?next=/app", status_code=303)
-    return _page("index.html", "ConverFlow dashboard loading...")
+    return _page("index.html", "DM Flow dashboard loading...")
 
 # --- Admin console ---
 
@@ -573,6 +655,8 @@ async def meta_webhook_event(request: Request):
         return {"status": "ignored"}
 
     entries = body.get("entry", [])
+    if not entries and "sample" in body:
+        entries = [{"changes": [body["sample"]]}]
     processed_count = 0
 
     try:
@@ -590,6 +674,14 @@ async def meta_webhook_event(request: Request):
                     media_id = val.get("media", {}).get("id")
 
                     logger.info(f"[WEBHOOK COMMENT] From: @{username} ({user_id}), Text: '{text}', Media: {media_id}, CommentID: {comment_id}")
+
+                    # Claim it before acting. Once the app is published both the
+                    # webhook and the poller see the same comment; whichever
+                    # gets here first makes the other skip it.
+                    if comment_id and comment_poller.was_handled(comment_id):
+                        logger.info(f"[WEBHOOK] {comment_id} already handled; skipping")
+                        continue
+                    comment_poller.mark_handled(comment_id)
 
                     all_rules = automation_engine.get_all()
                     active_rules = [r for r in all_rules if r.get("is_active") and r.get("type") == "comment_to_dm"]
@@ -777,12 +869,12 @@ async def meta_webhook_event(request: Request):
 
     return {"status": "ok", "processed": processed_count}
 
-# --- ConverFlow Wizard Publish Endpoint ---
+# --- DM Flow Wizard Publish Endpoint ---
 
 @app.post("/api/wizard/publish")
 async def publish_wizard_automation(req: WizardPublishRequest):
     """
-    Validates Free Trial limits (max 1 active reel) and creates the ConverFlow automation rule.
+    Validates Free Trial limits (max 1 active reel) and creates the DM Flow automation rule.
     """
     require_user()
     active_count = sum(1 for r in automation_engine.get_all() if r.get("is_active") and r.get("type") == "comment_to_dm")
@@ -819,12 +911,12 @@ async def publish_wizard_automation(req: WizardPublishRequest):
         "dm_message": f"{req.opening_dm}\n\n {req.delivery_link}" if req.delivery_link else req.opening_dm,
         "require_follow": req.require_follow,
         "ask_email": req.ask_email,
-        "tags": req.tags or ["Reel Lead", "ConverFlow Flow"],
+        "tags": req.tags or ["Reel Lead", "DM Flow Flow"],
         "is_active": True
     }
 
     created = automation_engine.create(rule_data)
-    campaign_manager.add_log("SUCCESS", f"Published ConverFlow Automation: '{req.name}' for {req.post_target}")
+    campaign_manager.add_log("SUCCESS", f"Published DM Flow Automation: '{req.name}' for {req.post_target}")
     return {"success": True, "upgrade_required": False, "rule": created}
 
 
@@ -858,7 +950,7 @@ async def open_login():
     login_thread.start()
     return {"success": True, "message": "Browser opened for login. Complete your login in the window."}
 
-# --- ConverFlow Automations Endpoints ---
+# --- DM Flow Automations Endpoints ---
 
 @app.get("/api/automations")
 async def list_automations():
@@ -873,11 +965,11 @@ async def save_automation(req: AutomationRuleRequest):
     rule_id = data.get("id")
     if rule_id and automation_engine.get_by_id(rule_id):
         updated = automation_engine.update(rule_id, data)
-        campaign_manager.add_log("INFO", f"Updated ConverFlow automation rule: '{data['name']}'")
+        campaign_manager.add_log("INFO", f"Updated DM Flow automation rule: '{data['name']}'")
         return {"success": True, "automation": updated}
     else:
         created = automation_engine.create(data)
-        campaign_manager.add_log("SUCCESS", f"Created new ConverFlow automation rule: '{data['name']}'")
+        campaign_manager.add_log("SUCCESS", f"Created new DM Flow automation rule: '{data['name']}'")
         return {"success": True, "automation": created}
 
 @app.post("/api/automations/{rule_id}/toggle")
@@ -915,12 +1007,12 @@ async def delete_automation(rule_id: str):
     campaign_manager.add_log("WARN", f"Deleted automation rule {rule_id}")
     return {"success": True}
 
-# --- ConverFlow Flow Simulator Endpoint ---
+# --- DM Flow Flow Simulator Endpoint ---
 
 @app.post("/api/simulator/send")
 async def simulate_message(req: SimulatorMessageRequest):
     """
-    Simulates ConverFlow trigger matching for comments or DMs in the interactive phone preview.
+    Simulates DM Flow trigger matching for comments or DMs in the interactive phone preview.
     """
     require_user()
     username = req.username or "alex_growth"
@@ -1220,7 +1312,7 @@ async def auth_signup(req: SignupRequest):
     if not ok:
         return {"success": False, "error": result}
     admin_store.log("SUCCESS", "signup", f"New workspace created: {result['name']} ({result['email']})")
-    campaign_manager.add_log("SUCCESS", f"New ConverFlow workspace: {result['email']}")
+    campaign_manager.add_log("SUCCESS", f"New DM Flow workspace: {result['email']}")
     return {"success": True, "user": user_manager.public(result)}
 
 
@@ -1731,17 +1823,21 @@ async def instagram_connect_token(req: MetaTestRequest, user_id: Optional[str] =
 
 
 @app.get("/api/instagram/callback", response_class=HTMLResponse)
-async def instagram_callback(code: Optional[str] = None, state: Optional[str] = None,
+async def instagram_callback(request: Request, code: Optional[str] = None,
+                             state: Optional[str] = None,
                              error: Optional[str] = None,
                              error_description: Optional[str] = None):
     """Meta redirects the customer's browser here after they approve."""
     def page(title: str, message: str, ok: bool) -> HTMLResponse:
-        colour = "#00824b" if ok else "#e5484d"
+        # The site accent, not the #00824b this project replaced - that hex
+        # was the colour we deliberately moved away from, and this is the
+        # very first screen a merchant sees after authorising.
+        colour = "#0fbf73" if ok else "#e5484d"
         icon = "M20 6L9 17l-5-5" if ok else "M18 6L6 18M6 6l12 12"
         return HTMLResponse(f"""
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} — ConverFlow</title>
+<title>{title} — DM Flow</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   body{{margin:0;min-height:100vh;display:grid;place-items:center;background:#f8fafb;
@@ -1752,7 +1848,7 @@ async def instagram_callback(code: Optional[str] = None, state: Optional[str] = 
         background:{colour}18;color:{colour}}}
   h1{{font-size:22px;margin:0 0 10px;letter-spacing:-.03em}}
   p{{font-size:15px;color:#5b6673;line-height:1.65;margin:0 0 26px}}
-  a{{display:inline-block;background:#00824b;color:#fff;text-decoration:none;font-weight:700;
+  a{{display:inline-block;background:#0fbf73;color:#04291a;text-decoration:none;font-weight:700;
      font-size:15px;padding:13px 26px;border-radius:999px}}
 </style></head><body><div class="box">
 <div class="ring"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1782,6 +1878,18 @@ async def instagram_callback(code: Optional[str] = None, state: Optional[str] = 
     if conn.get("page_id") and conn.get("page_access_token"):
         meta_oauth.subscribe_webhook(conn["page_id"], conn["page_access_token"])
     elif conn.get("access_token"):
+        # Two levels, and the app level has to come first: Instagram will not
+        # give an account's comment events to an app that never asked for
+        # comment events. Doing both here means a new merchant is live on
+        # connect instead of having to find the Repair button.
+        creds = _meta_app_creds()
+        if creds.get("app_id") and creds.get("app_secret") and request is not None:
+            app_ok, app_msg = webhook_setup.subscribe_app(
+                creds["app_id"], creds["app_secret"],
+                _webhook_url(request), creds.get("verify_token", ""))
+            admin_store.log("SUCCESS" if app_ok else "ERROR", "instagram",
+                            f"App-level webhook registration: "
+                            f"{'registered for comments' if app_ok else app_msg}")
         sub_ok, sub_msg = webhook_setup.subscribe(conn["access_token"])
         admin_store.log(
             "SUCCESS" if sub_ok else "ERROR", "instagram",
@@ -2306,7 +2414,7 @@ async def instagram_diagnose(request: Request):
                 "fix": ("Comment on one of your posts from a DIFFERENT account, "
                         "then press 'Read comments now'. Until your Meta app is "
                         "published, Meta sends no live webhooks to anyone - not "
-                        "even to you - so ConverFlow reads the comments itself "
+                        "even to you - so DM Flow reads the comments itself "
                         f"every {POLL_SECONDS}s instead.")}
     elif last.get("verdict") == event_log.REJECTED:
         step = {"key": "events", "label": "Events are actually arriving", "state": "fail",
@@ -2378,7 +2486,7 @@ async def instagram_poll_now():
     if not any(r.get("is_active") and r.get("type") == "comment_to_dm" for r in mine):
         return {"success": False, "error": "Turn a comment flow on first."}
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     state = comment_poller._state()
 
     def run():
