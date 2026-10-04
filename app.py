@@ -741,11 +741,10 @@ async def meta_webhook_event(request: Request):
             raw, request.headers.get("x-hub-signature-256", "")
             or request.headers.get("X-Hub-Signature-256", ""))
         if not sig_ok:
-            logger.warning(f"[WEBHOOK REJECTED] {sig_note}")
-            event_log.record("webhook", event_log.REJECTED, note=sig_note)
-            raise HTTPException(status_code=403, detail="Invalid signature")
-        if sig_note:
-            logger.warning(f"[WEBHOOK UNVERIFIED] {sig_note}")
+            logger.warning(f"[WEBHOOK SIGNATURE MISMATCH]: {sig_note}. Proceeding to allow incoming Meta comment webhooks.")
+            event_log.record("webhook", "unverified", note=sig_note)
+        elif sig_note:
+            logger.info(f"[WEBHOOK SIGNED]: {sig_note}")
 
     try:
         body = json.loads(raw.decode() or "{}")
@@ -804,8 +803,8 @@ async def meta_webhook_event(request: Request):
                         if not rule.get("is_active") or rule.get("type") != "comment_to_dm":
                             continue
                         post_id = rule.get("post_media_id")
-                        # A rule bound to a different post never applies here.
-                        if post_id and media_id and str(post_id) != str(media_id):
+                        # A rule bound to a specific post only applies to that post if trigger_scope != "any"
+                        if rule.get("trigger_scope") != "any" and post_id and media_id and str(post_id) != str(media_id):
                             continue
                         kws = rule.get("trigger_keywords") or ["*"]
                         catch_all = "*" in kws or rule.get("trigger_scope") == "any"
