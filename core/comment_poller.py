@@ -151,7 +151,7 @@ def watched_media(user: Dict[str, Any], rules: List[Dict[str, Any]]) -> List[str
     for r in rules:
         if not r.get("is_active") or r.get("type") != "comment_to_dm":
             continue
-        if r.get("created_by") != user.get("id"):
+        if r.get("created_by") and r.get("created_by") != user.get("id"):
             continue
         mid = r.get("post_media_id")
         if mid and str(mid) not in out:
@@ -183,7 +183,7 @@ def poll_user(user: Dict[str, Any], rules: List[Dict[str, Any]],
     media_ids = watched_media(user, rules)
     has_catch_all = any(
         r.get("is_active") and r.get("type") == "comment_to_dm"
-        and r.get("created_by") == user.get("id") and not r.get("post_media_id")
+        and (not r.get("created_by") or r.get("created_by") == user.get("id")) and not r.get("post_media_id")
         for r in rules)
     if has_catch_all:
         for mid in recent_media(token):
@@ -265,7 +265,7 @@ def poll_all(users: List[Dict[str, Any]], rules: List[Dict[str, Any]],
         ig = (u or {}).get("instagram") or {}
         if not (ig.get("connected") and ig.get("access_token")):
             continue
-        mine = [r for r in rules if r.get("created_by") == u.get("id")]
+        mine = [r for r in rules if not r.get("created_by") or r.get("created_by") == u.get("id")]
         if not any(r.get("is_active") and r.get("type") == "comment_to_dm" for r in mine):
             continue
         total["workspaces"] += 1

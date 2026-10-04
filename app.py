@@ -827,6 +827,12 @@ async def meta_webhook_event(request: Request):
                         logger.info(f"[WEBHOOK MATCHED RULE] Rule ID: {rule.get('id')}, Name: '{rule.get('name')}'")
                         # Workspace token for this rule
                         rule_user = user_manager.get(rule.get("created_by", ""))
+                        if not rule_user:
+                            for u in user_manager.all():
+                                u_ig = (u or {}).get("instagram") or {}
+                                if u_ig.get("connected") and u_ig.get("access_token"):
+                                    rule_user = u
+                                    break
                         user_token = ((rule_user or {}).get("instagram") or {}).get("access_token") or meta_client.config.get("access_token")
 
                         # The merchant testing their own flow comments from the
