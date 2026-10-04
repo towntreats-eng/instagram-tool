@@ -183,7 +183,8 @@ def poll_user(user: Dict[str, Any], rules: List[Dict[str, Any]],
     media_ids = watched_media(user, rules)
     has_catch_all = any(
         r.get("is_active") and r.get("type") == "comment_to_dm"
-        and (not r.get("created_by") or r.get("created_by") == user.get("id")) and not r.get("post_media_id")
+        and (not r.get("created_by") or r.get("created_by") == user.get("id"))
+        and (not r.get("post_media_id") or r.get("trigger_scope") == "any")
         for r in rules)
     if has_catch_all:
         for mid in recent_media(token):
