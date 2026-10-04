@@ -2742,7 +2742,7 @@ async def instagram_diagnose(request: Request):
                             "label": "Instagram account connected", "state": "fail",
                             "detail": "No account is linked to this workspace.",
                             "fix": "Connect Instagram from the Home screen."}]}
-    mine = [r for r in automation_engine.get_all() if r.get("created_by") == user["id"]]
+    mine = [r for r in automation_engine.get_all() if not r.get("created_by") or r.get("created_by") == user["id"]]
     out = webhook_setup.diagnose(user, mine, _webhook_url(request), _meta_app_creds())
 
     # The step every other step exists to produce. Meta can say a subscription
@@ -2823,7 +2823,7 @@ async def instagram_poll_now():
     user = require_user()
     if not instagram_account.connected(user):
         return {"success": False, "error": "Connect an Instagram account first."}
-    mine = [r for r in automation_engine.get_all() if r.get("created_by") == user["id"]]
+    mine = [r for r in automation_engine.get_all() if not r.get("created_by") or r.get("created_by") == user["id"]]
     if not any(r.get("is_active") and r.get("type") == "comment_to_dm" for r in mine):
         return {"success": False, "error": "Turn a comment flow on first."}
 
