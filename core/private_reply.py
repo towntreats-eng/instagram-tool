@@ -39,7 +39,7 @@ from typing import Any, Dict, Optional, Tuple
 
 IG_BASE = os.environ.get("IG_GRAPH_BASE", "https://graph.instagram.com").rstrip("/")
 if "graph.instagram.com" in IG_BASE:
-    IG_BASE = IG_BASE + "/v24.0"
+    IG_BASE = IG_BASE + "/v21.0"
 TIMEOUT = 15
 
 # Meta codes that mean "this person cannot be addressed this way", as opposed

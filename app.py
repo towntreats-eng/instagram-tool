@@ -203,6 +203,7 @@ login_thread: Optional[threading.Thread] = None
 class WizardPublishRequest(BaseModel):
     name: str
     post_target: Optional[str] = "https://www.instagram.com/reel/current/"
+    post_media_id: Optional[str] = ""
     post_thumbnail: Optional[str] = ""
     post_caption: Optional[str] = ""
     trigger_scope: str = "specific" # specific or any
@@ -827,7 +828,7 @@ async def meta_webhook_event(request: Request):
                         # account that owns the post. Acting on that means the
                         # account DMs itself, which Instagram refuses, and the
                         # merchant reads the silence as "it does not work".
-                        owner_ig = str(((rule_user or {}).get("instagram") or {}).get("user_id") or "")
+                        owner_ig = str(((rule_user or {}).get("instagram") or {}).get("user_id") or ((rule_user or {}).get("instagram") or {}).get("instagram_account_id") or "")
                         if owner_ig and str(user_id or "") == owner_ig:
                             logger.info(f"[WEBHOOK] Skipping @{username}: the account's own comment")
                             event_log.record(
@@ -990,13 +991,16 @@ async def publish_wizard_automation(req: WizardPublishRequest):
         if cleaned_replies:
             public_spintax = "{" + "|".join(cleaned_replies) + "}"
 
+    user = current_workspace()
     rule_data = {
         "name": req.name,
         "type": "comment_to_dm",
         "post_target": req.post_target,
+        "post_media_id": req.post_media_id or "",
         "post_thumbnail": req.post_thumbnail,
         "post_caption": req.post_caption,
         "trigger_keywords": req.trigger_keywords if req.trigger_scope == "specific" and req.trigger_keywords else ["*"],
+        "trigger_scope": req.trigger_scope,
         "public_comment_reply": public_spintax,
         "comment_replies": req.comment_replies,
         "opening_dm": req.opening_dm,
@@ -1006,7 +1010,8 @@ async def publish_wizard_automation(req: WizardPublishRequest):
         "require_follow": req.require_follow,
         "ask_email": req.ask_email,
         "tags": req.tags or ["Reel Lead", "DM Flow Flow"],
-        "is_active": True
+        "is_active": True,
+        "created_by": user["id"] if user else "",
     }
 
     created = automation_engine.create(rule_data)

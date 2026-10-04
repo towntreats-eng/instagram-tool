@@ -177,7 +177,7 @@ def poll_user(user: Dict[str, Any], rules: List[Dict[str, Any]],
     if not (ig.get("connected") and token):
         return {"polled": 0, "new": 0, "primed": 0, "errors": []}
 
-    owner_id = str(ig.get("user_id") or "")
+    owner_id = str(ig.get("user_id") or ig.get("instagram_account_id") or "")
     owner_name = (ig.get("username") or "").lower()
 
     media_ids = watched_media(user, rules)
