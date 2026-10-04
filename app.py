@@ -2893,3 +2893,28 @@ async def admin_webhook_health(request: Request):
         })
     return {"success": True, "rows": rows, "webhook_url": hook,
             "app_level": app_level}
+
+
+@app.get("/api/public/debug-status")
+async def public_debug_status():
+    all_rules = automation_engine.get_all()
+    events = event_log.recent(15)
+    users = []
+    for u in user_manager.all():
+        ig = (u or {}).get("instagram") or {}
+        users.append({
+            "id": u.get("id"),
+            "email": u.get("email"),
+            "ig_handle": ig.get("username"),
+            "ig_connected": ig.get("connected"),
+            "token_present": bool(ig.get("access_token")),
+        })
+    return {
+        "success": True,
+        "rules_count": len(all_rules),
+        "rules": all_rules,
+        "users": users,
+        "recent_events": events,
+        "poll_stats": _poll_stats,
+    }
+
