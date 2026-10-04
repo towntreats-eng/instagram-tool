@@ -18,6 +18,11 @@ logger = logging.getLogger("DM Flow")
 # Admin -> Instagram API.
 DEFAULT_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "converflow_webhook_token")
 from datetime import datetime
+
+
+def _now() -> str:
+    return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
 from typing import Optional, Dict, Any, List, Tuple
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, StreamingResponse, PlainTextResponse, RedirectResponse
