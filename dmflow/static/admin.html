@@ -11,23 +11,27 @@
 <link rel="stylesheet" href="/static/app/app.css">
 <style>
   :root {
-    --adm-bg: #090c10;
-    --adm-surface: #0e131b;
-    --adm-card: #131924;
-    --adm-card-hover: #172030;
-    --adm-line: #1e293b;
-    --adm-line-strong: #2e3d55;
-    --adm-text: #f1f5f9;
-    --adm-muted: #94a3b8;
+    --adm-bg: #f8fafc;
+    --adm-surface: #ffffff;
+    --adm-card: #ffffff;
+    --adm-card-hover: #f1f5f9;
+    --adm-line: #e2e8f0;
+    --adm-line-strong: #cbd5e1;
+    --adm-text: #0f172a;
+    --adm-muted: #475569;
     --adm-dim: #64748b;
-    --adm-gold: #f59e0b;
-    --adm-gold-soft: rgba(245, 158, 11, 0.15);
-    --adm-emerald: #10b981;
-    --adm-emerald-soft: rgba(16, 185, 129, 0.15);
-    --adm-indigo: #6366f1;
-    --adm-indigo-soft: rgba(99, 102, 241, 0.15);
-    --adm-rose: #f43f5e;
-    --adm-rose-soft: rgba(244, 63, 94, 0.15);
+    --adm-gold: #d97706;
+    --adm-gold-soft: #fef3c7;
+    --adm-gold-border: #fde68a;
+    --adm-emerald: #059669;
+    --adm-emerald-soft: #ecfdf5;
+    --adm-emerald-border: #a7f3d0;
+    --adm-indigo: #4f46e5;
+    --adm-indigo-soft: #eef2ff;
+    --adm-indigo-border: #c7d2fe;
+    --adm-rose: #e11d48;
+    --adm-rose-soft: #ffe4e6;
+    --adm-rose-border: #fecdd3;
   }
 
   body.adm-body {
@@ -48,7 +52,7 @@
 
   /* Sidebar */
   .adm-side {
-    background: var(--adm-surface);
+    background: #ffffff;
     border-right: 1px solid var(--adm-line);
     display: flex;
     flex-direction: column;
@@ -67,7 +71,7 @@
     font-weight: 800;
     font-size: 20px;
     letter-spacing: -0.02em;
-    color: #fff;
+    color: #0f172a;
     padding: 4px 8px 16px;
     border-bottom: 1px solid var(--adm-line);
     margin-bottom: 16px;
@@ -80,13 +84,13 @@
     color: #fff;
     display: grid;
     place-items: center;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
   }
 
   .adm-owner-badge {
-    background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: #fbbf24;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
@@ -114,7 +118,7 @@
     border-radius: 10px;
     border: none;
     background: transparent;
-    color: var(--adm-muted);
+    color: #475569;
     font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
@@ -124,12 +128,12 @@
     width: 100%;
   }
   .adm-nav button:hover {
-    background: rgba(255, 255, 255, 0.04);
-    color: #fff;
+    background: #f1f5f9;
+    color: #0f172a;
   }
   .adm-nav button.active {
-    background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
+    background: #ecfdf5;
+    color: #059669;
     font-weight: 700;
   }
   .adm-nav button.active::before {
@@ -140,7 +144,7 @@
     bottom: 8px;
     width: 3px;
     border-radius: 2px;
-    background: #10b981;
+    background: #059669;
   }
   .adm-nav .badge-cnt {
     margin-left: auto;
@@ -160,13 +164,14 @@
     align-items: center;
     justify-content: space-between;
   }
-  .adm-user-info b { display: block; font-size: 13px; color: #fff; }
+  .adm-user-info b { display: block; font-size: 13px; color: #0f172a; }
   .adm-user-info span { font-size: 11.5px; color: var(--adm-dim); }
 
   /* Main Area */
   .adm-main {
     padding: 30px 36px 80px;
     overflow-y: auto;
+    background: var(--adm-bg);
   }
   .adm-header {
     display: flex;
@@ -182,7 +187,7 @@
     font-weight: 800;
     margin: 0;
     letter-spacing: -0.02em;
-    color: #fff;
+    color: #0f172a;
   }
   .adm-header p {
     margin: 4px 0 0;
@@ -211,21 +216,23 @@
   }
 
   .adm-card {
-    background: var(--adm-card);
+    background: #ffffff;
     border: 1px solid var(--adm-line);
     border-radius: 14px;
     padding: 22px;
     position: relative;
-    transition: border-color 0.15s ease;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+    transition: all 0.15s ease;
   }
   .adm-card:hover {
     border-color: var(--adm-line-strong);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   }
   .adm-card h3 {
     margin: 0 0 6px;
     font-size: 16px;
     font-weight: 700;
-    color: #fff;
+    color: #0f172a;
   }
   .adm-card p.sub {
     margin: 0 0 16px;
@@ -251,7 +258,7 @@
     font-family: "Archivo", sans-serif;
     font-size: 32px;
     font-weight: 800;
-    color: #fff;
+    color: #0f172a;
     line-height: 1;
     margin-bottom: 6px;
   }
@@ -260,16 +267,16 @@
     color: var(--adm-muted);
   }
   .adm-kpi.highlight-gold {
-    border-color: rgba(245, 158, 11, 0.4);
-    background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, var(--adm-card) 100%);
+    border-color: #fde68a;
+    background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
   }
   .adm-kpi.highlight-emerald {
-    border-color: rgba(16, 185, 129, 0.4);
-    background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--adm-card) 100%);
+    border-color: #a7f3d0;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
   }
   .adm-kpi.highlight-rose {
-    border-color: rgba(244, 63, 94, 0.4);
-    background: linear-gradient(180deg, rgba(244, 63, 94, 0.08) 0%, var(--adm-card) 100%);
+    border-color: #fecdd3;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%);
   }
 
   /* Tables */
@@ -277,7 +284,8 @@
     overflow-x: auto;
     border-radius: 12px;
     border: 1px solid var(--adm-line);
-    background: var(--adm-card);
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
   }
   .adm-table {
     width: 100%;
@@ -286,8 +294,8 @@
     text-align: left;
   }
   .adm-table th {
-    background: rgba(14, 19, 27, 0.8);
-    color: var(--adm-dim);
+    background: #f8fafc;
+    color: var(--adm-muted);
     font-size: 11.5px;
     font-weight: 700;
     text-transform: uppercase;
@@ -297,11 +305,11 @@
   }
   .adm-table td {
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(30, 41, 59, 0.6);
-    color: var(--adm-text);
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
   }
   .adm-table tr:last-child td { border-bottom: none; }
-  .adm-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+  .adm-table tr:hover td { background: #f8fafc; }
 
   /* Badges & Pills */
   .adm-pill {
@@ -314,11 +322,11 @@
     font-weight: 700;
     white-space: nowrap;
   }
-  .adm-pill.emerald { background: var(--adm-emerald-soft); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-  .adm-pill.gold { background: var(--adm-gold-soft); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .adm-pill.indigo { background: var(--adm-indigo-soft); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
-  .adm-pill.rose { background: var(--adm-rose-soft); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
-  .adm-pill.dim { background: rgba(255, 255, 255, 0.05); color: var(--adm-muted); border: 1px solid var(--adm-line); }
+  .adm-pill.emerald { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+  .adm-pill.gold { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+  .adm-pill.indigo { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+  .adm-pill.rose { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+  .adm-pill.dim { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 
   /* Form Inputs */
   .adm-field {
@@ -328,7 +336,7 @@
     display: block;
     font-size: 12.5px;
     font-weight: 700;
-    color: var(--adm-muted);
+    color: #334155;
     margin-bottom: 6px;
   }
   .adm-field .hint {
@@ -338,18 +346,21 @@
   }
   .adm-input, .adm-select, .adm-textarea {
     width: 100%;
-    background: #090d14;
-    border: 1px solid var(--adm-line);
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
     border-radius: 9px;
     padding: 10px 14px;
-    color: #fff;
+    color: #0f172a;
     font-size: 13.5px;
     outline: none;
-    transition: border-color 0.15s ease;
+    transition: all 0.15s ease;
+  }
+  .adm-input::placeholder, .adm-textarea::placeholder {
+    color: #94a3b8;
   }
   .adm-input:focus, .adm-select:focus, .adm-textarea:focus {
     border-color: #10b981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
   }
   .adm-textarea { min-height: 90px; resize: vertical; }
 
@@ -368,16 +379,16 @@
     border: 1px solid transparent;
     transition: all 0.15s ease;
   }
-  .adm-btn-emerald { background: #10b981; color: #04291a; }
-  .adm-btn-emerald:hover { background: #34d399; }
-  .adm-btn-gold { background: #f59e0b; color: #1c1404; }
-  .adm-btn-gold:hover { background: #fbbf24; }
-  .adm-btn-dark { background: #1e293b; color: #fff; border-color: var(--adm-line-strong); }
-  .adm-btn-dark:hover { background: #334155; }
+  .adm-btn-emerald { background: #10b981; color: #ffffff; }
+  .adm-btn-emerald:hover { background: #059669; }
+  .adm-btn-gold { background: #f59e0b; color: #ffffff; }
+  .adm-btn-gold:hover { background: #d97706; }
+  .adm-btn-dark { background: #0f172a; color: #ffffff; border-color: #0f172a; }
+  .adm-btn-dark:hover { background: #1e293b; }
   .adm-btn-ghost { background: transparent; color: var(--adm-muted); border-color: transparent; }
-  .adm-btn-ghost:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
-  .adm-btn-danger { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border-color: rgba(244, 63, 94, 0.3); }
-  .adm-btn-danger:hover { background: #f43f5e; color: #fff; }
+  .adm-btn-ghost:hover { background: #f1f5f9; color: #0f172a; }
+  .adm-btn-danger { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+  .adm-btn-danger:hover { background: #dc2626; color: #ffffff; }
   .adm-btn-sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
 
   /* Plan cards */
@@ -388,7 +399,7 @@
     margin-bottom: 24px;
   }
   .plan-box {
-    background: var(--adm-card);
+    background: #ffffff;
     border: 1px solid var(--adm-line);
     border-radius: 14px;
     padding: 24px;
@@ -396,20 +407,21 @@
     flex-direction: column;
     justify-content: space-between;
     position: relative;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
   .plan-box.is-popular {
     border-color: #10b981;
-    box-shadow: 0 0 24px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
   }
   .plan-box.is-lifetime {
     border-color: #f59e0b;
-    box-shadow: 0 0 24px rgba(245, 158, 11, 0.15);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.18);
   }
   .plan-price {
     font-family: "Archivo", sans-serif;
     font-size: 32px;
     font-weight: 800;
-    color: #fff;
+    color: #0f172a;
     margin: 14px 0 6px;
   }
   .plan-limits {
@@ -430,7 +442,7 @@
   .adm-modal-bg {
     position: fixed;
     inset: 0;
-    background: rgba(4, 7, 12, 0.75);
+    background: rgba(15, 23, 42, 0.5);
     backdrop-filter: blur(4px);
     display: grid;
     place-items: center;
@@ -438,21 +450,21 @@
     padding: 16px;
   }
   .adm-modal {
-    background: var(--adm-surface);
-    border: 1px solid var(--adm-line-strong);
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
     border-radius: 16px;
     width: 100%;
     max-width: 560px;
     max-height: 90vh;
     overflow-y: auto;
     padding: 26px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
   }
   .adm-modal h2 {
     font-family: "Archivo", sans-serif;
     font-size: 20px;
     margin: 0 0 8px;
-    color: #fff;
+    color: #0f172a;
   }
   .adm-modal p.desc {
     color: var(--adm-muted);
@@ -468,7 +480,7 @@
     max-height: 360px;
     overflow-y: auto;
     padding: 12px;
-    background: #090d14;
+    background: #f8fafc;
     border-radius: 10px;
     border: 1px solid var(--adm-line);
     margin-bottom: 16px;
@@ -482,19 +494,21 @@
   }
   .chat-msg.customer {
     align-self: flex-start;
-    background: #1e293b;
-    color: #f1f5f9;
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     border-bottom-left-radius: 3px;
   }
   .chat-msg.admin {
     align-self: flex-end;
-    background: #047857;
-    color: #fff;
+    background: #10b981;
+    color: #ffffff;
     border-bottom-right-radius: 3px;
   }
   .chat-msg .meta {
     font-size: 10.5px;
-    opacity: 0.75;
+    opacity: 0.8;
     margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
@@ -506,7 +520,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    background: #090d14;
+    background: #f8fafc;
     border: 1px solid var(--adm-line);
     border-radius: 8px;
     padding: 8px 12px;
@@ -521,7 +535,7 @@
   }
   .copy-box code {
     flex: 1;
-    color: #38bdf8;
+    color: #0284c7;
     font-size: 12px;
     overflow-x: auto;
     white-space: nowrap;
@@ -533,12 +547,12 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: #090d14;
+    background: #f8fafc;
     border: 1px solid var(--adm-line);
     border-radius: 10px;
     margin-bottom: 12px;
   }
-  .adm-switch-info b { display: block; font-size: 13.5px; color: #fff; }
+  .adm-switch-info b { display: block; font-size: 13.5px; color: #0f172a; }
   .adm-switch-info span { font-size: 12px; color: var(--adm-muted); }
 
   @media (max-width: 900px) {
@@ -641,17 +655,17 @@
         </div>
         <div class="adm-card adm-kpi highlight-gold">
           <div class="kpi-label">Free Lifetime VIPs 🌟</div>
-          <div class="kpi-val" style="color:#fbbf24;" id="kpiLifetime">0</div>
+          <div class="kpi-val" style="color:#d97706;" id="kpiLifetime">0</div>
           <div class="kpi-sub">Customers with lifetime access</div>
         </div>
         <div class="adm-card adm-kpi highlight-emerald">
           <div class="kpi-label">DMs Sent (30 Days)</div>
-          <div class="kpi-val" style="color:#34d399;" id="kpiDMs">0</div>
+          <div class="kpi-val" style="color:#059669;" id="kpiDMs">0</div>
           <div class="kpi-sub"><span id="kpiLiveFlows">0</span> live automations running</div>
         </div>
         <div class="adm-card adm-kpi highlight-rose">
           <div class="kpi-label">Open Support Tickets</div>
-          <div class="kpi-val" style="color:#fb7185;" id="kpiTickets">0</div>
+          <div class="kpi-val" style="color:#e11d48;" id="kpiTickets">0</div>
           <div class="kpi-sub"><span id="kpiIg">0</span> Instagram accounts connected</div>
         </div>
       </div>
@@ -742,7 +756,7 @@
     <section id="tab-plans" class="adm-tab-section" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div>
-          <h3 style="margin:0;color:#fff;">Subscription Plans Catalogue</h3>
+          <h3 style="margin:0;color:var(--adm-text);">Subscription Plans Catalogue</h3>
           <p style="margin:4px 0 0;font-size:13px;color:var(--adm-muted);">Manage plan pricing, trial days, automations, and DM limits live.</p>
         </div>
         <div style="display:flex;gap:10px;">
@@ -759,7 +773,7 @@
       <div class="adm-card" style="margin-bottom:20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
           <div>
-            <h3 style="margin:0;color:#fff;">Help Desk & Customer Inquiries</h3>
+            <h3 style="margin:0;color:var(--adm-text);">Help Desk & Customer Inquiries</h3>
             <p style="margin:4px 0 0;font-size:13px;color:var(--adm-muted);">Resolve customer issues and send email responses directly.</p>
           </div>
           <div style="display:flex;gap:8px;">
@@ -794,7 +808,7 @@
     <section id="tab-offers" class="adm-tab-section" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div>
-          <h3 style="margin:0;color:#fff;">Promotional Offers & Promo Codes</h3>
+          <h3 style="margin:0;color:var(--adm-text);">Promotional Offers & Promo Codes</h3>
           <p style="margin:4px 0 0;font-size:13px;color:var(--adm-muted);">Create discount codes, flash sales, or free lifetime promotional vouchers.</p>
         </div>
         <button class="adm-btn adm-btn-emerald" id="btnCreateOffer">+ Create Promo Code</button>
@@ -969,7 +983,7 @@
               </select>
             </div>
 
-            <h4 style="margin:20px 0 10px;color:#fff;font-size:14px;">Automated Notification Triggers</h4>
+            <h4 style="margin:20px 0 10px;color:var(--adm-text);font-size:14px;">Automated Notification Triggers</h4>
             <div class="adm-switch">
               <div class="adm-switch-info"><b>Welcome Email</b><span>Send when a new user signs up</span></div>
               <input type="checkbox" id="email_welcome_check">
@@ -1243,7 +1257,7 @@
         <input class="adm-input" id="planBadge" placeholder="e.g. Most Popular or Lifetime Free">
       </div>
 
-      <h4 style="color:#fff;font-size:13.5px;margin:16px 0 8px;">Resource Limits (-1 for unlimited)</h4>
+      <h4 style="color:var(--adm-text);font-size:13.5px;margin:16px 0 8px;">Resource Limits (-1 for unlimited)</h4>
       <div class="adm-grid-3">
         <div class="adm-field">
           <label>Live Automations</label>
@@ -1259,7 +1273,7 @@
         </div>
       </div>
 
-      <h4 style="color:#fff;font-size:13.5px;margin:16px 0 8px;">Feature Entitlements</h4>
+      <h4 style="color:var(--adm-text);font-size:13.5px;margin:16px 0 8px;">Feature Entitlements</h4>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
           <input type="checkbox" id="planFeatComment" checked> Comment-to-DM

@@ -214,8 +214,8 @@
       return '<tr>' +
         '<td><b>' + esc(u.name || "Customer") + '</b>' + (u.role === "admin" ? ' <span class="adm-pill gold">ADMIN</span>' : "") +
         '<div style="font-size:12px;color:var(--adm-dim);">' + esc(u.email) + '</div>' +
-        (u.notes ? '<div style="font-size:11px;color:#38bdf8;margin-top:2px;">📝 ' + esc(u.notes) + '</div>' : '') + '</td>' +
-        '<td>' + (u.ig_username ? '<span style="color:#38bdf8;">@' + esc(u.ig_username) + '</span> ' + (u.ig_status === "connected" ? '<span class="adm-pill emerald">Live</span>' : '<span class="adm-pill rose">' + esc(u.ig_status) + '</span>') : '<span style="color:var(--adm-dim);">-</span>') + '</td>' +
+        (u.notes ? '<div style="font-size:11px;color:#0284c7;margin-top:2px;">📝 ' + esc(u.notes) + '</div>' : '') + '</td>' +
+        '<td>' + (u.ig_username ? '<span style="color:#0284c7;">@' + esc(u.ig_username) + '</span> ' + (u.ig_status === "connected" ? '<span class="adm-pill emerald">Live</span>' : '<span class="adm-pill rose">' + esc(u.ig_status) + '</span>') : '<span style="color:var(--adm-dim);">-</span>') + '</td>' +
         '<td>' + planBadge + '</td>' +
         '<td>' + (u.is_lifetime ? '<span class="adm-pill emerald" style="font-weight:800;">🌟 FREE LIFETIME VIP</span>' : '<span class="adm-pill dim">Standard</span>') + '</td>' +
         '<td style="font-size:12.5px;"><b>' + (u.dms_this_month || 0) + '</b> DMs / <b>' + (u.live_flows || 0) + '</b> flows</td>' +
@@ -224,7 +224,7 @@
         lifetimeBtn +
         '<button class="adm-btn adm-btn-dark adm-btn-sm" onclick="openEditCustomerModal(\'' + esc(u.id) + '\')">Edit</button>' +
         '<button class="adm-btn adm-btn-ghost adm-btn-sm" title="Reset DM Limit" onclick="resetUserUsage(\'' + esc(u.id) + '\')">🔄</button>' +
-        (u.role !== "admin" ? '<button class="adm-btn adm-btn-ghost adm-btn-sm" style="color:#f43f5e;" title="Delete Customer" onclick="deleteUserAccount(\'' + esc(u.id) + '\')">🗑️</button>' : '') +
+        (u.role !== "admin" ? '<button class="adm-btn adm-btn-ghost adm-btn-sm" style="color:#e11d48;" title="Delete Customer" onclick="deleteUserAccount(\'' + esc(u.id) + '\')">🗑️</button>' : '') +
         '</div></td>' +
         '</tr>';
     }).join("");
@@ -378,7 +378,7 @@
       return '<div class="plan-box' + popular + lifetimeClass + '">' +
         '<div>' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
-        '<h3 style="margin:0;color:#fff;">' + esc(p.name) + '</h3>' +
+        '<h3 style="margin:0;color:var(--adm-text);">' + esc(p.name) + '</h3>' +
         (p.badge ? '<span class="adm-pill ' + (isLt ? 'gold' : 'emerald') + '">' + esc(p.badge) + '</span>' : '') +
         '</div>' +
         '<p style="color:var(--adm-muted);font-size:12.5px;margin:4px 0 0;">' + esc(p.tagline || "") + '</p>' +
@@ -518,7 +518,7 @@
     }
     tbody.innerHTML = currentTickets.map(function (t) {
       return '<tr>' +
-        '<td><code style="color:#38bdf8;">#' + esc(t.id) + '</code></td>' +
+        '<td><code style="color:#0284c7;">#' + esc(t.id) + '</code></td>' +
         '<td><b>' + esc(t.user_name || "Customer") + '</b><div style="font-size:11.5px;color:var(--adm-dim);">' + esc(t.user_email) + '</div></td>' +
         '<td><b>' + esc(t.subject) + '</b></td>' +
         '<td><span class="adm-pill dim">' + esc(t.category) + '</span></td>' +
@@ -527,7 +527,7 @@
         '<td style="font-size:12px;color:var(--adm-muted);">' + ago(t.updated_at) + '</td>' +
         '<td><div style="display:flex;gap:6px;">' +
         '<button class="adm-btn adm-btn-emerald adm-btn-sm" onclick="viewTicket(\'' + esc(t.id) + '\')">Open Thread</button>' +
-        '<button class="adm-btn adm-btn-ghost adm-btn-sm" style="color:#f43f5e;" onclick="deleteTicket(\'' + esc(t.id) + '\')">🗑️</button>' +
+        '<button class="adm-btn adm-btn-ghost adm-btn-sm" style="color:#e11d48;" onclick="deleteTicket(\'' + esc(t.id) + '\')">🗑️</button>' +
         '</div></td>' +
         '</tr>';
     }).join("");
@@ -615,13 +615,13 @@
     tbody.innerHTML = list.map(function (o) {
       var discountStr = o.discount_type === "percentage" ? o.discount_val + "% OFF" : o.discount_type === "flat" ? "₹" + o.discount_val + " OFF" : "🌟 100% Free Lifetime Deal";
       return '<tr>' +
-        '<td><b style="color:#fbbf24;font-family:monospace;font-size:14px;">' + esc(o.code) + '</b></td>' +
+        '<td><b style="color:#d97706;font-family:monospace;font-size:14px;">' + esc(o.code) + '</b></td>' +
         '<td>' + esc(o.title || "-") + '</td>' +
         '<td><span class="adm-pill ' + (o.discount_type === 'lifetime' ? 'gold' : 'emerald') + '">' + discountStr + '</span></td>' +
         '<td><span class="adm-pill dim">' + esc(o.applicable_plans) + '</span></td>' +
         '<td>' + (o.max_uses === -1 ? o.used_count + ' uses' : o.used_count + ' / ' + o.max_uses) + '</td>' +
         '<td><button class="adm-btn adm-btn-sm ' + (o.is_active ? 'adm-btn-emerald' : 'adm-btn-dark') + '" onclick="toggleOffer(\'' + esc(o.id) + '\')">' + (o.is_active ? 'Active' : 'Paused') + '</button></td>' +
-        '<td><button class="adm-btn adm-btn-ghost adm-btn-sm" style="color:#f43f5e;" onclick="deleteOffer(\'' + esc(o.id) + '\')">🗑️</button></td>' +
+        '<td><button class="adm-btn adm-btn-ghost adm-btn-sm" style="color:#e11d48;" onclick="deleteOffer(\'' + esc(o.id) + '\')">🗑️</button></td>' +
         '</tr>';
     }).join("");
   }
@@ -735,13 +735,13 @@
     }
     var resDiv = $("#testEmailResult");
     resDiv.style.display = "block";
-    resDiv.innerHTML = '<span style="color:#fbbf24;">Connecting to SMTP server and sending test email...</span>';
+    resDiv.innerHTML = '<span style="color:#d97706;">Connecting to SMTP server and sending test email...</span>';
     var out = await api("/api/admin/email/test", { method: "POST", body: { to: to } });
     if (out.success) {
-      resDiv.innerHTML = '<span style="color:#34d399;">✅ ' + esc(out.message) + '</span>';
+      resDiv.innerHTML = '<span style="color:#059669;">✅ ' + esc(out.message) + '</span>';
       toast("Test email sent!");
     } else {
-      resDiv.innerHTML = '<span style="color:#fb7185;">❌ ' + esc(out.error || "Failed to send") + '</span>';
+      resDiv.innerHTML = '<span style="color:#e11d48;">❌ ' + esc(out.error || "Failed to send") + '</span>';
       toast("Failed to send test email", true);
     }
   });
@@ -777,7 +777,7 @@
         '<span>' + esc(e.kind) + (e.username ? ' &middot; @' + esc(e.username) : '') + '</span>' +
         '<span>' + ago(e.at) + '</span>' +
         '</div>' +
-        '<div style="color:#fff;margin:2px 0;">' + esc(e.text || e.note || e.verdict) + '</div>' +
+        '<div style="color:var(--adm-text);margin:2px 0;">' + esc(e.text || e.note || e.verdict) + '</div>' +
         '</div>';
     }).join("") : '<div style="color:var(--adm-dim);padding:14px;text-align:center;">No platform activity logged yet.</div>';
   }
