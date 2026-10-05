@@ -534,6 +534,22 @@ async def system_diag(request: Request, key: str = ""):
     }
 
 
+@app.get("/api/system/repair", include_in_schema=False)
+@app.post("/api/system/repair", include_in_schema=False)
+async def system_repair(key: str = ""):
+    if key != "converflow_debug":
+        return fail("Unauthorized", 401)
+    import traceback
+    try:
+        stats = settings.import_legacy()
+        return ok(stats=stats,
+                  users=db.query("SELECT id, email, role, status FROM dm_users"),
+                  ig=db.query("SELECT user_id, ig_user_id, app_user_id, username, status FROM dm_ig"),
+                  flows=[engine.flow_row(r) for r in db.query("SELECT * FROM dm_flows")])
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "trace": traceback.format_exc()}
+
+
 @app.post("/api/system/simulate-comment", include_in_schema=False)
 async def simulate_comment(request: Request):
     auth.require_admin(request)
