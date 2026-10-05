@@ -316,17 +316,19 @@ def handle_comment(acct: Dict[str, Any], c: Dict[str, Any], source: str) -> str:
             log(user_id, "comment", "reply_failed", source=source, flow_id=fid, username=username,
                 text=text, note=f"Public reply refused: {out}")
 
-    if b["opening"]["on"]:
-        ok, out = instagram.send(token, {"comment_id": c["id"]}, b["opening"]["text"],
-                                 [{"title": b["opening"]["button"], "payload": f"LINK:{fid}"}])
-        note = "Opening DM sent - waiting for them to tap the button." if ok else f"Opening DM refused: {out}"
-    else:
-        ok, out = instagram.send(token, {"comment_id": c["id"]}, b["link"]["text"],
-                                 [{"title": b["link"]["button"], "url": b["link"]["url"]}])
-        note = "Link sent." if ok else f"Link refused: {out}"
+    link_url = (b.get("link") or {}).get("url") or ""
+    link_btn = (b.get("link") or {}).get("button") or (b.get("opening") or {}).get("button") or "Open Link"
+    buttons = [{"title": link_btn, "url": link_url}] if link_url else []
 
-    touch_contact(user_id, str(c.get("from_id") or ""), username, fid, text,
-                  link_sent=bool(ok and not b["opening"]["on"]))
+    if b["opening"]["on"] and b["opening"]["text"].strip():
+        msg_text = b["opening"]["text"]
+    else:
+        msg_text = b["link"]["text"] or "Thanks for commenting! Here is your link:"
+
+    ok, out = instagram.send(token, {"comment_id": c["id"]}, msg_text, buttons)
+    note = "DM sent successfully." if ok else f"DM refused by Instagram: {out}"
+
+    touch_contact(user_id, str(c.get("from_id") or ""), username, fid, text, link_sent=ok)
     verdict = "sent" if ok else "failed"
     log(user_id, "comment", verdict, source=source, flow_id=fid, username=username, text=text, note=note)
     return verdict

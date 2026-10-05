@@ -1069,14 +1069,47 @@
 
         <div>
           <div class="adm-card" style="margin-bottom:20px;">
+            <h3>⚡ Test Comment & DM Pipeline</h3>
+            <p class="sub">Simulate a live comment right now to verify that your keyword trigger, Meta API, and DM dispatch work end-to-end.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 10px;">
+              <div class="adm-field" style="margin:0;">
+                <label>Comment Text</label>
+                <input class="adm-input" id="simCommentText" value="Send me the link" placeholder="e.g. link, send, price">
+              </div>
+              <div class="adm-field" style="margin:0;">
+                <label>Tester Username</label>
+                <input class="adm-input" id="simCommentUser" value="personal_tester" placeholder="tester username">
+              </div>
+            </div>
+            <button class="adm-btn adm-btn-emerald" id="btnSimulateComment" type="button" style="width:100%;">🚀 Simulate Comment & Trigger DM Flow</button>
+            <div id="simCommentResult" style="display:none;margin-top:12px;padding:12px;border-radius:10px;font-size:12.5px;background:var(--adm-bg);border:1px solid var(--adm-line);"></div>
+          </div>
+
+          <div class="adm-card" style="margin-bottom:20px;">
             <h3>Copy URLs into Meta</h3>
             <p class="sub">Paste these exact endpoints into your Meta App settings.</p>
             <div id="metaUrls"></div>
           </div>
 
+          <div class="adm-card" style="margin-bottom:20px;">
+            <h3>Meta Setup Verification Checklist</h3>
+            <p class="sub">Essential settings required by Meta Graph API for automated DMs:</p>
+            <ul style="margin:8px 0 0 18px;font-size:12.5px;color:var(--adm-muted);line-height:1.7;">
+              <li><b>1. Webhook Fields:</b> In Meta App &rarr; <i>Webhooks &rarr; Instagram</i>, ensure <code>comments</code> and <code>messages</code> are subscribed.</li>
+              <li><b>2. Tester Invitation Accepted:</b> In the Instagram mobile app for your tester account: <i>Settings &rarr; Website permissions &rarr; Tester invitations &rarr; Tap Accept</i>.</li>
+              <li><b>3. Connected Tools Toggle:</b> On your professional IG account (@satnamwebservices): <i>Settings &rarr; Messages and story replies &rarr; Message controls &rarr; Connected Tools &rarr; <b>Allow access to messages</b> = ON</i>.</li>
+              <li><b>4. Separate Account Testing:</b> Test comments using your personal tester account, not from @satnamwebservices (Instagram prohibits self-DMs).</li>
+            </ul>
+          </div>
+
           <div class="adm-card">
-            <h3>Recent Platform Events</h3>
-            <p class="sub">Real-time log of comments, DMs sent, and webhook triggers.</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div>
+                <h3 style="margin:0;">Recent Platform Events</h3>
+                <p class="sub" style="margin:0;">Real-time log of comments, DMs sent, and webhook triggers.</p>
+              </div>
+              <button class="adm-btn adm-btn-light adm-btn-sm" id="btnRefreshMetaEvents" type="button">Refresh Logs</button>
+            </div>
             <div id="metaEventsList" style="max-height:280px;overflow-y:auto;"></div>
           </div>
         </div>

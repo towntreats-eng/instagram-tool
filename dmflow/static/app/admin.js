@@ -780,6 +780,45 @@
         '<div style="color:var(--adm-text);margin:2px 0;">' + esc(e.text || e.note || e.verdict) + '</div>' +
         '</div>';
     }).join("") : '<div style="color:var(--adm-dim);padding:14px;text-align:center;">No platform activity logged yet.</div>';
+    // Simulate Comment Button
+    var btnSim = $("#btnSimulateComment");
+    if (btnSim && !btnSim._bound) {
+      btnSim._bound = true;
+      btnSim.addEventListener("click", async function () {
+        var text = ($("#simCommentText").value || "").trim();
+        var user = ($("#simCommentUser").value || "").trim();
+        var resDiv = $("#simCommentResult");
+        resDiv.style.display = "block";
+        resDiv.innerHTML = '<span style="color:#d97706;">Running simulation through keyword matcher and Meta Graph API...</span>';
+
+        var out = await api("/api/system/simulate-comment", {
+          method: "POST",
+          body: { text: text, username: user }
+        });
+
+        if (out.success) {
+          var ev = out.event || {};
+          var vColor = out.verdict === "sent" ? "#059669" : out.verdict === "ignored" ? "#d97706" : "#e11d48";
+          resDiv.innerHTML = '<div><b>Verdict:</b> <span style="color:' + vColor + ';font-weight:700;">' + esc(out.verdict.toUpperCase()) + '</span></div>' +
+                             '<div style="margin-top:4px;color:var(--adm-text);"><b>Details:</b> ' + esc(ev.note || "Processed") + '</div>' +
+                             '<div style="margin-top:4px;color:var(--adm-dim);font-size:11px;">Comment ID: ' + esc(out.comment_id) + '</div>';
+          toast(out.verdict === "sent" ? "Simulation DM Sent!" : "Simulation completed: " + out.verdict, out.verdict !== "sent");
+          loadMeta();
+        } else {
+          resDiv.innerHTML = '<span style="color:#e11d48;">❌ ' + esc(out.error || "Simulation failed") + '</span>';
+          toast(out.error || "Simulation failed", true);
+        }
+      });
+    }
+
+    var btnRef = $("#btnRefreshMetaEvents");
+    if (btnRef && !btnRef._bound) {
+      btnRef._bound = true;
+      btnRef.addEventListener("click", function () {
+        loadMeta();
+        toast("Refreshed activity logs");
+      });
+    }
   }
 
   $("#metaForm").addEventListener("submit", async function (e) {

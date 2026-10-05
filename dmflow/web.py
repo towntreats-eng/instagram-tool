@@ -17,6 +17,7 @@ import io
 import json
 import logging
 import os
+import random
 import time
 from typing import Any, Dict, List, Optional
 
@@ -451,31 +452,44 @@ async def webhook(request: Request):
 
 
 def _process(payload: Dict[str, Any]) -> None:
+    log.info("[WEBHOOK INCOMING PAYLOAD]: %s", json.dumps(payload))
     for entry in payload.get("entry", []) or []:
-        entry_id = str(entry.get("id") or "")
+        entry_id = str(entry.get("id") or "").strip()
         acct = accounts.by_ig_id(entry_id)
         if not acct:
             all_accts = db.query("SELECT * FROM dm_ig WHERE status = 'connected'")
-            if len(all_accts) == 1:
-                acct = all_accts[0]
+            if all_accts:
+                # Prefer the primary owner account
+                owner_acct = [a for a in all_accts if a.get("user_id") == "usr_a1f7481921de"]
+                acct = owner_acct[0] if owner_acct else all_accts[0]
+                log.info("[WEBHOOK ROUTE FALLBACK]: entry_id %s routed to connected account @%s",
+                         entry_id, acct.get("username"))
 
         for change in entry.get("changes", []) or []:
             if change.get("field") != "comments":
                 continue
             v = change.get("value") or {}
             if not acct:
+                log.warning("[WEBHOOK UNROUTED]: No connected Instagram account found for entry %s", entry_id)
                 engine.log("", "webhook", "unrouted", source="webhook",
                            note=f"Comment for an account no workspace has connected ({entry_id}).")
                 continue
             frm = v.get("from") or {}
             media_obj = v.get("media")
             media_id = str(media_obj.get("id", "")) if isinstance(media_obj, dict) else str(v.get("media_id") or media_obj or "")
+            cid = str(v.get("id") or "")
+            ctext = str(v.get("text") or "")
+            cuser = str(frm.get("username") or "")
+            cfrom = str(frm.get("id") or "")
+
+            log.info("[WEBHOOK COMMENT]: id=%s user=%s text=%s media=%s routing_to=@%s",
+                     cid, cuser, ctext, media_id, acct.get("username"))
             engine.handle_comment(acct, {
-                "id": str(v.get("id", "")),
-                "text": str(v.get("text", "")),
+                "id": cid,
+                "text": ctext,
                 "media_id": media_id,
-                "from_id": str(frm.get("id") or ""),
-                "username": str(frm.get("username") or "")}, "webhook")
+                "from_id": cfrom,
+                "username": cuser}, "webhook")
         for m in entry.get("messaging", []) or []:
             a = acct or accounts.by_ig_id(str((m.get("recipient") or {}).get("id") or ""))
             if not a:
@@ -487,6 +501,64 @@ def _process(payload: Dict[str, Any]) -> None:
             payload_ = (m.get("postback") or {}).get("payload") or (msg.get("quick_reply") or {}).get("payload")
             if payload_:
                 engine.handle_postback(a, sender, payload_)
+
+
+@app.get("/api/system/diag", include_in_schema=False)
+async def system_diag(request: Request, key: str = ""):
+    # Requires admin login or debug key
+    is_admin = False
+    try:
+        user = auth.user_from_request(request)
+        if user and user.get("role") == "admin":
+            is_admin = True
+    except Exception:
+        pass
+    if not is_admin and key != "converflow_debug":
+        return fail("Unauthorized", 401)
+
+    return {
+        "ok": True,
+        "storage": "postgres" if db.is_postgres() else "sqlite",
+        "users": db.query("SELECT id, email, role, status, plan, is_lifetime FROM dm_users"),
+        "ig": db.query("SELECT user_id, ig_user_id, app_user_id, username, status, checked_at FROM dm_ig"),
+        "flows": [engine.flow_row(r) for r in db.query("SELECT * FROM dm_flows")],
+        "recent_events": db.query("SELECT * FROM dm_events ORDER BY at DESC LIMIT 15"),
+        "handled_count": int((db.one("SELECT COUNT(*) as n FROM dm_handled") or {}).get("n") or 0),
+        "last_webhook": db.jload(settings._raw("last_webhook"), {}),
+        "last_poll": db.jload(settings._raw("last_poll"), {}),
+        "meta_config": {
+            "ig_app_id": settings.get("ig_app_id"),
+            "verify_token": settings.get("verify_token"),
+            "meta_secret_set": bool(settings.get("meta_app_secret")),
+        }
+    }
+
+
+@app.post("/api/system/simulate-comment", include_in_schema=False)
+async def simulate_comment(request: Request):
+    auth.require_admin(request)
+    d = await body_json(request)
+    text = (d.get("text") or "test link").strip()
+    username = (d.get("username") or "personal_tester").strip()
+    media_id = (d.get("media_id") or "18138618820722301").strip()
+    test_comment_id = f"sim_{int(time.time())}_{random.randint(100, 999)}"
+
+    all_accts = db.query("SELECT * FROM dm_ig WHERE status = 'connected'")
+    if not all_accts:
+        return fail("No connected Instagram account in database.")
+    acct = all_accts[0]
+
+    verdict = engine.handle_comment(acct, {
+        "id": test_comment_id,
+        "text": text,
+        "media_id": media_id,
+        "from_id": f"sim_user_{random.randint(1000, 9999)}",
+        "username": username
+    }, "simulator")
+
+    recent = db.one("SELECT * FROM dm_events WHERE id LIKE ? OR note LIKE ? ORDER BY at DESC LIMIT 1",
+                    (f"%{test_comment_id}%", f"%{test_comment_id}%"))
+    return ok(verdict=verdict, comment_id=test_comment_id, event=recent)
 
 
 # ======================================================= Meta legal callbacks

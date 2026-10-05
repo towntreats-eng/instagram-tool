@@ -191,21 +191,29 @@ def public_reply(token: str, comment_id: str, text: str) -> Result:
 
 
 def _buttons_message(text: str, buttons: List[Dict[str, str]]) -> Dict[str, Any]:
-    """A button template. Meta's limits: text <= 640, label <= 20, <= 3 buttons."""
-    out = []
+    """Instagram Messaging only supports generic template (not button template)."""
+    btn_objs = []
     for b in buttons[:3]:
         if b.get("url"):
-            out.append({"type": "web_url", "url": b["url"], "title": b["title"][:20]})
-        else:
-            out.append({"type": "postback", "payload": b["payload"], "title": b["title"][:20]})
+            btn_objs.append({"type": "web_url", "url": b["url"], "title": b["title"][:20]})
+        elif b.get("payload"):
+            btn_objs.append({"type": "postback", "payload": b["payload"], "title": b["title"][:20]})
+    element: Dict[str, Any] = {"title": (text or "DM Flow")[:80]}
+    if len(text or "") > 80:
+        element["subtitle"] = text[:80]
+    if btn_objs:
+        element["buttons"] = btn_objs
     return {"attachment": {"type": "template", "payload": {
-        "template_type": "button", "text": (text or "")[:640], "buttons": out}}}
+        "template_type": "generic", "elements": [element]}}}
 
 
 def _plain(text: str, buttons: List[Dict[str, str]]) -> Dict[str, Any]:
     """Fallback when a template is refused: the words, plus any link as text."""
-    links = [b["url"] for b in buttons if b.get("url")]
-    return {"text": ((text or "") + ("\n\n" + "\n".join(links) if links else ""))[:1000]}
+    links = [b["url"] for b in (buttons or []) if b.get("url")]
+    content = text or ""
+    if links and not any(l in content for l in links):
+        content = f"{content.rstrip()}\n\n👉 " + "\n👉 ".join(links)
+    return {"text": content[:1000]}
 
 
 def send(token: str, recipient: Dict[str, str], text: str,
@@ -214,17 +222,20 @@ def send(token: str, recipient: Dict[str, str], text: str,
     within 7 days) or {"id": IGSID} inside an open 24-hour window."""
     url = f"{_graph()}/me/messages"
     buttons = buttons or []
-    if buttons:
+    is_private_reply = "comment_id" in recipient
+
+    # In Instagram Private Replies, Meta does not support postback buttons.
+    # Keep web_url buttons, or direct message postbacks.
+    valid_buttons = [b for b in buttons if b.get("url") or (not is_private_reply and b.get("payload"))]
+
+    if valid_buttons:
         ok, out = _call("POST", url, params={"access_token": token},
-                        body={"recipient": recipient, "message": _buttons_message(text, buttons)})
+                        body={"recipient": recipient, "message": _buttons_message(text, valid_buttons)})
         if ok:
             return True, out
-        # A refused call does not use up the one private reply a comment
-        # allows - only a delivered one does - so a link-only message can
-        # safely fall back to text. A postback button cannot: without the
-        # button the message asks for a tap that is impossible.
-        if any(b.get("payload") for b in buttons):
-            return False, err_text(out)
+
+    # Guaranteed fallback: Send as text with link appended.
+    # Text private replies are universally supported on Instagram Graph API.
     ok, out = _call("POST", url, params={"access_token": token},
                     body={"recipient": recipient, "message": _plain(text, buttons)})
     return (True, out) if ok else (False, err_text(out))
