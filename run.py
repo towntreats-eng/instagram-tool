@@ -1,29 +1,16 @@
-import sys
+"""Run DM Flow on this computer: python run.py  ->  http://localhost:8000
+
+Uses a local SQLite file (data/dmflow.db) unless DATABASE_URL is set.
+"""
+import os
+import threading
 import time
 import webbrowser
-import threading
-import uvicorn
 
-def open_browser():
-    time.sleep(1.8)
-    print("\n Opening DM Flow in your browser...")
-    webbrowser.open("http://localhost:8000")
+os.environ.setdefault("COOKIE_SECURE", "0")   # plain http on localhost
 
 if __name__ == "__main__":
-    print("=" * 62)
-    print(" DM Flow - Instagram Automation, CRM & Outreach Suite")
-    print("=" * 62)
-    print(" Landing page -> http://localhost:8000/")
-    print(" Pricing -> http://localhost:8000/pricing")
-    print(" Sign up -> http://localhost:8000/signup")
-    print(" Dashboard -> http://localhost:8000/app")
-    print(" Admin console -> http://localhost:8000/admin")
-    print("-" * 62)
-    print(" Press Ctrl + C in this window to stop the server.")
-    print("=" * 62)
-
-    # Launch browser automatically
-    threading.Thread(target=open_browser, daemon=True).start()
-
-    # Start FastAPI server via uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=False, log_level="info")
+    import uvicorn
+    threading.Thread(target=lambda: (time.sleep(1.5), webbrowser.open("http://localhost:8000")), daemon=True).start()
+    print("DM Flow -> http://localhost:8000   (admin: /admin)   Ctrl+C to stop")
+    uvicorn.run("dmflow.web:app", host="127.0.0.1", port=8000)

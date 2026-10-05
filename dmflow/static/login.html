@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - DM Flow</title>
+<link rel="icon" href="/static/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app/app.css">
+<style>
+  body { background: var(--bg); }
+  .auth { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
+  .auth-side { background: var(--ink); color: #fff; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
+  .auth-side .brand { color: #fff; padding: 0; }
+  .auth-side .brand-mark { background: var(--green); color: var(--green-ink); }
+  .auth-side h2 { font-family: var(--display); font-size: 40px; letter-spacing: -.035em; line-height: 1.05; margin: 0 0 14px; max-width: 12ch; }
+  .auth-side p { color: #b5bbb8; max-width: 38ch; margin: 0; }
+  .auth-side small { color: #6f7572; }
+  .auth-main { display: grid; place-items: center; padding: 32px 20px; }
+  .auth-card { width: 100%; max-width: 400px; }
+  .auth-card h1 { font-family: var(--display); font-size: 32px; letter-spacing: -.03em; margin: 0 0 6px; }
+  .auth-card > p { color: var(--ink-3); margin: 0 0 26px; }
+  .auth-card form { display: flex; flex-direction: column; gap: 2px; }
+  .auth-foot { margin-top: 20px; color: var(--ink-3); font-size: 13.5px; text-align: center; }
+  @media (max-width: 860px) { .auth { grid-template-columns: 1fr; } .auth-side { display: none; } }
+</style>
+</head>
+<body>
+<div class="auth">
+  <div class="auth-side">
+    <a class="brand" href="/"><span class="brand-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h8l-1 8 11-13h-8z"/></svg></span>DM Flow</a>
+    <div><h2>Every comment is someone asking to buy.</h2><p>They comment a keyword. They get your link in DMs - in seconds, every time, while you sleep.</p></div>
+    <small>Built on the official Instagram API</small>
+  </div>
+  <div class="auth-main"><div class="auth-card">
+    <h1>Welcome back</h1><p>Sign in to your DM Flow workspace.</p>
+    <form id="f" novalidate>
+      <div class="field"><label for="email">Email</label><input class="input" id="email" name="email" type="email" autocomplete="email" required autofocus></div><div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required ></div>
+      <div class="errbox" id="err" hidden></div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" style="margin-top:10px">Sign in</button>
+    </form>
+    <div class="auth-foot">New to DM Flow? <a class="link" href="/signup">Create a free account</a></div>
+  </div></div>
+</div>
+<script>
+(function () {
+  var f = document.getElementById("f"), err = document.getElementById("err");
+  f.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var btn = f.querySelector("button"), label = btn.textContent;
+    var data = Object.fromEntries(new FormData(f).entries());
+    data.next = new URLSearchParams(location.search).get('next') || '';
+    btn.disabled = true; btn.textContent = "Please wait..."; err.hidden = true;
+    try {
+      var res = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      var out = await res.json();
+      if (out.success) { location.href = out.redirect || "/app"; return; }
+      err.textContent = out.error || "Something went wrong."; err.hidden = false;
+    } catch (x) { err.textContent = "Network error - try again."; err.hidden = false; }
+    btn.disabled = false; btn.textContent = label;
+  });
+})();
+</script>
+</body>
+</html>

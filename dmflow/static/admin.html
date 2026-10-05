@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin - DM Flow</title>
+<link rel="icon" href="/static/favicon.ico" sizes="any">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app/app.css">
+<style>
+  .adm { max-width: 1120px; margin: 0 auto; padding: 28px 20px 60px; }
+  .adm-top { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+  .adm-top .sp { flex: 1; }
+  .copy { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .copy code { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 12.5px; overflow-x: auto; white-space: nowrap; }
+  .copy span { width: 150px; font-size: 12.5px; font-weight: 700; color: var(--ink-3); flex: none; }
+  .src { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-4); }
+  select.input { height: 34px; padding: 0 8px; width: auto; }
+  @media (max-width: 700px) { .copy { flex-wrap: wrap; } .copy span { width: 100%; } }
+</style>
+</head>
+<body>
+<div class="adm">
+  <div class="adm-top"><a class="brand" href="/app"><span class="brand-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h8l-1 8 11-13h-8z"/></svg></span>DM Flow</a>
+    <span class="pill ink">Admin</span><div class="sp"></div><a class="btn btn-sm" href="/app">Customer panel</a></div>
+
+  <div class="set-grid">
+    <div class="card pad set-card">
+      <h3>Instagram app</h3>
+      <p>Two different secrets, from two different screens in Meta. Values set as Railway variables override these and are shown read-only.</p>
+      <form id="metaForm">
+        <div class="field"><label>Instagram App ID <span class="src" data-src="ig_app_id"></span></label><input class="input" name="ig_app_id"><small>Meta &rarr; Instagram &rarr; API setup with Instagram login. Not the Facebook app id at the top.</small></div>
+        <div class="field"><label>Instagram App Secret <span class="src" data-src="ig_app_secret"></span></label><input class="input" name="ig_app_secret" autocomplete="off"><small>Same screen as the Instagram App ID. Used to connect accounts.</small></div>
+        <div class="field"><label>Meta App Secret <span class="src" data-src="meta_app_secret"></span></label><input class="input" name="meta_app_secret" autocomplete="off"><small>App settings &rarr; Basic &rarr; App secret. Meta signs every webhook with this one - without it, comments are refused.</small></div>
+        <div class="field"><label>Webhook verify token <span class="src" data-src="verify_token"></span></label><input class="input" name="verify_token"></div>
+        <div class="field"><label>Public address <span class="src" data-src="base_url"></span></label><input class="input" name="base_url" placeholder="Leave empty to detect automatically"></div>
+        <div class="field"><label>Graph API version <span class="src" data-src="graph_version"></span></label><input class="input" name="graph_version"></div>
+        <button class="btn btn-primary" type="submit">Save</button>
+      </form>
+    </div>
+    <div>
+      <div class="card pad set-card" style="margin-bottom:16px">
+        <h3>Paste these into Meta</h3>
+        <p>Instagram &rarr; API setup with Instagram login.</p>
+        <div id="urls"></div>
+      </div>
+      <div class="card pad set-card">
+        <h3>Is Meta reaching us?</h3>
+        <p>The two ways comments arrive.</p>
+        <dl class="kv" id="health"></dl>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="h2">Workspaces</h2>
+  <div class="card" style="overflow-x:auto"><table class="t"><thead><tr><th>User</th><th>Instagram</th><th>Live</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead><tbody id="users"></tbody></table></div>
+
+  <h2 class="h2">Platform activity</h2>
+  <div class="card" id="events"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/static/app/admin.js"></script>
+</body>
+</html>
