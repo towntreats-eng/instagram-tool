@@ -158,7 +158,7 @@ def live_count(user_id: str, exclude: str = "") -> int:
 
 def save_flow(user: Dict[str, Any], flow_id: Optional[str], name: str, body: Dict[str, Any],
               go_live: bool) -> Tuple[bool, Any]:
-    plan = settings.plan(user.get("plan") or "free")
+    plan = settings.user_plan(user)
     b = normalise(body)
     errs = validate(b, plan)
     if errs:
@@ -188,7 +188,7 @@ def set_status(user: Dict[str, Any], flow_id: str, live: bool) -> Tuple[bool, st
     if not f:
         return False, "Automation not found."
     if live:
-        plan = settings.plan(user.get("plan") or "free")
+        plan = settings.user_plan(user)
         limit = plan["limits"].get("automations", 1)
         if limit != -1 and live_count(user["id"], flow_id) >= limit:
             return False, f"Your {plan['name']} plan allows {limit} live automation{'s' if limit != 1 else ''}."
@@ -298,8 +298,9 @@ def handle_comment(acct: Dict[str, Any], c: Dict[str, Any], source: str) -> str:
         return "no_flow"
     b, fid = flow["body"], flow["id"]
 
-    user = db.one("SELECT plan FROM dm_users WHERE id = ?", (user_id,)) or {}
-    limit = settings.plan(user.get("plan") or "free")["limits"].get("dms_per_month", 200)
+    user = db.one("SELECT plan, is_lifetime FROM dm_users WHERE id = ?", (user_id,)) or {}
+    plan_obj = settings.user_plan(user)
+    limit = plan_obj["limits"].get("dms_per_month", 200)
     if limit != -1 and dms_this_month(user_id) >= limit:
         log(user_id, "comment", "limit", source=source, flow_id=fid, username=username, text=text,
             note=f"Monthly DM limit of {limit} reached. Upgrade to keep replying.")

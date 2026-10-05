@@ -65,8 +65,20 @@
   async function loadMe() {
     var out = await api("/api/me");
     if (!out.success) return false;
+    if (out.user && out.user.role === "admin") {
+      // Owner account MUST ALWAYS open the Admin Panel directly, NEVER customer interface
+      location.href = "/admin";
+      return false;
+    }
     S.me = out.user; S.plan = out.plan; S.usage = out.usage; S.ig = out.instagram || { connected: false };
     S.igReady = out.instagram_ready;
+    if (out.announcement && out.announcement.trim()) {
+      var ab = $("#announcementBanner");
+      if (ab) {
+        ab.textContent = "📢 " + out.announcement.trim();
+        ab.style.display = "block";
+      }
+    }
     paintSide();
     return true;
   }
@@ -92,18 +104,24 @@
       a.innerHTML = '<span class="ph">' + I.img + "</span><div><b>No account</b><span><i class=\"dot\"></i>" +
         (S.ig.status === "expired" ? "Connection expired" : "Not connected") + "</span></div>";
     }
-    var lim = S.plan ? S.plan.limits.dms_per_month : 0, used = S.usage.dms || 0;
-    $("#mUse").textContent = num(used) + " / " + cap(lim);
-    $("#mBar").style.width = (lim === -1 ? 4 : Math.min(100, (used / Math.max(1, lim)) * 100)) + "%";
-    $("#mPlan").textContent = (S.plan ? S.plan.name : "") + " plan";
+    var isLt = S.me && S.me.is_lifetime || S.plan && S.plan.is_lifetime;
+    var lim = isLt ? -1 : (S.plan ? S.plan.limits.dms_per_month : 0), used = S.usage.dms || 0;
+    $("#mUse").textContent = isLt ? (num(used) + " / ∞ (VIP)") : (num(used) + " / " + cap(lim));
+    $("#mBar").style.width = (isLt || lim === -1 ? 100 : Math.min(100, (used / Math.max(1, lim)) * 100)) + "%";
+    if (isLt) {
+      $("#mBar").style.background = "#f59e0b";
+      $("#mPlan").innerHTML = '<span class="pill gold" style="font-weight:800;background:rgba(245,158,11,0.15);color:#b45309;padding:2px 8px;border-radius:99px;">🌟 Lifetime VIP</span>';
+    } else {
+      $("#mPlan").textContent = (S.plan ? S.plan.name : "") + " plan";
+    }
     var nm = (S.me.name || S.me.email || "?");
     $("#meAv").textContent = nm.charAt(0).toUpperCase();
     $("#meName").textContent = S.me.name || "You"; $("#meEmail").textContent = S.me.email;
   }
 
   // ------------------------------------------------------------ router
-  var VIEWS = { home: viewHome, automations: viewAutomations, contacts: viewContacts, settings: viewSettings };
-  var TITLES = { home: "Home", automations: "Automations", contacts: "Contacts", settings: "Settings" };
+  var VIEWS = { home: viewHome, automations: viewAutomations, contacts: viewContacts, settings: viewSettings, support: viewSupport };
+  var TITLES = { home: "Home", automations: "Automations", contacts: "Contacts", settings: "Settings", support: "Support" };
 
   function current() {
     var p = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
@@ -315,6 +333,111 @@
       $("[data-x]", m).onclick = function () { m.remove(); };
       await loadMe(); route();
     };
+  }
+
+  // ------------------------------------------------------------ SUPPORT
+  async function viewSupport() {
+    var out = await api("/api/tickets");
+    var list = out.success ? out.tickets || [] : [];
+    $("#topAct").innerHTML = '<button class="btn btn-primary btn-sm" id="btnNewTicket">+ New Support Ticket</button>';
+
+    var v = $("#view");
+    v.innerHTML = '<div style="max-width:860px;margin:0 auto;">' +
+      '<div class="card pad" style="margin-bottom:20px;">' +
+      '<h3 style="margin:0 0 6px;">Customer Support Desk</h3>' +
+      '<p class="hint" style="margin:0;">Have questions, need help setting up reels, or encountered an issue? Submit a ticket below.</p>' +
+      '</div>' +
+      '<div class="card" style="overflow-x:auto;">' +
+      (list.length ? '<table class="t"><thead><tr><th>Ticket</th><th>Subject</th><th>Category</th><th>Status</th><th>Updated</th><th>Action</th></tr></thead><tbody>' +
+       list.map(function (t) {
+         var statusBadge = t.status === "open" ? '<span class="pill red">Open</span>' : t.status === "in_progress" ? '<span class="pill amber">In Progress</span>' : '<span class="pill green">Resolved</span>';
+         return '<tr>' +
+           '<td><code>#' + esc(t.id) + '</code></td>' +
+           '<td><b>' + esc(t.subject) + '</b></td>' +
+           '<td><span class="pill">' + esc(t.category) + '</span></td>' +
+           '<td>' + statusBadge + '</td>' +
+           '<td>' + ago(t.updated_at) + '</td>' +
+           '<td><button class="btn btn-sm btn-ghost" data-viewticket="' + esc(t.id) + '">View Thread</button></td>' +
+           '</tr>';
+       }).join("") + '</tbody></table>' : '<div class="empty">No support tickets created yet. Need help? Click "+ New Support Ticket" above.</div>') +
+      '</div></div>';
+
+    $("#btnNewTicket").addEventListener("click", function () {
+      var m = modal(
+        '<h3>Create Support Ticket</h3>' +
+        '<p>Tell us what you need help with. A real team member responds quickly.</p>' +
+        '<form id="mTicketForm">' +
+        '<div class="field"><label>Subject</label><input class="input" name="subject" required placeholder="e.g. Issue connecting Instagram account"></div>' +
+        '<div class="field"><label>Category</label><select class="input" name="category"><option value="general">General Support</option><option value="technical">Instagram / Automation Issue</option><option value="billing">Billing & Plan</option><option value="feature">Feature Request</option></select></div>' +
+        '<div class="field"><label>Priority</label><select class="input" name="priority"><option value="medium">Medium</option><option value="low">Low</option><option value="high">High</option></select></div>' +
+        '<div class="field"><label>Message</label><textarea class="input" name="message" required style="min-height:90px;" placeholder="Describe what you are trying to do..."></textarea></div>' +
+        '<div class="row" style="margin-top:14px;"><button class="btn btn-ghost" type="button" id="mCancel">Cancel</button><button class="btn btn-primary" type="submit">Submit Ticket</button></div>' +
+        '</form>'
+      );
+      $("#mCancel", m).addEventListener("click", function () { m.remove(); });
+      $("#mTicketForm", m).addEventListener("submit", async function (e) {
+        e.preventDefault();
+        var d = {
+          subject: this.subject.value,
+          category: this.category.value,
+          priority: this.priority.value,
+          message: this.message.value
+        };
+        var res = await api("/api/tickets", { method: "POST", body: d });
+        if (res.success) {
+          m.remove();
+          toast("Ticket submitted!");
+          viewSupport();
+        } else {
+          toast(res.error || "Could not submit ticket", true);
+        }
+      });
+    });
+
+    $$("[data-viewticket]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        var tid = btn.dataset.viewticket;
+        var res = await api("/api/tickets/" + tid);
+        if (!res.success) { toast("Could not load ticket", true); return; }
+        var t = res.ticket, msgs = res.messages || [];
+        var m = modal(
+          '<h3>#' + esc(t.id) + ': ' + esc(t.subject) + '</h3>' +
+          '<div style="font-size:12px;color:var(--ink-3);margin-bottom:12px;">Category: ' + esc(t.category) + ' &middot; Status: <b>' + esc(t.status.toUpperCase()) + '</b></div>' +
+          '<div style="max-height:280px;overflow-y:auto;background:var(--bg);padding:12px;border-radius:10px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">' +
+          msgs.map(function (msg) {
+            var isStaff = msg.sender_role === "admin";
+            return '<div style="padding:8px 12px;border-radius:10px;font-size:13px;max-width:85%;' +
+              (isStaff ? 'background:#0fbf73;color:#04291a;align-self:flex-start;' : 'background:var(--paper);border:1px solid var(--line);align-self:flex-end;') + '">' +
+              '<div style="font-size:10.5px;opacity:0.75;margin-bottom:2px;"><b>' + esc(msg.sender_name || (isStaff ? "DM Flow Support" : "You")) + '</b> &middot; ' + ago(msg.created_at) + '</div>' +
+              esc(msg.message).replace(/\n/g, "<br>") +
+              '</div>';
+          }).join("") +
+          '</div>' +
+          (t.status !== "closed" ?
+            '<form id="mReplyForm">' +
+            '<div class="field"><label>Send Reply</label><textarea class="input" name="message" required style="min-height:70px;" placeholder="Add additional information..."></textarea></div>' +
+            '<div class="row"><button class="btn btn-ghost" type="button" id="mClose">Close</button><button class="btn btn-primary" type="submit">Send</button></div>' +
+            '</form>' : '<div class="hint">This ticket is closed.</div><div class="row" style="margin-top:10px;"><button class="btn btn-ghost" id="mClose">Close</button></div>')
+        );
+        $("#mClose", m).addEventListener("click", function () { m.remove(); });
+        var rf = $("#mReplyForm", m);
+        if (rf) {
+          rf.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            var text = this.message.value.trim();
+            if (!text) return;
+            var out = await api("/api/tickets/" + tid + "/reply", { method: "POST", body: { message: text } });
+            if (out.success) {
+              m.remove();
+              toast("Reply sent");
+              viewSupport();
+            } else {
+              toast(out.error || "Failed to send reply", true);
+            }
+          });
+        }
+      });
+    });
   }
 
   // ------------------------------------------------------------ actions

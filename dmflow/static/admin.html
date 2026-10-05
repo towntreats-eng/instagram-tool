@@ -3,62 +3,1384 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin - DM Flow</title>
+<title>Owner Command Center — DM Flow</title>
 <link rel="icon" href="/static/favicon.ico" sizes="any">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/app/app.css">
 <style>
-  .adm { max-width: 1120px; margin: 0 auto; padding: 28px 20px 60px; }
-  .adm-top { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
-  .adm-top .sp { flex: 1; }
-  .copy { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-  .copy code { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 12.5px; overflow-x: auto; white-space: nowrap; }
-  .copy span { width: 150px; font-size: 12.5px; font-weight: 700; color: var(--ink-3); flex: none; }
-  .src { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-4); }
-  select.input { height: 34px; padding: 0 8px; width: auto; }
-  @media (max-width: 700px) { .copy { flex-wrap: wrap; } .copy span { width: 100%; } }
+  :root {
+    --adm-bg: #090c10;
+    --adm-surface: #0e131b;
+    --adm-card: #131924;
+    --adm-card-hover: #172030;
+    --adm-line: #1e293b;
+    --adm-line-strong: #2e3d55;
+    --adm-text: #f1f5f9;
+    --adm-muted: #94a3b8;
+    --adm-dim: #64748b;
+    --adm-gold: #f59e0b;
+    --adm-gold-soft: rgba(245, 158, 11, 0.15);
+    --adm-emerald: #10b981;
+    --adm-emerald-soft: rgba(16, 185, 129, 0.15);
+    --adm-indigo: #6366f1;
+    --adm-indigo-soft: rgba(99, 102, 241, 0.15);
+    --adm-rose: #f43f5e;
+    --adm-rose-soft: rgba(244, 63, 94, 0.15);
+  }
+
+  body.adm-body {
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .adm-shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .adm-side {
+    background: var(--adm-surface);
+    border-right: 1px solid var(--adm-line);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 20px 16px;
+    z-index: 50;
+  }
+
+  .adm-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: "Archivo", sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: #fff;
+    padding: 4px 8px 16px;
+    border-bottom: 1px solid var(--adm-line);
+    margin-bottom: 16px;
+  }
+  .adm-brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .adm-owner-badge {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+
+  .adm-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    overflow-y: auto;
+  }
+  .adm-nav button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--adm-muted);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    position: relative;
+    width: 100%;
+  }
+  .adm-nav button:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+  }
+  .adm-nav button.active {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    font-weight: 700;
+  }
+  .adm-nav button.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 2px;
+    background: #10b981;
+  }
+  .adm-nav .badge-cnt {
+    margin-left: auto;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+
+  .adm-foot {
+    border-top: 1px solid var(--adm-line);
+    padding-top: 16px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .adm-user-info b { display: block; font-size: 13px; color: #fff; }
+  .adm-user-info span { font-size: 11.5px; color: var(--adm-dim); }
+
+  /* Main Area */
+  .adm-main {
+    padding: 30px 36px 80px;
+    overflow-y: auto;
+  }
+  .adm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .adm-header h1 {
+    font-family: "Archivo", sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+  .adm-header p {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    color: var(--adm-muted);
+  }
+
+  /* Cards & Grid */
+  .adm-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .adm-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .adm-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .adm-card {
+    background: var(--adm-card);
+    border: 1px solid var(--adm-line);
+    border-radius: 14px;
+    padding: 22px;
+    position: relative;
+    transition: border-color 0.15s ease;
+  }
+  .adm-card:hover {
+    border-color: var(--adm-line-strong);
+  }
+  .adm-card h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .adm-card p.sub {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--adm-muted);
+  }
+
+  .adm-kpi {
+    padding: 20px 22px;
+  }
+  .adm-kpi .kpi-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--adm-dim);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .adm-kpi .kpi-val {
+    font-family: "Archivo", sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .adm-kpi .kpi-sub {
+    font-size: 12px;
+    color: var(--adm-muted);
+  }
+  .adm-kpi.highlight-gold {
+    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, var(--adm-card) 100%);
+  }
+  .adm-kpi.highlight-emerald {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--adm-card) 100%);
+  }
+  .adm-kpi.highlight-rose {
+    border-color: rgba(244, 63, 94, 0.4);
+    background: linear-gradient(180deg, rgba(244, 63, 94, 0.08) 0%, var(--adm-card) 100%);
+  }
+
+  /* Tables */
+  .adm-table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--adm-line);
+    background: var(--adm-card);
+  }
+  .adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    text-align: left;
+  }
+  .adm-table th {
+    background: rgba(14, 19, 27, 0.8);
+    color: var(--adm-dim);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--adm-line);
+  }
+  .adm-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+    color: var(--adm-text);
+  }
+  .adm-table tr:last-child td { border-bottom: none; }
+  .adm-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+  /* Badges & Pills */
+  .adm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .adm-pill.emerald { background: var(--adm-emerald-soft); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .adm-pill.gold { background: var(--adm-gold-soft); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .adm-pill.indigo { background: var(--adm-indigo-soft); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+  .adm-pill.rose { background: var(--adm-rose-soft); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+  .adm-pill.dim { background: rgba(255, 255, 255, 0.05); color: var(--adm-muted); border: 1px solid var(--adm-line); }
+
+  /* Form Inputs */
+  .adm-field {
+    margin-bottom: 16px;
+  }
+  .adm-field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--adm-muted);
+    margin-bottom: 6px;
+  }
+  .adm-field .hint {
+    font-size: 11.5px;
+    color: var(--adm-dim);
+    margin-top: 5px;
+  }
+  .adm-input, .adm-select, .adm-textarea {
+    width: 100%;
+    background: #090d14;
+    border: 1px solid var(--adm-line);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .adm-input:focus, .adm-select:focus, .adm-textarea:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  }
+  .adm-textarea { min-height: 90px; resize: vertical; }
+
+  /* Buttons */
+  .adm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .adm-btn-emerald { background: #10b981; color: #04291a; }
+  .adm-btn-emerald:hover { background: #34d399; }
+  .adm-btn-gold { background: #f59e0b; color: #1c1404; }
+  .adm-btn-gold:hover { background: #fbbf24; }
+  .adm-btn-dark { background: #1e293b; color: #fff; border-color: var(--adm-line-strong); }
+  .adm-btn-dark:hover { background: #334155; }
+  .adm-btn-ghost { background: transparent; color: var(--adm-muted); border-color: transparent; }
+  .adm-btn-ghost:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+  .adm-btn-danger { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border-color: rgba(244, 63, 94, 0.3); }
+  .adm-btn-danger:hover { background: #f43f5e; color: #fff; }
+  .adm-btn-sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
+
+  /* Plan cards */
+  .plan-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .plan-box {
+    background: var(--adm-card);
+    border: 1px solid var(--adm-line);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .plan-box.is-popular {
+    border-color: #10b981;
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.15);
+  }
+  .plan-box.is-lifetime {
+    border-color: #f59e0b;
+    box-shadow: 0 0 24px rgba(245, 158, 11, 0.15);
+  }
+  .plan-price {
+    font-family: "Archivo", sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    margin: 14px 0 6px;
+  }
+  .plan-limits {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0;
+    font-size: 13px;
+    color: var(--adm-muted);
+  }
+  .plan-limits li {
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Modals */
+  .adm-modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 12, 0.75);
+    backdrop-filter: blur(4px);
+    display: grid;
+    place-items: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .adm-modal {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-line-strong);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 26px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  }
+  .adm-modal h2 {
+    font-family: "Archivo", sans-serif;
+    font-size: 20px;
+    margin: 0 0 8px;
+    color: #fff;
+  }
+  .adm-modal p.desc {
+    color: var(--adm-muted);
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+
+  /* Ticket chat bubbles */
+  .ticket-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 12px;
+    background: #090d14;
+    border-radius: 10px;
+    border: 1px solid var(--adm-line);
+    margin-bottom: 16px;
+  }
+  .chat-msg {
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 80%;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .chat-msg.customer {
+    align-self: flex-start;
+    background: #1e293b;
+    color: #f1f5f9;
+    border-bottom-left-radius: 3px;
+  }
+  .chat-msg.admin {
+    align-self: flex-end;
+    background: #047857;
+    color: #fff;
+    border-bottom-right-radius: 3px;
+  }
+  .chat-msg .meta {
+    font-size: 10.5px;
+    opacity: 0.75;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* Copy box */
+  .copy-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #090d14;
+    border: 1px solid var(--adm-line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+  }
+  .copy-box span.title {
+    width: 140px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--adm-muted);
+    flex: none;
+  }
+  .copy-box code {
+    flex: 1;
+    color: #38bdf8;
+    font-size: 12px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* Switch toggle */
+  .adm-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #090d14;
+    border: 1px solid var(--adm-line);
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .adm-switch-info b { display: block; font-size: 13.5px; color: #fff; }
+  .adm-switch-info span { font-size: 12px; color: var(--adm-muted); }
+
+  @media (max-width: 900px) {
+    .adm-shell { grid-template-columns: 1fr; }
+    .adm-side { display: none; }
+    .adm-grid-4, .adm-grid-3, .adm-grid-2 { grid-template-columns: 1fr; }
+    .adm-main { padding: 20px 16px; }
+  }
 </style>
 </head>
-<body>
-<div class="adm">
-  <div class="adm-top"><a class="brand" href="/app"><span class="brand-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h8l-1 8 11-13h-8z"/></svg></span>DM Flow</a>
-    <span class="pill ink">Admin</span><div class="sp"></div><a class="btn btn-sm" href="/app">Customer panel</a></div>
+<body class="adm-body">
 
-  <div class="set-grid">
-    <div class="card pad set-card">
-      <h3>Instagram app</h3>
-      <p>Two different secrets, from two different screens in Meta. Values set as Railway variables override these and are shown read-only.</p>
-      <form id="metaForm">
-        <div class="field"><label>Instagram App ID <span class="src" data-src="ig_app_id"></span></label><input class="input" name="ig_app_id"><small>Meta &rarr; Instagram &rarr; API setup with Instagram login. Not the Facebook app id at the top.</small></div>
-        <div class="field"><label>Instagram App Secret <span class="src" data-src="ig_app_secret"></span></label><input class="input" name="ig_app_secret" autocomplete="off"><small>Same screen as the Instagram App ID. Used to connect accounts.</small></div>
-        <div class="field"><label>Meta App Secret <span class="src" data-src="meta_app_secret"></span></label><input class="input" name="meta_app_secret" autocomplete="off"><small>App settings &rarr; Basic &rarr; App secret. Meta signs every webhook with this one - without it, comments are refused.</small></div>
-        <div class="field"><label>Webhook verify token <span class="src" data-src="verify_token"></span></label><input class="input" name="verify_token"></div>
-        <div class="field"><label>Public address <span class="src" data-src="base_url"></span></label><input class="input" name="base_url" placeholder="Leave empty to detect automatically"></div>
-        <div class="field"><label>Graph API version <span class="src" data-src="graph_version"></span></label><input class="input" name="graph_version"></div>
-        <button class="btn btn-primary" type="submit">Save</button>
+<div class="adm-shell">
+  <!-- Sidebar -->
+  <aside class="adm-side">
+    <div class="adm-brand">
+      <span class="adm-brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h8l-1 8 11-13h-8z"/></svg>
+      </span>
+      DM Flow
+    </div>
+
+    <div class="adm-owner-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Master Command Center
+    </div>
+
+    <nav class="adm-nav" id="adminNav">
+      <button class="active" data-tab="overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M9 9l3 3 5-5"/></svg>
+        Overview & Stats
+      </button>
+      <button data-tab="users">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Customers & Lifetime
+      </button>
+      <button data-tab="plans">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
+        Plans & Pricing
+      </button>
+      <button data-tab="tickets">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Support Tickets
+        <span class="badge-cnt" id="navTicketsBadge" style="display:none">0</span>
+      </button>
+      <button data-tab="offers">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9h.01M15 15h.01"/></svg>
+        Offers & Coupons
+      </button>
+      <button data-tab="billing">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Payment Gateways
+      </button>
+      <button data-tab="email">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email & SMTP
+      </button>
+      <button data-tab="meta">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Meta & Instagram
+      </button>
+      <button data-tab="platform">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Platform & Brand
+      </button>
+    </nav>
+
+    <div class="adm-foot">
+      <div class="adm-user-info">
+        <b>Platform Owner</b>
+        <span id="ownerEmail">owner</span>
+      </div>
+      <button class="adm-btn adm-btn-danger adm-btn-sm" id="adminLogoutBtn" title="Sign out of Owner Account">
+        Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main View -->
+  <main class="adm-main">
+    <!-- Header with Quick Refresh -->
+    <div class="adm-header">
+      <div>
+        <h1 id="viewTitle">Overview & Stats</h1>
+        <p id="viewSubtitle">Real-time pulse of your DM Flow SaaS platform</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="adm-pill emerald" id="sysStatusPill">● Live System Active</span>
+        <button class="adm-btn adm-btn-dark adm-btn-sm" id="btnRefresh">Refresh Data</button>
+      </div>
+    </div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="adm-tab-section">
+      <div class="adm-grid-4">
+        <div class="adm-card adm-kpi">
+          <div class="kpi-label">Total Customers</div>
+          <div class="kpi-val" id="kpiUsers">0</div>
+          <div class="kpi-sub"><span id="kpiActiveUsers">0</span> active workspaces</div>
+        </div>
+        <div class="adm-card adm-kpi highlight-gold">
+          <div class="kpi-label">Free Lifetime VIPs 🌟</div>
+          <div class="kpi-val" style="color:#fbbf24;" id="kpiLifetime">0</div>
+          <div class="kpi-sub">Customers with lifetime access</div>
+        </div>
+        <div class="adm-card adm-kpi highlight-emerald">
+          <div class="kpi-label">DMs Sent (30 Days)</div>
+          <div class="kpi-val" style="color:#34d399;" id="kpiDMs">0</div>
+          <div class="kpi-sub"><span id="kpiLiveFlows">0</span> live automations running</div>
+        </div>
+        <div class="adm-card adm-kpi highlight-rose">
+          <div class="kpi-label">Open Support Tickets</div>
+          <div class="kpi-val" style="color:#fb7185;" id="kpiTickets">0</div>
+          <div class="kpi-sub"><span id="kpiIg">0</span> Instagram accounts connected</div>
+        </div>
+      </div>
+
+      <div class="adm-grid-2">
+        <!-- Quick Business Actions -->
+        <div class="adm-card">
+          <h3>Quick Business Controls</h3>
+          <p class="sub">Instant master shortcuts for platform management.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <button class="adm-btn adm-btn-gold" id="btnQuickLifetime">⭐ Grant Free Lifetime Account</button>
+            <button class="adm-btn adm-btn-emerald" id="btnQuickPlan">+ Add New Plan</button>
+            <button class="adm-btn adm-btn-dark" id="btnQuickOffer">+ Create Coupon Code</button>
+            <button class="adm-btn adm-btn-dark" id="btnQuickEmail">✉️ Send Test Email</button>
+          </div>
+        </div>
+
+        <!-- System & Meta Health -->
+        <div class="adm-card">
+          <h3>Integration & Webhook Status</h3>
+          <p class="sub">Verification that Meta and background pollers are running.</p>
+          <div id="overviewHealth"></div>
+        </div>
+      </div>
+
+      <div class="adm-grid-2">
+        <!-- Recent Signups -->
+        <div class="adm-card">
+          <h3>Recent Customer Signups</h3>
+          <p class="sub">Latest users who created an account.</p>
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+              <thead><tr><th>Customer</th><th>Plan</th><th>VIP</th><th>Joined</th></tr></thead>
+              <tbody id="overviewRecentUsers"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Support Tickets -->
+        <div class="adm-card">
+          <h3>Pending Customer Inquiries</h3>
+          <p class="sub">Recent tickets submitted by customers.</p>
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+              <thead><tr><th>Subject</th><th>Customer</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="overviewRecentTickets"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CUSTOMERS & LIFETIME -->
+    <section id="tab-users" class="adm-tab-section" style="display:none">
+      <div class="adm-card" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;gap:10px;align-items:center;flex:1;max-width:440px;">
+            <input class="adm-input" id="userSearchInput" placeholder="Search by name, email, Instagram handle...">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-user-btn active" data-filter="all">All</button>
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-user-btn" data-filter="active">Active</button>
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-user-btn" data-filter="lifetime">🌟 Lifetime VIP</button>
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-user-btn" data-filter="suspended">Suspended</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Instagram</th>
+              <th>Plan</th>
+              <th>Free Lifetime VIP</th>
+              <th>Usage (DMs / Flows)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 3: PLANS & PRICING -->
+    <section id="tab-plans" class="adm-tab-section" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <h3 style="margin:0;color:#fff;">Subscription Plans Catalogue</h3>
+          <p style="margin:4px 0 0;font-size:13px;color:var(--adm-muted);">Manage plan pricing, trial days, automations, and DM limits live.</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="adm-btn adm-btn-dark" id="btnResetPlans">Reset to Defaults</button>
+          <button class="adm-btn adm-btn-emerald" id="btnCreatePlan">+ Create New Plan</button>
+        </div>
+      </div>
+
+      <div class="plan-card-grid" id="plansContainer"></div>
+    </section>
+
+    <!-- TAB 4: SUPPORT TICKETS -->
+    <section id="tab-tickets" class="adm-tab-section" style="display:none">
+      <div class="adm-card" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h3 style="margin:0;color:#fff;">Help Desk & Customer Inquiries</h3>
+            <p style="margin:4px 0 0;font-size:13px;color:var(--adm-muted);">Resolve customer issues and send email responses directly.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-ticket-btn active" data-filter="all">All</button>
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-ticket-btn" data-filter="open">Open</button>
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-ticket-btn" data-filter="in_progress">In Progress</button>
+            <button class="adm-btn adm-btn-dark adm-btn-sm filter-ticket-btn" data-filter="resolved">Resolved</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Customer</th>
+              <th>Subject</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Updated</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="ticketsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 5: OFFERS & COUPONS -->
+    <section id="tab-offers" class="adm-tab-section" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <h3 style="margin:0;color:#fff;">Promotional Offers & Promo Codes</h3>
+          <p style="margin:4px 0 0;font-size:13px;color:var(--adm-muted);">Create discount codes, flash sales, or free lifetime promotional vouchers.</p>
+        </div>
+        <button class="adm-btn adm-btn-emerald" id="btnCreateOffer">+ Create Promo Code</button>
+      </div>
+
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>Promo Code</th>
+              <th>Title</th>
+              <th>Discount</th>
+              <th>Applicable Plans</th>
+              <th>Redeemed</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="offersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 6: PAYMENT GATEWAYS -->
+    <section id="tab-billing" class="adm-tab-section" style="display:none">
+      <form id="billingForm">
+        <div class="adm-grid-2">
+          <!-- Gateway Selection & Currency -->
+          <div class="adm-card">
+            <h3>General Payment Settings</h3>
+            <p class="sub">Base currency and checkout mode.</p>
+            <div class="adm-field">
+              <label>Default Payment Gateway</label>
+              <select class="adm-select" name="payment_gateway">
+                <option value="razorpay">Razorpay (India & UPI / Cards)</option>
+                <option value="stripe">Stripe (International Cards)</option>
+                <option value="manual">Manual / Offline Billing</option>
+              </select>
+            </div>
+            <div class="adm-field">
+              <label>Payment Mode</label>
+              <select class="adm-select" name="payment_mode">
+                <option value="manual">Manual / Demo (No real charge)</option>
+                <option value="test">Test / Sandbox Mode</option>
+                <option value="live">Live / Production Mode</option>
+              </select>
+            </div>
+            <div class="adm-grid-2" style="margin-bottom:0;">
+              <div class="adm-field">
+                <label>Currency Code</label>
+                <input class="adm-input" name="currency" placeholder="INR, USD, etc.">
+              </div>
+              <div class="adm-field">
+                <label>Tax / GST %</label>
+                <input class="adm-input" name="tax_percent" type="number" step="0.5" placeholder="18">
+              </div>
+            </div>
+            <div class="adm-field">
+              <label>Invoice Prefix</label>
+              <input class="adm-input" name="invoice_prefix" placeholder="DMF">
+            </div>
+          </div>
+
+          <!-- Razorpay Settings -->
+          <div class="adm-card">
+            <h3>Razorpay Configuration</h3>
+            <p class="sub">Standard gateway for Indian debit cards, credit cards, and UPI.</p>
+            <div class="adm-switch">
+              <div class="adm-switch-info">
+                <b>Enable Razorpay</b>
+                <span>Accept payments via Razorpay</span>
+              </div>
+              <input type="checkbox" id="razorpay_enabled_check">
+            </div>
+            <div class="adm-field">
+              <label>Key ID</label>
+              <input class="adm-input" name="razorpay_key_id" placeholder="rzp_live_...">
+            </div>
+            <div class="adm-field">
+              <label>Key Secret</label>
+              <input class="adm-input" name="razorpay_key_secret" type="password" placeholder="Leave empty to keep existing secret">
+            </div>
+            <div class="adm-field">
+              <label>Webhook Secret</label>
+              <input class="adm-input" name="razorpay_webhook_secret" type="password" placeholder="Leave empty to keep existing secret">
+            </div>
+          </div>
+        </div>
+
+        <!-- Stripe Settings -->
+        <div class="adm-card" style="margin-bottom:20px;">
+          <h3>Stripe Configuration</h3>
+          <p class="sub">For international cross-border subscriptions and global credit cards.</p>
+          <div class="adm-switch">
+            <div class="adm-switch-info">
+              <b>Enable Stripe</b>
+              <span>Accept international credit card payments</span>
+            </div>
+            <input type="checkbox" id="stripe_enabled_check">
+          </div>
+          <div class="adm-grid-3">
+            <div class="adm-field">
+              <label>Publishable Key</label>
+              <input class="adm-input" name="stripe_publishable_key" placeholder="pk_live_...">
+            </div>
+            <div class="adm-field">
+              <label>Secret Key</label>
+              <input class="adm-input" name="stripe_secret_key" type="password" placeholder="sk_live_...">
+            </div>
+            <div class="adm-field">
+              <label>Webhook Signing Secret</label>
+              <input class="adm-input" name="stripe_webhook_secret" type="password" placeholder="whsec_...">
+            </div>
+          </div>
+        </div>
+
+        <button class="adm-btn adm-btn-emerald" type="submit">Save Payment Gateway Settings</button>
       </form>
-    </div>
-    <div>
-      <div class="card pad set-card" style="margin-bottom:16px">
-        <h3>Paste these into Meta</h3>
-        <p>Instagram &rarr; API setup with Instagram login.</p>
-        <div id="urls"></div>
-      </div>
-      <div class="card pad set-card">
-        <h3>Is Meta reaching us?</h3>
-        <p>The two ways comments arrive.</p>
-        <dl class="kv" id="health"></dl>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <h2 class="h2">Workspaces</h2>
-  <div class="card" style="overflow-x:auto"><table class="t"><thead><tr><th>User</th><th>Instagram</th><th>Live</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead><tbody id="users"></tbody></table></div>
+    <!-- TAB 7: EMAIL & SMTP -->
+    <section id="tab-email" class="adm-tab-section" style="display:none">
+      <div class="adm-grid-2">
+        <!-- SMTP Config -->
+        <div class="adm-card">
+          <h3>SMTP Mail Server</h3>
+          <p class="sub">Send welcome emails, ticket responses, and VIP gift alerts.</p>
+          <form id="emailForm">
+            <div class="adm-switch">
+              <div class="adm-switch-info">
+                <b>Enable Outgoing SMTP</b>
+                <span>Deliver transactional system emails</span>
+              </div>
+              <input type="checkbox" id="smtp_enabled_check">
+            </div>
+            <div class="adm-grid-2">
+              <div class="adm-field">
+                <label>SMTP Host</label>
+                <input class="adm-input" name="smtp_host" placeholder="smtp.gmail.com or smtp.resend.com">
+              </div>
+              <div class="adm-field">
+                <label>Port</label>
+                <input class="adm-input" name="smtp_port" placeholder="587">
+              </div>
+            </div>
+            <div class="adm-grid-2">
+              <div class="adm-field">
+                <label>Username / Email</label>
+                <input class="adm-input" name="smtp_user" placeholder="your-email@domain.com">
+              </div>
+              <div class="adm-field">
+                <label>Password / App Password</label>
+                <input class="adm-input" name="smtp_password" type="password" placeholder="••••••••">
+              </div>
+            </div>
+            <div class="adm-grid-2">
+              <div class="adm-field">
+                <label>From Name</label>
+                <input class="adm-input" name="smtp_from_name" placeholder="DM Flow Support">
+              </div>
+              <div class="adm-field">
+                <label>From Email</label>
+                <input class="adm-input" name="smtp_from_email" placeholder="support@domain.com">
+              </div>
+            </div>
+            <div class="adm-field">
+              <label>Security Encryption</label>
+              <select class="adm-select" name="smtp_security">
+                <option value="tls">STARTTLS (Standard on Port 587)</option>
+                <option value="ssl">SSL / TLS (Port 465)</option>
+                <option value="none">None (Insecure / Local relay)</option>
+              </select>
+            </div>
 
-  <h2 class="h2">Platform activity</h2>
-  <div class="card" id="events"></div>
+            <h4 style="margin:20px 0 10px;color:#fff;font-size:14px;">Automated Notification Triggers</h4>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Welcome Email</b><span>Send when a new user signs up</span></div>
+              <input type="checkbox" id="email_welcome_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Ticket Reply Email</b><span>Send when an admin replies to a customer ticket</span></div>
+              <input type="checkbox" id="email_ticket_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Lifetime VIP Gift Email</b><span>Send when granting a Free Lifetime VIP account</span></div>
+              <input type="checkbox" id="email_lifetime_check">
+            </div>
+
+            <button class="adm-btn adm-btn-emerald" type="submit" style="margin-top:10px;">Save Email Settings</button>
+          </form>
+        </div>
+
+        <!-- Live SMTP Tester -->
+        <div>
+          <div class="adm-card" style="margin-bottom:20px;">
+            <h3>⚡ Test SMTP Delivery</h3>
+            <p class="sub">Send an instant test email to verify your mail server configuration.</p>
+            <div class="adm-field">
+              <label>Recipient Email Address</label>
+              <input class="adm-input" id="testEmailTarget" placeholder="your-personal@email.com">
+              <div class="hint">We will connect to your SMTP host and send a live confirmation message.</div>
+            </div>
+            <button class="adm-btn adm-btn-gold" id="btnSendTestEmail">Send Test Email Now</button>
+            <div id="testEmailResult" style="margin-top:14px;font-size:13px;display:none;"></div>
+          </div>
+
+          <div class="adm-card">
+            <h3>Recommended Mail Providers</h3>
+            <p class="sub">Reliable SMTP hosts with free tiers:</p>
+            <ul style="color:var(--adm-muted);font-size:13px;padding-left:18px;line-height:1.7;">
+              <li><b>Resend</b> (smtp.resend.com, Port 587) — 3,000 free emails/mo</li>
+              <li><b>SendGrid</b> (smtp.sendgrid.net, Port 587) — 100 free emails/day</li>
+              <li><b>Google Workspace / Gmail</b> (smtp.gmail.com, Port 587) — use App Password</li>
+              <li><b>Amazon SES</b> — highly scalable & low cost</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 8: META & INSTAGRAM -->
+    <section id="tab-meta" class="adm-tab-section" style="display:none">
+      <div class="adm-grid-2">
+        <div class="adm-card">
+          <h3>Meta & Instagram App Credentials</h3>
+          <p class="sub">Values configured in Meta Developer Portal for Instagram Login & Webhooks.</p>
+          <form id="metaForm">
+            <div class="adm-field">
+              <label>Instagram App ID</label>
+              <input class="adm-input" name="ig_app_id">
+              <div class="hint">Meta &rarr; Instagram &rarr; API setup with Instagram login.</div>
+            </div>
+            <div class="adm-field">
+              <label>Instagram App Secret</label>
+              <input class="adm-input" name="ig_app_secret" autocomplete="off">
+              <div class="hint">Used for OAuth handshake to exchange access tokens.</div>
+            </div>
+            <div class="adm-field">
+              <label>Meta App Secret (Webhook Signing)</label>
+              <input class="adm-input" name="meta_app_secret" autocomplete="off">
+              <div class="hint">App settings &rarr; Basic &rarr; App secret. Meta signs comment webhooks with this secret.</div>
+            </div>
+            <div class="adm-field">
+              <label>Webhook Verify Token</label>
+              <input class="adm-input" name="verify_token">
+            </div>
+            <div class="adm-field">
+              <label>Public Base URL (HTTPS)</label>
+              <input class="adm-input" name="base_url" placeholder="Leave empty for auto-detection">
+            </div>
+            <div class="adm-field">
+              <label>Graph API Version</label>
+              <input class="adm-input" name="graph_version">
+            </div>
+            <button class="adm-btn adm-btn-emerald" type="submit">Save Meta Credentials</button>
+          </form>
+        </div>
+
+        <div>
+          <div class="adm-card" style="margin-bottom:20px;">
+            <h3>Copy URLs into Meta</h3>
+            <p class="sub">Paste these exact endpoints into your Meta App settings.</p>
+            <div id="metaUrls"></div>
+          </div>
+
+          <div class="adm-card">
+            <h3>Recent Platform Events</h3>
+            <p class="sub">Real-time log of comments, DMs sent, and webhook triggers.</p>
+            <div id="metaEventsList" style="max-height:280px;overflow-y:auto;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 9: PLATFORM & BRAND -->
+    <section id="tab-platform" class="adm-tab-section" style="display:none">
+      <form id="platformForm">
+        <div class="adm-grid-2">
+          <!-- Brand Identity -->
+          <div class="adm-card">
+            <h3>Brand & Business Profile</h3>
+            <p class="sub">App title and public support contact details.</p>
+            <div class="adm-field">
+              <label>Platform Brand Name</label>
+              <input class="adm-input" name="brand_name" placeholder="DM Flow">
+            </div>
+            <div class="adm-field">
+              <label>Company / Legal Entity</label>
+              <input class="adm-input" name="company_name" placeholder="Satnam Web Services">
+            </div>
+            <div class="adm-field">
+              <label>Support Email Address</label>
+              <input class="adm-input" name="support_email" placeholder="hello@umangsatnam.in">
+            </div>
+            <div class="adm-field">
+              <label>Support WhatsApp Number</label>
+              <input class="adm-input" name="support_whatsapp" placeholder="+91 88498 66193">
+            </div>
+          </div>
+
+          <!-- Master Control Toggles -->
+          <div class="adm-card">
+            <h3>Platform Master Switches</h3>
+            <p class="sub">Emergency and operational flags.</p>
+            <div class="adm-switch">
+              <div class="adm-switch-info">
+                <b>Signups Open</b>
+                <span>Allow new customers to create accounts</span>
+              </div>
+              <input type="checkbox" id="signups_open_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info">
+                <b>Maintenance Mode</b>
+                <span>Block customer panel with a friendly upgrade notice</span>
+              </div>
+              <input type="checkbox" id="maintenance_mode_check">
+            </div>
+            <div class="adm-field" style="margin-top:16px;">
+              <label>Global Announcement Banner</label>
+              <textarea class="adm-textarea" name="announcement" placeholder="Optional announcement displayed to all customers at the top of their dashboard (leave blank to disable)..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button class="adm-btn adm-btn-emerald" type="submit">Save Platform & Brand Settings</button>
+      </form>
+    </section>
+  </main>
 </div>
+
+<!-- ======================================================== MODALS -->
+
+<!-- Modal: Edit Customer -->
+<div class="adm-modal-bg" id="modalCustomer" style="display:none">
+  <div class="adm-modal">
+    <h2>Edit Customer Account</h2>
+    <p class="desc" id="modalCustomerEmail">-</p>
+    <form id="formEditCustomer">
+      <input type="hidden" id="editUserId">
+      <div class="adm-field">
+        <label>Customer Name</label>
+        <input class="adm-input" id="editUserName">
+      </div>
+      <div class="adm-grid-2">
+        <div class="adm-field">
+          <label>Plan</label>
+          <select class="adm-select" id="editUserPlan"></select>
+        </div>
+        <div class="adm-field">
+          <label>Account Status</label>
+          <select class="adm-select" id="editUserStatus">
+            <option value="active">Active</option>
+            <option value="suspended">Suspended (Revoke access)</option>
+          </select>
+        </div>
+      </div>
+      <div class="adm-field">
+        <label>Role</label>
+        <select class="adm-select" id="editUserRole">
+          <option value="customer">Customer (Standard)</option>
+          <option value="admin">Administrator / Owner</option>
+        </select>
+      </div>
+      <div class="adm-switch" style="margin:16px 0;">
+        <div class="adm-switch-info">
+          <b>🌟 Free Lifetime VIP Account</b>
+          <span>Bypass all limits forever (unlimited DMs & automations)</span>
+        </div>
+        <input type="checkbox" id="editUserLifetime">
+      </div>
+      <div class="adm-field">
+        <label>Admin Internal Notes</label>
+        <textarea class="adm-textarea" id="editUserNotes" placeholder="Private internal notes about this customer..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button class="adm-btn adm-btn-ghost" type="button" onclick="closeModal('modalCustomer')">Cancel</button>
+        <button class="adm-btn adm-btn-emerald" type="submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Grant Lifetime Shortcut -->
+<div class="adm-modal-bg" id="modalQuickLifetime" style="display:none">
+  <div class="adm-modal">
+    <h2>🌟 Grant Free Lifetime Account</h2>
+    <p class="desc">Select any customer to instantly grant unlimited lifetime VIP access.</p>
+    <form id="formQuickLifetime">
+      <div class="adm-field">
+        <label>Select Customer</label>
+        <select class="adm-select" id="quickLifetimeUserSelect"></select>
+      </div>
+      <div class="adm-switch" style="margin:16px 0;">
+        <div class="adm-switch-info">
+          <b>Send Notification Email</b>
+          <span>Notify customer via SMTP of their free lifetime upgrade</span>
+        </div>
+        <input type="checkbox" id="quickLifetimeNotify" checked>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button class="adm-btn adm-btn-ghost" type="button" onclick="closeModal('modalQuickLifetime')">Cancel</button>
+        <button class="adm-btn adm-btn-gold" type="submit">Grant Free Lifetime Access</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Plan Editor -->
+<div class="adm-modal-bg" id="modalPlan" style="display:none">
+  <div class="adm-modal">
+    <h2 id="modalPlanTitle">Plan Editor</h2>
+    <p class="desc">Define pricing, trial duration, and feature limits.</p>
+    <form id="formPlanEdit">
+      <input type="hidden" id="planEditIndex">
+      <div class="adm-grid-2">
+        <div class="adm-field">
+          <label>Plan ID (slug)</label>
+          <input class="adm-input" id="planId" placeholder="e.g. starter, pro, vip" required>
+        </div>
+        <div class="adm-field">
+          <label>Plan Name</label>
+          <input class="adm-input" id="planName" placeholder="e.g. Pro Creator" required>
+        </div>
+      </div>
+      <div class="adm-field">
+        <label>Tagline</label>
+        <input class="adm-input" id="planTagline" placeholder="For growing brands">
+      </div>
+      <div class="adm-grid-3">
+        <div class="adm-field">
+          <label>Monthly Price (₹/$)</label>
+          <input class="adm-input" id="planPriceM" type="number" placeholder="499">
+        </div>
+        <div class="adm-field">
+          <label>Yearly Price (₹/$)</label>
+          <input class="adm-input" id="planPriceY" type="number" placeholder="4990">
+        </div>
+        <div class="adm-field">
+          <label>Trial Days</label>
+          <input class="adm-input" id="planTrial" type="number" placeholder="0">
+        </div>
+      </div>
+      <div class="adm-field">
+        <label>Badge Text</label>
+        <input class="adm-input" id="planBadge" placeholder="e.g. Most Popular or Lifetime Free">
+      </div>
+
+      <h4 style="color:#fff;font-size:13.5px;margin:16px 0 8px;">Resource Limits (-1 for unlimited)</h4>
+      <div class="adm-grid-3">
+        <div class="adm-field">
+          <label>Live Automations</label>
+          <input class="adm-input" id="planLimitAuto" type="number" value="1">
+        </div>
+        <div class="adm-field">
+          <label>Contacts Stored</label>
+          <input class="adm-input" id="planLimitContacts" type="number" value="500">
+        </div>
+        <div class="adm-field">
+          <label>DMs Per Month</label>
+          <input class="adm-input" id="planLimitDMs" type="number" value="1000">
+        </div>
+      </div>
+
+      <h4 style="color:#fff;font-size:13.5px;margin:16px 0 8px;">Feature Entitlements</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
+          <input type="checkbox" id="planFeatComment" checked> Comment-to-DM
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
+          <input type="checkbox" id="planFeatFollow" checked> Follower Check Gate
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
+          <input type="checkbox" id="planFeatAnyPost"> Any Post / Wildcard Trigger
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
+          <input type="checkbox" id="planFeatPriority"> Priority Support
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
+          <input type="checkbox" id="planFeatAI"> AI Flow Assistant
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;color:var(--adm-text);">
+          <input type="checkbox" id="planFeatCSV"> CSV Data Export
+        </label>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+        <button class="adm-btn adm-btn-ghost" type="button" onclick="closeModal('modalPlan')">Cancel</button>
+        <button class="adm-btn adm-btn-emerald" type="submit">Save Plan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Offer / Coupon Editor -->
+<div class="adm-modal-bg" id="modalOffer" style="display:none">
+  <div class="adm-modal">
+    <h2>Create Promo Offer / Coupon</h2>
+    <p class="desc">Vouchers can apply discounts or grant 100% free lifetime accounts.</p>
+    <form id="formOfferEdit">
+      <div class="adm-grid-2">
+        <div class="adm-field">
+          <label>Coupon Code</label>
+          <input class="adm-input" id="offerCode" placeholder="e.g. VIPLIFETIME or DIWALI50" style="text-transform:uppercase;" required>
+        </div>
+        <div class="adm-field">
+          <label>Title / Description</label>
+          <input class="adm-input" id="offerTitle" placeholder="Special Founder Deal">
+        </div>
+      </div>
+      <div class="adm-grid-2">
+        <div class="adm-field">
+          <label>Discount Type</label>
+          <select class="adm-select" id="offerType">
+            <option value="percentage">Percentage Discount (%)</option>
+            <option value="flat">Flat Amount Discount (₹/$)</option>
+            <option value="lifetime">100% Free Lifetime Deal</option>
+          </select>
+        </div>
+        <div class="adm-field">
+          <label>Discount Value</label>
+          <input class="adm-input" id="offerVal" type="number" placeholder="50">
+        </div>
+      </div>
+      <div class="adm-grid-2">
+        <div class="adm-field">
+          <label>Applicable Plans</label>
+          <input class="adm-input" id="offerPlans" value="all" placeholder="all or comma-separated: growth,starter">
+        </div>
+        <div class="adm-field">
+          <label>Max Uses (-1 for unlimited)</label>
+          <input class="adm-input" id="offerMaxUses" type="number" value="-1">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button class="adm-btn adm-btn-ghost" type="button" onclick="closeModal('modalOffer')">Cancel</button>
+        <button class="adm-btn adm-btn-emerald" type="submit">Save Offer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Ticket Thread & Reply -->
+<div class="adm-modal-bg" id="modalTicket" style="display:none">
+  <div class="adm-modal" style="max-width:640px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <h2 id="ticketModalSubject" style="margin:0;">Ticket Conversation</h2>
+        <p class="desc" id="ticketModalMeta" style="margin:4px 0 0;">-</p>
+      </div>
+      <span class="adm-pill" id="ticketModalStatusPill">-</span>
+    </div>
+
+    <!-- Message Thread -->
+    <div class="ticket-chat" id="ticketChatContainer"></div>
+
+    <!-- Reply Box -->
+    <form id="formTicketReply">
+      <input type="hidden" id="replyTicketId">
+      <div class="adm-field">
+        <label>Your Response as Support Admin</label>
+        <textarea class="adm-textarea" id="ticketReplyText" placeholder="Write response to customer..." required></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <select class="adm-select" id="ticketReplyStatus" style="width:auto;height:36px;padding:0 10px;">
+            <option value="in_progress">Keep In Progress</option>
+            <option value="resolved">Mark Resolved</option>
+            <option value="closed">Close Ticket</option>
+          </select>
+          <label style="font-size:12.5px;color:var(--adm-muted);display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="ticketReplyEmailCheck" checked> Email customer
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="adm-btn adm-btn-ghost" type="button" onclick="closeModal('modalTicket')">Close</button>
+          <button class="adm-btn adm-btn-emerald" type="submit">Send Response</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Notice -->
 <div class="toast" id="toast"></div>
+
 <script src="/static/app/admin.js"></script>
 </body>
 </html>

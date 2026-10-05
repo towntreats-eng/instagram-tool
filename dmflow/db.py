@@ -29,9 +29,12 @@ SCHEMA = [
         email TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL DEFAULT '',
         password_hash TEXT NOT NULL DEFAULT '',
-        role TEXT NOT NULL DEFAULT 'owner',
+        role TEXT NOT NULL DEFAULT 'customer',
         status TEXT NOT NULL DEFAULT 'active',
         plan TEXT NOT NULL DEFAULT 'free',
+        is_lifetime INTEGER NOT NULL DEFAULT 0,
+        plan_expires_at BIGINT NOT NULL DEFAULT 0,
+        notes TEXT NOT NULL DEFAULT '',
         created_at BIGINT NOT NULL DEFAULT 0)""",
     """CREATE TABLE IF NOT EXISTS dm_sessions (
         token_hash TEXT PRIMARY KEY,
@@ -104,6 +107,44 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS dm_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL DEFAULT '')""",
+    # Customer support tickets
+    """CREATE TABLE IF NOT EXISTS dm_tickets (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        user_email TEXT NOT NULL DEFAULT '',
+        user_name TEXT NOT NULL DEFAULT '',
+        subject TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL DEFAULT 'general',
+        priority TEXT NOT NULL DEFAULT 'medium',
+        status TEXT NOT NULL DEFAULT 'open',
+        created_at BIGINT NOT NULL DEFAULT 0,
+        updated_at BIGINT NOT NULL DEFAULT 0)""",
+    "CREATE INDEX IF NOT EXISTS dm_tickets_user ON dm_tickets (user_id)",
+    "CREATE INDEX IF NOT EXISTS dm_tickets_status ON dm_tickets (status)",
+    # Ticket conversation messages
+    """CREATE TABLE IF NOT EXISTS dm_ticket_messages (
+        id TEXT PRIMARY KEY,
+        ticket_id TEXT NOT NULL,
+        sender_role TEXT NOT NULL DEFAULT 'customer',
+        sender_id TEXT NOT NULL DEFAULT '',
+        sender_name TEXT NOT NULL DEFAULT '',
+        message TEXT NOT NULL DEFAULT '',
+        created_at BIGINT NOT NULL DEFAULT 0)""",
+    "CREATE INDEX IF NOT EXISTS dm_ticket_msgs_ticket ON dm_ticket_messages (ticket_id)",
+    # Promotional offers & coupon codes
+    """CREATE TABLE IF NOT EXISTS dm_offers (
+        id TEXT PRIMARY KEY,
+        code TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        discount_type TEXT NOT NULL DEFAULT 'percentage',
+        discount_val REAL NOT NULL DEFAULT 0,
+        applicable_plans TEXT NOT NULL DEFAULT 'all',
+        max_uses INTEGER NOT NULL DEFAULT -1,
+        used_count INTEGER NOT NULL DEFAULT 0,
+        valid_until BIGINT NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at BIGINT NOT NULL DEFAULT 0)""",
+    "CREATE INDEX IF NOT EXISTS dm_offers_code ON dm_offers (code)",
 ]
 
 
@@ -164,6 +205,17 @@ _engine = None
 _lock = threading.Lock()
 
 
+def _ensure_migrations(eng) -> None:
+    # Ensure columns exist on dm_users if table already existed prior
+    for col, col_type in (("is_lifetime", "INTEGER NOT NULL DEFAULT 0"),
+                          ("plan_expires_at", "BIGINT NOT NULL DEFAULT 0"),
+                          ("notes", "TEXT NOT NULL DEFAULT ''")):
+        try:
+            eng.execute(f"ALTER TABLE dm_users ADD COLUMN {col} {col_type}")
+        except Exception:
+            pass
+
+
 def engine():
     global _engine
     if _engine is None:
@@ -171,7 +223,11 @@ def engine():
             if _engine is None:
                 _engine = _Postgres(DATABASE_URL) if DATABASE_URL else _Sqlite(SQLITE_PATH)
                 for stmt in SCHEMA:
-                    _engine.execute(stmt)
+                    try:
+                        _engine.execute(stmt)
+                    except Exception:
+                        pass
+                _ensure_migrations(_engine)
     return _engine
 
 

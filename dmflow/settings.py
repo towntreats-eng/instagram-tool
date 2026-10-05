@@ -21,6 +21,23 @@ ENV = {
     "verify_token": "VERIFY_TOKEN",
     "base_url": "BASE_URL",
     "graph_version": "GRAPH_VERSION",
+    # Platform / Brand
+    "brand_name": "BRAND_NAME",
+    "support_email": "SUPPORT_EMAIL",
+    "support_whatsapp": "SUPPORT_WHATSAPP",
+    # SMTP
+    "smtp_host": "SMTP_HOST",
+    "smtp_port": "SMTP_PORT",
+    "smtp_user": "SMTP_USER",
+    "smtp_password": "SMTP_PASSWORD",
+    "smtp_from_email": "SMTP_FROM_EMAIL",
+    # Gateways
+    "razorpay_key_id": "RAZORPAY_KEY_ID",
+    "razorpay_key_secret": "RAZORPAY_KEY_SECRET",
+    "razorpay_webhook_secret": "RAZORPAY_WEBHOOK_SECRET",
+    "stripe_publishable_key": "STRIPE_PUBLISHABLE_KEY",
+    "stripe_secret_key": "STRIPE_SECRET_KEY",
+    "stripe_webhook_secret": "STRIPE_WEBHOOK_SECRET",
 }
 
 DEFAULTS = {
@@ -30,29 +47,73 @@ DEFAULTS = {
     "verify_token": "converflow_webhook_token",   # kept: Meta already has it
     "base_url": "",
     "graph_version": "v24.0",
+    # Platform / Brand
+    "brand_name": "DM Flow",
+    "support_email": "hello@umangsatnam.in",
+    "support_whatsapp": "+91 88498 66193",
+    "company_name": "Satnam Web Services",
+    "announcement": "",
+    "maintenance_mode": "0",
+    "signups_open": "1",
+    # Email / SMTP
+    "smtp_enabled": "0",
+    "smtp_host": "",
+    "smtp_port": "587",
+    "smtp_user": "",
+    "smtp_password": "",
+    "smtp_from_name": "DM Flow",
+    "smtp_from_email": "",
+    "smtp_security": "tls",
+    "email_welcome_enabled": "1",
+    "email_ticket_enabled": "1",
+    "email_lifetime_enabled": "1",
+    # Payment Gateway
+    "payment_gateway": "razorpay",
+    "payment_mode": "manual",  # manual | test | live
+    "currency": "INR",
+    "tax_percent": "18",
+    "invoice_prefix": "DMF",
+    "razorpay_enabled": "0",
+    "razorpay_key_id": "",
+    "razorpay_key_secret": "",
+    "razorpay_webhook_secret": "",
+    "stripe_enabled": "0",
+    "stripe_publishable_key": "",
+    "stripe_secret_key": "",
+    "stripe_webhook_secret": "",
 }
 
-SECRETS = {"ig_app_secret", "meta_app_secret"}
+SECRETS = {
+    "ig_app_secret", "meta_app_secret", "smtp_password",
+    "razorpay_key_secret", "razorpay_webhook_secret",
+    "stripe_secret_key", "stripe_webhook_secret"
+}
 
 # Only what the product actually does. No feature appears on the pricing page
 # that the code does not deliver. -1 means unlimited.
 DEFAULT_PLANS: List[Dict[str, Any]] = [
     {"id": "free", "name": "Free", "tagline": "One automation, free forever",
      "price_monthly": 0, "price_yearly": 0, "trial_days": 0, "highlight": False,
-     "badge": "Free forever",
+     "badge": "Free forever", "is_active": True,
      "limits": {"automations": 1, "contacts": 100, "dms_per_month": 200, "ig_accounts": 1},
-     "features": {"comment_to_dm": True, "follow_gate": True, "any_post": False}},
+     "features": {"comment_to_dm": True, "follow_gate": True, "any_post": False, "priority_support": False}},
     {"id": "starter", "name": "Starter", "tagline": "For creators posting every week",
      "price_monthly": 399, "price_yearly": 3990, "trial_days": 0, "highlight": False,
-     "badge": "",
+     "badge": "", "is_active": True,
      "limits": {"automations": 5, "contacts": 1000, "dms_per_month": 2000, "ig_accounts": 1},
-     "features": {"comment_to_dm": True, "follow_gate": True, "any_post": True}},
+     "features": {"comment_to_dm": True, "follow_gate": True, "any_post": True, "priority_support": False}},
     {"id": "growth", "name": "Growth", "tagline": "For brands selling every day",
      "price_monthly": 799, "price_yearly": 7990, "trial_days": 15, "highlight": True,
-     "badge": "Most popular",
+     "badge": "Most popular", "is_active": True,
      "limits": {"automations": -1, "contacts": 5000, "dms_per_month": 15000, "ig_accounts": 1},
      "features": {"comment_to_dm": True, "follow_gate": True, "any_post": True,
                   "priority_support": True}},
+    {"id": "lifetime", "name": "Lifetime VIP", "tagline": "Full platform access forever",
+     "price_monthly": 0, "price_yearly": 0, "trial_days": 0, "highlight": False,
+     "badge": "Lifetime Free", "is_active": True,
+     "limits": {"automations": -1, "contacts": -1, "dms_per_month": -1, "ig_accounts": -1},
+     "features": {"comment_to_dm": True, "follow_gate": True, "any_post": True,
+                  "priority_support": True, "ai_assist": True, "csv_export": True}},
 ]
 
 
@@ -98,11 +159,31 @@ def plans() -> List[Dict[str, Any]]:
     return stored if isinstance(stored, list) and stored else DEFAULT_PLANS
 
 
+def save_plans(plans_list: List[Dict[str, Any]]) -> None:
+    put("plans", db.jdump(plans_list))
+
+
+def reset_plans() -> List[Dict[str, Any]]:
+    put("plans", db.jdump(DEFAULT_PLANS))
+    return DEFAULT_PLANS
+
+
 def plan(plan_id: str) -> Dict[str, Any]:
     for p in plans():
-        if p["id"] == plan_id:
+        if p.get("id") == plan_id:
             return p
     return plans()[0]
+
+
+def user_plan(user: Dict[str, Any]) -> Dict[str, Any]:
+    p = dict(plan(user.get("plan") or "free"))
+    if user.get("is_lifetime"):
+        p["is_lifetime"] = True
+        p["badge"] = "Lifetime VIP"
+        p["limits"] = {"automations": -1, "contacts": -1, "dms_per_month": -1, "ig_accounts": -1}
+        p["features"] = {**p.get("features", {}), "comment_to_dm": True, "follow_gate": True,
+                         "any_post": True, "priority_support": True, "ai_assist": True, "csv_export": True}
+    return p
 
 
 def base_url(request=None) -> str:

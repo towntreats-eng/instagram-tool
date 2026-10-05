@@ -101,15 +101,27 @@ def require_admin(request: Request) -> Dict[str, Any]:
 
 
 def public_user(u: Dict[str, Any]) -> Dict[str, Any]:
-    return {k: u.get(k) for k in ("id", "email", "name", "role", "plan", "created_at")}
+    return {
+        "id": u.get("id"),
+        "email": u.get("email"),
+        "name": u.get("name"),
+        "role": u.get("role"),
+        "plan": u.get("plan"),
+        "is_lifetime": bool(u.get("is_lifetime")),
+        "plan_expires_at": u.get("plan_expires_at") or 0,
+        "status": u.get("status") or "active",
+        "created_at": u.get("created_at"),
+    }
 
 
-def create_user(name: str, email: str, password: str, role: str = "owner") -> Dict[str, Any]:
+def create_user(name: str, email: str, password: str, role: str = "customer",
+                is_lifetime: int = 0) -> Dict[str, Any]:
     email = (email or "").strip().lower()
     uid = db.new_id("u_")
-    db.execute("INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, created_at) "
-               "VALUES (?, ?, ?, ?, ?, 'active', 'free', ?)",
-               (uid, email, (name or "").strip(), hash_password(password), role, db.now()))
+    plan = "lifetime" if is_lifetime else "free"
+    db.execute("INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, is_lifetime, plan_expires_at, notes, created_at) "
+               "VALUES (?, ?, ?, ?, ?, 'active', ?, ?, 0, '', ?)",
+               (uid, email, (name or "").strip(), hash_password(password), role, plan, is_lifetime, db.now()))
     return db.one("SELECT * FROM dm_users WHERE id = ?", (uid,))
 
 
