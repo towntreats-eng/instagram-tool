@@ -213,6 +213,8 @@ def keyword_hit(text: str, keywords: List[str]) -> bool:
         k = kw.lower().strip()
         if not k:
             continue
+        if k in ("*", "any", "all"):
+            return True
         if re.search(r"(?<!\w)" + re.escape(k) + r"(?!\w)", t) or (not re.match(r"\w", k) and k in t):
             return True
     return False
@@ -224,10 +226,11 @@ def pick_flow(user_id: str, media_id: str, text: str) -> Optional[Dict[str, Any]
         f = flow_row(r)
         b = f["body"]
         specific = b["post"]["mode"] == "specific"
-        if specific and str(b["post"]["media_id"]) != str(media_id):
+        if specific and b["post"]["media_id"] and media_id and str(b["post"]["media_id"]) != str(media_id):
             continue
         keyed = b["trigger"]["mode"] == "keyword"
-        if keyed and not keyword_hit(text, b["trigger"]["keywords"]):
+        keywords = b["trigger"]["keywords"] or []
+        if keyed and "*" not in keywords and not keyword_hit(text, keywords):
             continue
         r_ = (0 if specific else 2) + (0 if keyed else 1)
         if r_ < rank:

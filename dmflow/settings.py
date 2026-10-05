@@ -208,52 +208,126 @@ def instagram_ready() -> bool:
 
 # ------------------------------------------------------------------ migration
 def import_legacy() -> Dict[str, int]:
-    """First boot only: bring over logins and the Meta app from the old app.
+    """First boot only: bring over logins, connected Instagram accounts, automations, and Meta app from the old app.
 
     Reads the old `documents` table (Postgres) or the old data/*.json files
     (local). Never overwrites anything already set here, so running it twice
     is harmless.
     """
-    stats = {"users": 0, "settings": 0}
-    users_doc, settings_doc = None, None
+    stats = {"users": 0, "settings": 0, "accounts": 0, "flows": 0}
+    users_doc, settings_doc, automations_doc = None, None, None
     if db.is_postgres():
         try:
-            for row in db.query("SELECT name, body FROM documents WHERE name IN ('users', 'settings')"):
+            for row in db.query("SELECT name, body FROM documents WHERE name IN ('users', 'settings', 'automations')"):
                 body = row["body"] if isinstance(row["body"], dict) else db.jload(row["body"], {})
                 if row["name"] == "users":
                     users_doc = body
-                else:
+                elif row["name"] == "settings":
                     settings_doc = body
+                elif row["name"] == "automations":
+                    automations_doc = body
         except Exception:
             pass
     else:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        for name in ("users", "settings"):
+        for name in ("users", "settings", "automations"):
             path = os.path.join(root, "data", name + ".json")
             if os.path.exists(path):
                 try:
                     body = json.load(open(path, encoding="utf-8"))
                     if name == "users":
                         users_doc = body
-                    else:
+                    elif name == "settings":
                         settings_doc = body
+                    elif name == "automations":
+                        automations_doc = body
                 except Exception:
                     pass
 
-    if users_doc and not db.one("SELECT id FROM dm_users LIMIT 1"):
-        rows = users_doc.get("users", []) if isinstance(users_doc, dict) else users_doc
-        for u in rows or []:
-            email = (u.get("email") or "").strip().lower()
-            if not email or not u.get("password_hash"):
-                continue
-            db.execute(
-                "INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, created_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING",
-                (u.get("id") or db.new_id("u_"), email, u.get("name") or "",
-                 u["password_hash"], "admin" if u.get("role") == "admin" else "owner",
-                 u.get("status") or "active", u.get("plan") or "free", db.now()))
-            stats["users"] += 1
+    # 1. Users & Instagram Connections
+    user_rows = users_doc.get("users", []) if isinstance(users_doc, dict) else (users_doc or [])
+    for u in user_rows:
+        email = (u.get("email") or "").strip().lower()
+        if not email or not u.get("password_hash"):
+            continue
+        uid = u.get("id") or db.new_id("u_")
+        db.execute(
+            "INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING",
+            (uid, email, u.get("name") or "",
+             u["password_hash"], "admin" if u.get("role") == "admin" else "owner",
+             u.get("status") or "active", u.get("plan") or "free", db.now()))
+        stats["users"] += 1
 
+        # Connected IG account
+        ig = u.get("instagram") or {}
+        if ig.get("connected") and ig.get("access_token"):
+            existing_ig = db.one("SELECT user_id FROM dm_ig WHERE user_id = ?", (uid,))
+            if not existing_ig:
+                now = db.now()
+                ig_user_id = str(ig.get("instagram_account_id") or "")
+                db.execute(
+                    "INSERT INTO dm_ig (user_id, ig_user_id, app_user_id, username, name, picture, followers, "
+                    "media_count, account_type, token, token_expires, connected_at, checked_at, status, status_note) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'connected', '')",
+                    (uid, ig_user_id, str(ig.get("page_id") or ""),
+                     ig.get("username") or "", ig.get("display_name") or "", ig.get("profile_picture_url") or "",
+                     0, 0, "BUSINESS", ig.get("access_token"), now + 5184000, now, now))
+                stats["accounts"] += 1
+
+    # 2. Flows & Automations
+    auto_rows = automations_doc if isinstance(automations_doc, list) else (automations_doc or {}).get("automations", [])
+    first_user = db.one("SELECT id FROM dm_users ORDER BY created_at ASC LIMIT 1")
+    default_uid = first_user["id"] if first_user else ""
+    for a in auto_rows or []:
+        uid = a.get("created_by") or default_uid
+        if not uid:
+            continue
+        fid = a.get("id") or db.new_id("f_")
+        if db.one("SELECT id FROM dm_flows WHERE id = ?", (fid,)):
+            continue
+        name = a.get("name") or "Automation"
+        status = "live" if a.get("is_active", True) else "paused"
+        trigger_kws = a.get("trigger_keywords") or ["*"]
+        body = {
+            "post": {
+                "mode": "any" if a.get("trigger_scope") == "any" or not a.get("post_media_id") else "specific",
+                "media_id": str(a.get("post_media_id") or ""),
+                "thumb": a.get("post_thumbnail") or "",
+                "caption": a.get("post_caption") or "",
+                "permalink": a.get("post_target") or "",
+            },
+            "trigger": {
+                "mode": "any" if a.get("trigger_scope") == "any" or "*" in trigger_kws else "keyword",
+                "keywords": trigger_kws,
+            },
+            "public_reply": {
+                "on": bool(a.get("comment_replies")),
+                "variants": a.get("comment_replies") or ["Check DMs!"],
+            },
+            "opening": {
+                "on": bool(a.get("opening_dm")),
+                "text": a.get("opening_dm") or "Hey there! Thanks for your comment.",
+                "button": a.get("button_text") or "Get it",
+            },
+            "follow_gate": {
+                "on": bool(a.get("require_follow")),
+                "text": "Please follow to receive the link.",
+                "button": "I'm following",
+            },
+            "link": {
+                "text": a.get("dm_message") or "Here is your link:",
+                "button": a.get("button_text") or "Open Link",
+                "url": a.get("delivery_link") or "",
+            },
+        }
+        db.execute(
+            "INSERT INTO dm_flows (id, user_id, name, status, body, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (fid, uid, name, status, db.jdump(body), db.now(), db.now()))
+        stats["flows"] += 1
+
+    # 3. Meta App Settings
     meta = (settings_doc or {}).get("meta_app", {}) if isinstance(settings_doc, dict) else {}
     for old, new in (("app_id", "ig_app_id"), ("app_secret", "ig_app_secret"),
                      ("webhook_secret", "meta_app_secret"), ("verify_token", "verify_token")):
