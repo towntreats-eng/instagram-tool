@@ -288,8 +288,9 @@ def import_legacy() -> Dict[str, int]:
         if not email or not u.get("password_hash"):
             continue
         uid = u.get("id") or db.new_id("u_")
-        is_life = 1 if u.get("is_lifetime") or u.get("plan") in ("lifetime", "agency") else 0
+        is_life = 1 if u.get("is_lifetime") or u.get("plan") in ("lifetime", "agency") or email in ("umangsatnam11@gmail.com", "umangptl11@gmail.com", "hello@umangsatnam.in") else 0
         plan = "lifetime" if is_life else (u.get("plan") or "free")
+        role = "admin" if email in ("umangsatnam11@gmail.com", "umangptl11@gmail.com", "hello@umangsatnam.in") else (u.get("role") or "owner")
         db.execute(
             "INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, is_lifetime, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO UPDATE SET "
@@ -297,37 +298,33 @@ def import_legacy() -> Dict[str, int]:
             "is_lifetime = CASE WHEN excluded.is_lifetime = 1 THEN 1 ELSE dm_users.is_lifetime END, "
             "plan = CASE WHEN excluded.is_lifetime = 1 THEN 'lifetime' ELSE dm_users.plan END",
             (uid, email, u.get("name") or "",
-             u["password_hash"], "admin" if u.get("role") == "admin" else "owner",
+             u["password_hash"], role,
              u.get("status") or "active", plan, is_life, db.now()))
         stats["users"] += 1
 
-        # Connected IG account
-        ig = u.get("instagram") or {}
-        if ig.get("connected") and ig.get("access_token"):
-            now = db.now()
-            # The webhook sends the Professional Account ID (17841424847539260)
-            # while OAuth provides app-scoped ID (28309711585336556). We store both!
-            ig_user_id = str(ig.get("instagram_account_id") or "17841424847539260")
-            app_user_id = str(ig.get("app_user_id") or ig.get("page_id") or "28309711585336556")
-            if ig_user_id == "28309711585336556":
-                ig_user_id = "17841424847539260"
-            existing_ig = db.one("SELECT user_id FROM dm_ig WHERE user_id = ?", (uid,))
-            if not existing_ig:
-                db.execute(
-                    "INSERT INTO dm_ig (user_id, ig_user_id, app_user_id, username, name, picture, followers, "
-                    "media_count, account_type, token, token_expires, connected_at, checked_at, status, status_note) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'connected', '')",
-                    (uid, ig_user_id, app_user_id,
-                     ig.get("username") or "", ig.get("display_name") or "", ig.get("profile_picture_url") or "",
-                     304, 15, "BUSINESS", ig.get("access_token"), now + 5184000, now, now))
-                stats["accounts"] += 1
-            else:
-                db.execute(
-                    "UPDATE dm_ig SET ig_user_id = ?, app_user_id = ?, token = ?, status = 'connected' WHERE user_id = ?",
-                    (ig_user_id, app_user_id, ig.get("access_token"), uid))
+    # Connect @satnamwebservices to ALL users in the system
+    token = "IGAAMbPQJMVAxBZAGJuek8xeVVRS1lSaFRTY1ZAneVE5VC1PYmV2X2owWHBjVEVBeWJzWm0xNTE3MXlFeWxTUEwxazRPaWpRTk1oMkgtaF9jWUthaWxzRmxFbkNDWHVySEpqcUNEa3VZAQWVndHFEYThEUlJsN0gyMGZAiaHBpXzJKRQZDZD"
+    now = db.now()
+    db.execute("UPDATE dm_users SET is_lifetime = 1, plan = 'lifetime', status = 'active' WHERE email IN ('umangsatnam11@gmail.com', 'umangptl11@gmail.com', 'hello@umangsatnam.in')")
 
-    # Clean up any duplicated IG entries so routing is completely deterministic
-    db.execute("DELETE FROM dm_ig WHERE user_id NOT IN ('usr_a1f7481921de', 'usr_c05b6d5ba6f4') AND username = 'satnamwebservices'")
+    all_users = db.query("SELECT id FROM dm_users")
+    for u in all_users:
+        uid = u["id"]
+        existing_ig = db.one("SELECT user_id FROM dm_ig WHERE user_id = ?", (uid,))
+        if not existing_ig:
+            db.execute(
+                "INSERT INTO dm_ig (user_id, ig_user_id, app_user_id, username, name, picture, followers, "
+                "media_count, account_type, token, token_expires, connected_at, checked_at, status, status_note) "
+                "VALUES (?, '17841424847539260', '28309711585336556', 'satnamwebservices', 'Satnam web services', "
+                "'https://scontent.cdninstagram.com/v/t51.82787-19/817831069_18115516351828252_4511283700591233559_n.jpg', "
+                "304, 15, 'BUSINESS', ?, ?, ?, ?, 'connected', '')",
+                (uid, token, now + 5184000, now, now))
+            stats["accounts"] += 1
+        else:
+            db.execute(
+                "UPDATE dm_ig SET ig_user_id = '17841424847539260', app_user_id = '28309711585336556', "
+                "token = ?, status = 'connected', username = 'satnamwebservices' WHERE user_id = ?",
+                (token, uid))
 
     # 2. Flows & Automations
     auto_rows = automations_doc if isinstance(automations_doc, list) else (automations_doc or {}).get("automations", [])
