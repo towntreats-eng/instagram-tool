@@ -495,6 +495,8 @@ def _process(payload: Dict[str, Any]) -> None:
             payload_ = (m.get("postback") or {}).get("payload") or (msg.get("quick_reply") or {}).get("payload")
             if payload_:
                 engine.handle_postback(a, sender, payload_)
+            elif msg.get("text"):
+                engine.handle_text(a, sender, msg["text"])
 
 
 @app.get("/api/system/diag", include_in_schema=False)

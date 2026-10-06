@@ -316,25 +316,53 @@ def handle_comment(acct: Dict[str, Any], c: Dict[str, Any], source: str) -> str:
             log(user_id, "comment", "reply_failed", source=source, flow_id=fid, username=username,
                 text=text, note=f"Public reply refused: {out}")
 
-    link_url = (b.get("link") or {}).get("url") or ""
-    link_btn = (b.get("link") or {}).get("button") or (b.get("opening") or {}).get("button") or "Open Link"
-    buttons = [{"title": link_btn, "url": link_url}] if link_url else []
-
-    if b["opening"]["on"] and b["opening"]["text"].strip():
-        msg_text = b["opening"]["text"]
+    name = username or "there"
+    if b["opening"]["on"]:
+        # Step 1: an opening DM whose button starts a real conversation. The
+        # link (and the follow check) only happen after they tap it.
+        ok, out = instagram.send(token, {"comment_id": c["id"]}, fill(b["opening"]["text"], name),
+                                 [{"title": b["opening"]["button"], "payload": f"LINK:{fid}"}])
+        note = ("Opening DM sent - waiting for them to tap the button." if ok
+                else f"Opening DM refused by Instagram: {out}")
+        link_sent = False
     else:
-        msg_text = b["link"]["text"] or "Thanks for commenting! Here is your link:"
+        ok, out = instagram.send(token, {"comment_id": c["id"]}, fill(b["link"]["text"], name),
+                                 [{"title": b["link"]["button"], "url": b["link"]["url"]}])
+        note = "Link sent." if ok else f"Link refused by Instagram: {out}"
+        link_sent = ok
 
-    ok, out = instagram.send(token, {"comment_id": c["id"]}, msg_text, buttons)
-    note = "DM sent successfully." if ok else f"DM refused by Instagram: {out}"
-
-    touch_contact(user_id, str(c.get("from_id") or ""), username, fid, text, link_sent=ok)
+    touch_contact(user_id, str(c.get("from_id") or ""), username, fid, text, link_sent=link_sent)
     verdict = "sent" if ok else "failed"
     log(user_id, "comment", verdict, source=source, flow_id=fid, username=username, text=text, note=note)
     return verdict
 
 
 # ------------------------------------------------------------------ postbacks
+def fill(text: str, name: str) -> str:
+    return (text or "").replace("{name}", name or "there")
+
+
+def handle_text(acct: Dict[str, Any], sender_id: str, text: str) -> str:
+    """A typed reply instead of a tap (or a quick-reply fallback without a
+    payload): treat words like the button label as the tap."""
+    user_id = acct["user_id"]
+    c = db.one("SELECT flow_id FROM dm_contacts WHERE user_id = ? AND ig_id = ?", (user_id, sender_id))
+    if not c or not c.get("flow_id"):
+        return "ignored"
+    flow = get_flow(user_id, c["flow_id"])
+    if not flow:
+        return "ignored"
+    b, t = flow["body"], (text or "").strip().lower()
+    if not t:
+        return "ignored"
+    if b["follow_gate"]["on"] and (t == b["follow_gate"]["button"].lower()
+                                   or re.search(r"\b(follow(ed|ing)?|done)\b", t)):
+        return handle_postback(acct, sender_id, f"CHECK:{flow['id']}", "text")
+    if t == b["opening"]["button"].lower() or re.search(r"\blink\b", t):
+        return handle_postback(acct, sender_id, f"LINK:{flow['id']}", "text")
+    return "ignored"
+
+
 def handle_postback(acct: Dict[str, Any], sender_id: str, payload: str, source: str = "webhook") -> str:
     user_id = acct["user_id"]
     kind, _, fid = (payload or "").partition(":")
@@ -350,25 +378,33 @@ def handle_postback(acct: Dict[str, Any], sender_id: str, payload: str, source: 
 
     if b["follow_gate"]["on"]:
         following, why = instagram.follows(token, sender_id)
-        if following is False:
-            text = b["follow_gate"]["text"]
+        tries_key = f"chk:{user_id}:{sender_id}:{fid}"
+        tries = int(settings._raw(tries_key) or 0) if kind == "CHECK" else 0
+        # Unreadable follow status counts as "not yet" - unless Instagram has
+        # refused to say three times in a row, so a real follower is never
+        # stuck in a loop by an API hiccup.
+        unverified_pass = following is None and tries >= 3
+        if following is False or (following is None and not unverified_pass):
+            text = fill(b["follow_gate"]["text"], who or "there")
             if kind == "CHECK":
-                text = "I can't see the follow yet - it can take a few seconds. " + text
+                text = "I can't see your follow yet - it can take a few seconds. " + text
+                settings.put(tries_key, str(tries + 1))
             ok, out = instagram.send(token, {"id": sender_id}, text, [
                 {"title": "Open profile", "url": f"https://instagram.com/{acct['username']}"},
                 {"title": b["follow_gate"]["button"], "payload": f"CHECK:{fid}"}])
             touch_contact(user_id, sender_id, who, fid, follows=False)
+            why_note = "" if following is False else f" (Instagram did not say: {why})"
             log(user_id, "postback", "held" if ok else "failed", source=source, flow_id=fid, username=who,
-                note="Not following yet - asked them to follow." if ok else f"Follow request refused: {out}")
+                note=("Not following yet - asked them to follow." + why_note) if ok
+                else f"Follow request refused: {out}")
             return "held" if ok else "failed"
-        if following is None:
-            note_extra = f" (follow status unreadable: {why} - sent anyway)"
-        else:
-            note_extra = ""
+        settings.put(tries_key, "0")
+        note_extra = (" Follow verified." if following else
+                      f" Follow status unreadable after 3 checks ({why}) - sent anyway.")
     else:
         following, note_extra = None, ""
 
-    ok, out = instagram.send(token, {"id": sender_id}, b["link"]["text"],
+    ok, out = instagram.send(token, {"id": sender_id}, fill(b["link"]["text"], who or "there"),
                              [{"title": b["link"]["button"], "url": b["link"]["url"]}])
     touch_contact(user_id, sender_id, who, fid, follows=following, link_sent=ok)
     log(user_id, "postback", "link_sent" if ok else "failed", source=source, flow_id=fid, username=who,
