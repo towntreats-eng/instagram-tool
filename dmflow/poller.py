@@ -33,11 +33,13 @@ def _age(ts: str) -> float:
 
 def poll_account(acct: Dict[str, Any]) -> Dict[str, int]:
     user_id, token = acct["user_id"], acct["token"]
-    stats = {"posts": 0, "new": 0, "primed": 0, "errors": 0}
+    stats = {"posts": 0, "new": 0, "primed": 0, "errors": 0, "seen": 0, "hidden": 0}
     ids, any_post = engine.watched_media(user_id)
-    if any_post:
-        ok, recent = instagram.media(token, limit=8)
-        if ok:
+    counts: Dict[str, int] = {}
+    ok, recent = instagram.media(token, limit=8)
+    if ok:
+        counts = {m["id"]: int(m.get("comments_count") or 0) for m in recent}
+        if any_post:
             ids += [m["id"] for m in recent if m["id"] not in ids]
     for mid in ids[:12]:
         ok, rows = instagram.comments(token, mid)
@@ -46,6 +48,10 @@ def poll_account(acct: Dict[str, Any]) -> Dict[str, int]:
             stats["errors"] += 1
             engine.log(user_id, "poll", "error", source="poll", note=f"Could not read comments on {mid}: {rows}")
             continue
+        stats["seen"] += len(rows)
+        # Instagram counts comments the API will not hand over (e.g. from
+        # accounts without a role on an unpublished app). Surface the gap.
+        stats["hidden"] += max(0, counts.get(mid, 0) - len(rows))
         primed = db.one("SELECT primed_at FROM dm_poll WHERE user_id = ? AND media_id = ?", (user_id, mid))
         if not primed:
             for c in rows:
@@ -68,7 +74,7 @@ def poll_account(acct: Dict[str, Any]) -> Dict[str, int]:
 
 
 def poll_all() -> Dict[str, int]:
-    total = {"accounts": 0, "posts": 0, "new": 0, "primed": 0, "errors": 0}
+    total = {"accounts": 0, "posts": 0, "new": 0, "primed": 0, "errors": 0, "seen": 0, "hidden": 0}
     users = db.query("SELECT DISTINCT user_id FROM dm_flows WHERE status = 'live'")
     for u in users:
         acct = accounts.get(u["user_id"])

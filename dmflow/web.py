@@ -434,14 +434,17 @@ async def webhook_verify(request: Request):
 @app.post("/api/meta/webhook", include_in_schema=False)
 async def webhook(request: Request):
     raw = await request.body()
-    sig_header = request.headers.get("x-hub-signature-256", "") or request.headers.get("X-Hub-Signature-256", "")
-    sig_ok = _signature_ok(raw, sig_header) if _secrets() and sig_header else True
-    if not sig_ok:
-        log.warning("[WEBHOOK SIGNATURE MISMATCH]: processing payload anyway to avoid dropping comments.")
-        settings.put("last_webhook", db.jdump({"at": db.now(), "ok": True,
-                                               "note": "Signature unverified/mismatched - processed anyway"}))
-    else:
-        settings.put("last_webhook", db.jdump({"at": db.now(), "ok": True}))
+    if not _secrets():
+        settings.put("last_webhook", db.jdump({"at": db.now(), "ok": False,
+                                               "note": "No app secret set - delivery refused."}))
+        return PlainTextResponse("not configured", status_code=503)
+    if not _signature_ok(raw, request.headers.get("x-hub-signature-256", "")):
+        settings.put("last_webhook", db.jdump({"at": db.now(), "ok": False,
+                                               "note": "Signature did not match. Set the Meta App Secret "
+                                                       "(App settings > Basic) in Admin."}))
+        engine.log("", "webhook", "rejected", source="webhook", note="Bad signature")
+        return PlainTextResponse("bad signature", status_code=403)
+    settings.put("last_webhook", db.jdump({"at": db.now(), "ok": True}))
 
     try:
         payload = json.loads(raw or b"{}")
@@ -452,19 +455,10 @@ async def webhook(request: Request):
 
 
 def _process(payload: Dict[str, Any]) -> None:
-    log.info("[WEBHOOK INCOMING PAYLOAD]: %s", json.dumps(payload))
+    log.debug("webhook payload: %s", json.dumps(payload))
     for entry in payload.get("entry", []) or []:
         entry_id = str(entry.get("id") or "").strip()
         acct = accounts.by_ig_id(entry_id)
-        if not acct:
-            all_accts = db.query("SELECT * FROM dm_ig WHERE status = 'connected'")
-            if all_accts:
-                # Prefer the primary owner account
-                owner_acct = [a for a in all_accts if a.get("user_id") == "usr_a1f7481921de"]
-                acct = owner_acct[0] if owner_acct else all_accts[0]
-                log.info("[WEBHOOK ROUTE FALLBACK]: entry_id %s routed to connected account @%s",
-                         entry_id, acct.get("username"))
-
         for change in entry.get("changes", []) or []:
             if change.get("field") != "comments":
                 continue
@@ -513,7 +507,7 @@ async def system_diag(request: Request, key: str = ""):
             is_admin = True
     except Exception:
         pass
-    if not is_admin and key != "converflow_debug":
+    if not is_admin:
         return fail("Unauthorized", 401)
 
     return {
@@ -536,9 +530,8 @@ async def system_diag(request: Request, key: str = ""):
 
 @app.get("/api/system/repair", include_in_schema=False)
 @app.post("/api/system/repair", include_in_schema=False)
-async def system_repair(key: str = ""):
-    if key != "converflow_debug":
-        return fail("Unauthorized", 401)
+async def system_repair(request: Request):
+    auth.require_admin(request)
     import traceback
     try:
         stats = settings.import_legacy()

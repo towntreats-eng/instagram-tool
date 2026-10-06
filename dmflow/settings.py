@@ -8,6 +8,7 @@ here is published.
 """
 
 import json
+import hashlib
 import os
 from typing import Any, Dict, List
 
@@ -208,201 +209,83 @@ def instagram_ready() -> bool:
 
 # ------------------------------------------------------------------ migration
 def import_legacy() -> Dict[str, int]:
-    """First boot only: bring over logins, connected Instagram accounts, automations, and Meta app from the old app.
+    """First boot only: bring over logins and the Meta app from the old app.
 
     Reads the old `documents` table (Postgres) or the old data/*.json files
     (local). Never overwrites anything already set here, so running it twice
     is harmless.
     """
-    stats = {"users": 0, "settings": 0, "accounts": 0, "flows": 0}
-    users_doc, settings_doc, automations_doc = None, None, None
+    stats = {"users": 0, "settings": 0}
+    users_doc, settings_doc = None, None
     if db.is_postgres():
         try:
-            for row in db.query("SELECT name, body FROM documents WHERE name IN ('users', 'settings', 'automations')"):
+            for row in db.query("SELECT name, body FROM documents WHERE name IN ('users', 'settings')"):
                 body = row["body"] if isinstance(row["body"], dict) else db.jload(row["body"], {})
                 if row["name"] == "users":
                     users_doc = body
-                elif row["name"] == "settings":
+                else:
                     settings_doc = body
-                elif row["name"] == "automations":
-                    automations_doc = body
         except Exception:
             pass
-    # Fallback to local files if postgres documents table was empty or absent
-    if not users_doc or not automations_doc:
+    else:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        for name in ("users", "settings", "automations"):
+        for name in ("users", "settings"):
             path = os.path.join(root, "data", name + ".json")
             if os.path.exists(path):
                 try:
                     body = json.load(open(path, encoding="utf-8"))
-                    if name == "users" and not users_doc:
+                    if name == "users":
                         users_doc = body
-                    elif name == "settings" and not settings_doc:
+                    else:
                         settings_doc = body
-                    elif name == "automations" and not automations_doc:
-                        automations_doc = body
                 except Exception:
                     pass
 
-    # Built-in fallback seeds (guarantees deployment is never empty on Postgres/Railway)
-    default_users = [
-        {
-            "id": "usr_a1f7481921de",
-            "name": "Umang Satnam",
-            "email": "hello@umangsatnam.in",
-            "password_hash": "384b957bd026d967$e95acc4779851cb61c1c328b88ee1799d504df24fb7e73c3358495ce3831b7be",
-            "role": "admin",
-            "plan": "lifetime",
-            "is_lifetime": 1,
-            "status": "active",
-            "instagram": {
-                "connected": True,
-                "access_token": "IGAAMbPQJMVAxBZAGJuek8xeVVRS1lSaFRTY1ZAneVE5VC1PYmV2X2owWHBjVEVBeWJzWm0xNTE3MXlFeWxTUEwxazRPaWpRTk1oMkgtaF9jWUthaWxzRmxFbkNDWHVySEpqcUNEa3VZAQWVndHFEYThEUlJsN0gyMGZAiaHBpXzJKRQZDZD",
-                "instagram_account_id": "17841424847539260",
-                "app_user_id": "28309711585336556",
-                "username": "satnamwebservices",
-                "display_name": "Satnam web services",
-                "profile_picture_url": "https://scontent.cdninstagram.com/v/t51.82787-19/817831069_18115516351828252_4511283700591233559_n.jpg"
-            }
-        },
-        {
-            "id": "usr_c05b6d5ba6f4",
-            "name": "Umang Patel",
-            "email": "umangptl11@gmail.com",
-            "password_hash": "384b957bd026d967$e95acc4779851cb61c1c328b88ee1799d504df24fb7e73c3358495ce3831b7be",
-            "role": "admin",
-            "plan": "lifetime",
-            "is_lifetime": 1,
-            "status": "active"
-        }
-    ]
-
-    # 1. Users & Instagram Connections
-    user_rows = users_doc.get("users", []) if isinstance(users_doc, dict) else (users_doc or [])
-    if not user_rows:
-        user_rows = default_users
-
-    for u in user_rows:
-        email = (u.get("email") or "").strip().lower()
-        if not email or not u.get("password_hash"):
-            continue
-        uid = u.get("id") or db.new_id("u_")
-        is_life = 1 if u.get("is_lifetime") or u.get("plan") in ("lifetime", "agency") or email in ("umangsatnam11@gmail.com", "umangptl11@gmail.com", "hello@umangsatnam.in") else 0
-        plan = "lifetime" if is_life else (u.get("plan") or "free")
-        role = "admin" if email in ("umangsatnam11@gmail.com", "umangptl11@gmail.com", "hello@umangsatnam.in") else (u.get("role") or "owner")
-        db.execute(
-            "INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, is_lifetime, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO UPDATE SET "
-            "role = CASE WHEN excluded.role = 'admin' THEN 'admin' ELSE dm_users.role END, "
-            "is_lifetime = CASE WHEN excluded.is_lifetime = 1 THEN 1 ELSE dm_users.is_lifetime END, "
-            "plan = CASE WHEN excluded.is_lifetime = 1 THEN 'lifetime' ELSE dm_users.plan END",
-            (uid, email, u.get("name") or "",
-             u["password_hash"], role,
-             u.get("status") or "active", plan, is_life, db.now()))
-        stats["users"] += 1
-
-    # Connect @satnamwebservices to ALL users in the system
-    token = "IGAAMbPQJMVAxBZAGJuek8xeVVRS1lSaFRTY1ZAneVE5VC1PYmV2X2owWHBjVEVBeWJzWm0xNTE3MXlFeWxTUEwxazRPaWpRTk1oMkgtaF9jWUthaWxzRmxFbkNDWHVySEpqcUNEa3VZAQWVndHFEYThEUlJsN0gyMGZAiaHBpXzJKRQZDZD"
-    now = db.now()
-    db.execute("UPDATE dm_users SET is_lifetime = 1, plan = 'lifetime', status = 'active' WHERE email IN ('umangsatnam11@gmail.com', 'umangptl11@gmail.com', 'hello@umangsatnam.in')")
-
-    all_users = db.query("SELECT id FROM dm_users")
-    for u in all_users:
-        uid = u["id"]
-        existing_ig = db.one("SELECT user_id FROM dm_ig WHERE user_id = ?", (uid,))
-        if not existing_ig:
+    if users_doc and not db.one("SELECT id FROM dm_users LIMIT 1"):
+        rows = users_doc.get("users", []) if isinstance(users_doc, dict) else users_doc
+        for u in rows or []:
+            email = (u.get("email") or "").strip().lower()
+            if not email or not u.get("password_hash"):
+                continue
             db.execute(
-                "INSERT INTO dm_ig (user_id, ig_user_id, app_user_id, username, name, picture, followers, "
-                "media_count, account_type, token, token_expires, connected_at, checked_at, status, status_note) "
-                "VALUES (?, '17841424847539260', '28309711585336556', 'satnamwebservices', 'Satnam web services', "
-                "'https://scontent.cdninstagram.com/v/t51.82787-19/817831069_18115516351828252_4511283700591233559_n.jpg', "
-                "304, 15, 'BUSINESS', ?, ?, ?, ?, 'connected', '')",
-                (uid, token, now + 5184000, now, now))
-            stats["accounts"] += 1
-        else:
-            db.execute(
-                "UPDATE dm_ig SET ig_user_id = '17841424847539260', app_user_id = '28309711585336556', "
-                "token = ?, status = 'connected', username = 'satnamwebservices' WHERE user_id = ?",
-                (token, uid))
+                "INSERT INTO dm_users (id, email, name, password_hash, role, status, plan, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING",
+                (u.get("id") or db.new_id("u_"), email, u.get("name") or "",
+                 u["password_hash"], "admin" if u.get("role") == "admin" else "owner",
+                 u.get("status") or "active", u.get("plan") or "free", db.now()))
+            stats["users"] += 1
 
-    # 2. Flows & Automations
-    auto_rows = automations_doc if isinstance(automations_doc, list) else (automations_doc or {}).get("automations", [])
-    if not auto_rows:
-        auto_rows = [
-            {
-                "id": "rule_16673424",
-                "name": "Reel 2 Automation",
-                "trigger_scope": "any",
-                "trigger_keywords": ["*"],
-                "post_media_id": "",
-                "post_target": "https://instagram.com/reel/2",
-                "comment_replies": ["Check DMs!", "Sent to your inbox! ✨", "Check your direct messages! 🚀"],
-                "opening_dm": "Hey there! Thanks for your comment. Here is your access link:",
-                "button_text": "Get it",
-                "delivery_link": "https://example.com/2",
-                "dm_message": "Hey there! Thanks for your comment. Here is your access link:\n\n👉 https://example.com/2",
-                "is_active": True,
-                "created_by": "usr_a1f7481921de"
-            }
-        ]
-
-    first_user = db.one("SELECT id FROM dm_users ORDER BY created_at ASC LIMIT 1")
-    default_uid = first_user["id"] if first_user else "usr_a1f7481921de"
-    for a in auto_rows or []:
-        uid = a.get("created_by") or default_uid
-        if not uid:
-            continue
-        fid = a.get("id") or db.new_id("f_")
-        name = a.get("name") or "Automation"
-        status = "live" if a.get("is_active", True) else "paused"
-        trigger_kws = a.get("trigger_keywords") or ["*"]
-        body = {
-            "post": {
-                "mode": "any" if a.get("trigger_scope") == "any" or not a.get("post_media_id") else "specific",
-                "media_id": str(a.get("post_media_id") or ""),
-                "thumb": a.get("post_thumbnail") or "",
-                "caption": a.get("post_caption") or "",
-                "permalink": a.get("post_target") or "",
-            },
-            "trigger": {
-                "mode": "any" if a.get("trigger_scope") == "any" or "*" in trigger_kws else "keyword",
-                "keywords": trigger_kws,
-            },
-            "public_reply": {
-                "on": bool(a.get("comment_replies")),
-                "variants": a.get("comment_replies") or ["Check DMs!"],
-            },
-            "opening": {
-                "on": bool(a.get("opening_dm")),
-                "text": a.get("opening_dm") or "Hey there! Thanks for your comment.",
-                "button": a.get("button_text") or "Get it",
-            },
-            "follow_gate": {
-                "on": bool(a.get("require_follow")),
-                "text": "Please follow to receive the link.",
-                "button": "I'm following",
-            },
-            "link": {
-                "text": a.get("dm_message") or "Here is your link:",
-                "button": a.get("button_text") or "Open Link",
-                "url": a.get("delivery_link") or "",
-            },
-        }
-        if db.one("SELECT id FROM dm_flows WHERE id = ?", (fid,)):
-            db.execute("UPDATE dm_flows SET status = 'live', body = ? WHERE id = ?", (db.jdump(body), fid))
-        else:
-            db.execute(
-                "INSERT INTO dm_flows (id, user_id, name, status, body, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (fid, uid, name, status, db.jdump(body), db.now(), db.now()))
-            stats["flows"] += 1
-
-    # 3. Meta App Settings
-    put("ig_app_id", "1087830127189044")
-    put("ig_app_secret", "1c5050bf8a475ffefe7bb346be4d72c1")
-    put("meta_app_secret", "1c5050bf8a475ffefe7bb346be4d72c1")
-    put("verify_token", "converflow_webhook_token")
-    stats["settings"] += 4
-
+    meta = (settings_doc or {}).get("meta_app", {}) if isinstance(settings_doc, dict) else {}
+    for old, new in (("app_id", "ig_app_id"), ("app_secret", "ig_app_secret"),
+                     ("webhook_secret", "meta_app_secret"), ("verify_token", "verify_token")):
+        val = str(meta.get(old) or "").strip()
+        if val and not _raw(new):
+            put(new, val)
+            stats["settings"] += 1
+    _owner_upgrade()
+    stats["accounts_cleared"] = _clear_seeded_connections()
     return stats
+
+OWNER_EMAILS = ("umangsatnam11@gmail.com", "umangptl11@gmail.com", "hello@umangsatnam.in")
+
+# sha256 of an Instagram token that an earlier build hardcoded and attached to
+# every workspace. Any row still holding it is not a real connection: drop it
+# so the owner reconnects through Instagram. (Only the hash lives here.)
+_SEEDED_TOKEN_SHA256 = "61c226de9e0bc14fb74b391a5dd5bdf0f4c3ee0632be148005c38f5b17f0bbe9"
+
+
+def _owner_upgrade() -> None:
+    marks = ",".join("?" for _ in OWNER_EMAILS)
+    db.execute(f"UPDATE dm_users SET is_lifetime = 1, plan = 'lifetime' WHERE email IN ({marks})", OWNER_EMAILS)
+
+
+def _clear_seeded_connections() -> int:
+    cleared = 0
+    for row in db.query("SELECT user_id, token FROM dm_ig"):
+        if hashlib.sha256((row.get("token") or "").encode()).hexdigest() == _SEEDED_TOKEN_SHA256:
+            db.execute("DELETE FROM dm_ig WHERE user_id = ?", (row["user_id"],))
+            db.execute("DELETE FROM dm_poll WHERE user_id = ?", (row["user_id"],))
+            cleared += 1
+    return cleared
+
+
