@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import random
+import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -65,6 +66,14 @@ async def _billing_loop():
 
 
 @app.middleware("http")
+async def _static_revalidate(request: Request, call_next):
+    resp = await call_next(request)
+    if request.url.path.startswith("/static/") and request.url.path.endswith((".js", ".css")):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
+@app.middleware("http")
 async def _remember_base(request: Request, call_next):
     # Email links need the public address; learn it from real traffic when
     # BASE_URL is not set.
@@ -99,7 +108,36 @@ def fail(msg: Any, status: int = 400) -> JSONResponse:
                          "errors": msg if isinstance(msg, list) else [msg]}, status_code=status)
 
 
-def page(name: str) -> FileResponse:
+_ASSET_REF = re.compile(r'((?:src|href)="/static/[^"?]+\.(?:js|css))"')
+_page_cache: Dict[str, str] = {}
+_asset_ver: Dict[str, str] = {}
+
+
+def _ver(url: str) -> str:
+    """Short content hash of a static file - changes whenever the file changes."""
+    if url not in _asset_ver:
+        path = os.path.join(STATIC, url[len("/static/"):])
+        try:
+            with open(path, "rb") as fh:
+                _asset_ver[url] = hashlib.sha1(fh.read()).hexdigest()[:10]
+        except OSError:
+            _asset_ver[url] = "0"
+    return _asset_ver[url]
+
+
+def page(name: str) -> Response:
+    """Serve an HTML page with ?v=<hash> on every script and stylesheet, so a
+    browser never runs yesterday's app.js against today's page after a deploy."""
+    if name.endswith(".html"):
+        if name not in _page_cache:
+            with open(os.path.join(STATIC, name), encoding="utf-8") as fh:
+                html = fh.read()
+            def stamp(m):
+                attr_url = m.group(1)
+                url = attr_url.split('"', 1)[1]
+                return f'{attr_url}?v={_ver(url)}"'
+            _page_cache[name] = _ASSET_REF.sub(stamp, html)
+        return HTMLResponse(_page_cache[name], headers={"Cache-Control": "no-cache"})
     return FileResponse(os.path.join(STATIC, name), headers={"Cache-Control": "no-cache"})
 
 
