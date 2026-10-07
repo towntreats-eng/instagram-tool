@@ -79,6 +79,7 @@
         plans: ["Subscription Plans & Limits", "Customize pricing packages, monthly DM caps, and feature flags"],
         tickets: ["Customer Support Tickets", "Respond to customer inquiries and resolve support tickets directly"],
         offers: ["Offers & Promotional Coupons", "Create discount vouchers and free promotional lifetime passes"],
+        payments: ["Payments & Revenue", "Every payment, invoice and renewal across your customers"],
         billing: ["Payment Gateway Settings", "Configure Razorpay, Stripe, and checkout currencies"],
         email: ["Email & SMTP Configuration", "Setup transactional email delivery and test live SMTP connection"],
         meta: ["Meta & Instagram App Setup", "Manage Facebook/Instagram App secrets and webhook subscriptions"],
@@ -95,6 +96,7 @@
       else if (tab === "plans") loadPlans();
       else if (tab === "tickets") loadTickets();
       else if (tab === "offers") loadOffers();
+      else if (tab === "payments") loadPayments();
       else if (tab === "billing") loadBilling();
       else if (tab === "email") loadEmail();
       else if (tab === "meta") loadMeta();
@@ -679,6 +681,10 @@
       if (f.elements[k]) f.elements[k].value = b[k];
     });
     $("#razorpay_enabled_check").checked = b.razorpay_enabled === "1";
+    $("#rzpWebhookUrl").textContent = out.webhook_url || "-";
+    $("#rzpStatus").innerHTML = out.ready
+      ? '<span class="adm-pill emerald">● Accepting payments (' + esc(out.mode === "live" ? "LIVE - real money" : out.mode === "test" ? "TEST mode" : "keys set") + ')</span>'
+      : '<span class="adm-pill dim">Not accepting payments yet - add keys and tick Enable</span>';
     $("#stripe_enabled_check").checked = b.stripe_enabled === "1";
   }
 
@@ -696,6 +702,47 @@
     loadBilling();
   });
 
+
+  // ========================================================== PAYMENTS
+  function rs(paise) { return "₹" + (Number(paise || 0) / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+  async function loadPayments() {
+    var out = await api("/api/admin/payments");
+    if (!out.success) return;
+    var st = out.stats || {}, g = out.gateway || {};
+    $("#kpiRevMonth").textContent = rs(st.revenue_month);
+    $("#kpiRevTotal").textContent = rs(st.revenue_total);
+    $("#kpiMrr").textContent = rs(st.mrr);
+    $("#kpiPaying").textContent = st.paying_customers || 0;
+    $("#kpiPaidCount").textContent = st.paid_count || 0;
+    $("#kpiFailed").textContent = st.failed_count || 0;
+    var lw = g.last_webhook || {}, sw = g.last_sweep || {};
+    $("#payGatewayStatus").innerHTML =
+      '<div class="copy-box"><span class="title">Razorpay</span>' + (g.enabled
+        ? '<span class="adm-pill emerald">● ' + (g.mode === "live" ? "LIVE" : g.mode === "test" ? "TEST mode" : "On") + '</span>'
+        : '<span class="adm-pill dim">Off - set it up in Payment Gateways</span>') + '</div>' +
+      '<div class="copy-box"><span class="title">Webhook URL</span><code>' + esc(g.webhook_url) + '</code><button class="adm-btn adm-btn-dark adm-btn-sm" data-copy="' + esc(g.webhook_url) + '">Copy</button></div>' +
+      '<div class="copy-box"><span class="title">Last webhook</span>' + (lw.at ? '<span class="adm-pill emerald">' + ago(lw.at) + ' · ' + esc(lw.result || "") + '</span>' : '<span class="adm-pill dim">None received yet</span>') + '</div>' +
+      '<div class="copy-box"><span class="title">Renewal check</span>' + (sw.at ? '<span class="adm-pill indigo">' + ago(sw.at) + ' · ' + (sw.reminded || 0) + ' reminded · ' + (sw.expired || 0) + ' expired</span>' : '<span class="adm-pill dim">Runs every hour</span>') + '</div>';
+    var rows = out.payments || [];
+    var pill = { paid: "emerald", failed: "rose", created: "gold", abandoned: "dim" };
+    $("#paymentsTableBody").innerHTML = rows.length ? rows.map(function (p) {
+      return "<tr><td>" + ago(p.paid_at || p.created_at) + "</td><td><b>" + esc(p.name || "") + "</b><br><span style='color:var(--adm-muted);font-size:12px'>" + esc(p.email || "") + "</span></td>" +
+        "<td>" + esc(p.plan_id) + " · " + esc(p.cycle) + (p.coupon ? "<br><span style='font-size:11px;color:#059669'>" + esc(p.coupon) + "</span>" : "") + "</td>" +
+        "<td><b>" + rs(p.amount) + "</b>" + (p.tax ? "<br><span style='font-size:11px;color:var(--adm-muted)'>incl. GST " + rs(p.tax) + "</span>" : "") + "</td>" +
+        "<td>" + esc(p.method || p.gateway) + "</td>" +
+        '<td><span class="adm-pill ' + (pill[p.status] || "dim") + '">' + esc(p.status === "created" ? "pending" : p.status) + "</span>" + (p.error ? "<br><span style='font-size:11px;color:#e11d48'>" + esc(p.error) + "</span>" : "") + "</td>" +
+        "<td>" + (p.status === "paid" ? '<a href="/api/billing/invoice/' + esc(p.id) + '" target="_blank" rel="noopener" style="color:#0284c7;font-weight:700">' + esc(p.invoice_no || "View") + "</a>" : "-") + "</td></tr>";
+    }).join("") : '<tr><td colspan="7" style="text-align:center;color:var(--adm-muted);padding:30px">No payments yet.</td></tr>';
+  }
+  $("#btnRunSweep").addEventListener("click", async function () {
+    var out = await api("/api/admin/billing/sweep", { method: "POST" });
+    $("#sweepResult").textContent = out.success ? (out.stats.reminded + " reminders sent, " + out.stats.expired + " plans expired") : (out.error || "Failed");
+    loadPayments();
+  });
+  $("#rzpCopy").addEventListener("click", function () {
+    navigator.clipboard.writeText($("#rzpWebhookUrl").textContent).then(function () { toast("Webhook URL copied"); });
+  });
+
   // ========================================================== EMAIL & SMTP
   async function loadEmail() {
     var out = await api("/api/admin/email/settings");
@@ -709,6 +756,31 @@
     $("#email_welcome_check").checked = em.email_welcome_enabled === "1";
     $("#email_ticket_check").checked = em.email_ticket_enabled === "1";
     $("#email_lifetime_check").checked = em.email_lifetime_enabled === "1";
+    EMAIL_TOGGLES.forEach(function (k) { $("#" + k + "_check").checked = em[k + "_enabled"] === "1"; });
+    if (!em.smtp_provider) f.elements.smtp_provider.value = "gmail";
+    syncProvider();
+    loadEmailLog();
+  }
+  var EMAIL_TOGGLES = ["email_payment", "email_payment_failed", "email_renewal", "email_expired", "email_admin_alerts"];
+  function syncProvider() {
+    var gm = $("#smtpProvider").value === "gmail";
+    $("#gmailGuide").style.display = gm ? "block" : "none";
+    $$(".smtp-custom").forEach(function (el) { el.style.display = gm ? "none" : ""; });
+    $("#smtpUserLabel").textContent = gm ? "Your Gmail address" : "Username / Email";
+  }
+  $("#smtpProvider").addEventListener("change", syncProvider);
+  async function loadEmailLog() {
+    var out = await api("/api/admin/email/log");
+    if (!out.success) return;
+    $("#emailLogSummary").innerHTML = (out.ready ? '<span class="adm-pill emerald">● Ready</span> ' : '<span class="adm-pill dim">Not set up</span> ') +
+      (out.sent_today || 0) + " sent in the last 24 hours" + (out.provider === "gmail" ? " (Gmail limit ~500/day)" : "");
+    var rows = out.log || [];
+    var pill = { sent: "emerald", failed: "rose", skipped: "dim" };
+    $("#emailLog").innerHTML = rows.length ? rows.map(function (r) {
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--adm-line)"><span class="adm-pill ' + (pill[r.status] || "dim") + '">' + esc(r.status) + "</span> " +
+        "<b>" + esc(r.kind) + "</b> → " + esc(r.to_email) + ' <span style="color:var(--adm-muted)">' + ago(r.at) + "</span>" +
+        '<div style="color:var(--adm-muted)">' + esc(r.subject) + "</div>" + (r.error ? '<div style="color:#e11d48">' + esc(r.error) + "</div>" : "") + "</div>";
+    }).join("") : '<div style="color:var(--adm-muted)">No emails yet.</div>';
   }
 
   $("#emailForm").addEventListener("submit", async function (e) {
@@ -721,6 +793,7 @@
     data.email_welcome_enabled = $("#email_welcome_check").checked ? "1" : "0";
     data.email_ticket_enabled = $("#email_ticket_check").checked ? "1" : "0";
     data.email_lifetime_enabled = $("#email_lifetime_check").checked ? "1" : "0";
+    EMAIL_TOGGLES.forEach(function (k) { data[k + "_enabled"] = $("#" + k + "_check").checked ? "1" : "0"; });
 
     var out = await api("/api/admin/email/settings", { method: "POST", body: data });
     toast(out.message || (out.success ? "Email settings saved" : "Error saving email settings"), !out.success);
@@ -740,9 +813,11 @@
     if (out.success) {
       resDiv.innerHTML = '<span style="color:#059669;">✅ ' + esc(out.message) + '</span>';
       toast("Test email sent!");
+      loadEmailLog();
     } else {
       resDiv.innerHTML = '<span style="color:#e11d48;">❌ ' + esc(out.error || "Failed to send") + '</span>';
       toast("Failed to send test email", true);
+      loadEmailLog();
     }
   });
 

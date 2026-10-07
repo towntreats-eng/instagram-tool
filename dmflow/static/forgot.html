@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in - DM Flow</title>
+<title>Forgot password - DM Flow</title>
 <link rel="icon" href="/static/favicon.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,33 +35,31 @@
     <small>Built on the official Instagram API</small>
   </div>
   <div class="auth-main"><div class="auth-card">
-    <h1>Welcome back</h1><p>Sign in to your DM Flow workspace.</p>
+    <h1>Forgot password?</h1><p>Enter your account email. We'll send you a link to set a new password.</p>
     <form id="f" novalidate>
-      <div class="field"><label for="email">Email</label><input class="input" id="email" name="email" type="email" autocomplete="email" required autofocus></div><div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required ></div>
-      <div style="text-align:right;margin:-4px 0 6px"><a class="link" href="/forgot" style="font-size:13px">Forgot password?</a></div>
+      <div class="field"><label for="email">Email</label><input class="input" id="email" name="email" type="email" autocomplete="email" required autofocus></div>
       <div class="errbox" id="err" hidden></div>
-      <button class="btn btn-primary btn-lg btn-block" type="submit" style="margin-top:10px">Sign in</button>
+      <div id="ok" hidden style="background:var(--green-soft);color:var(--green-dim);border-radius:12px;padding:12px 14px;font-size:13.5px;font-weight:600;margin-top:8px"></div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" style="margin-top:10px">Send reset link</button>
     </form>
-    <div class="auth-foot">New to DM Flow? <a class="link" id="toSignup" href="/signup">Create a free account</a></div>
+    <div class="auth-foot">Remembered it? <a class="link" href="/login">Sign in</a></div>
   </div></div>
 </div>
 <script>
 (function () {
-  var f = document.getElementById("f"), err = document.getElementById("err");
-  var nx = new URLSearchParams(location.search).get("next");
-  if (nx) document.getElementById("toSignup").href = "/signup?next=" + encodeURIComponent(nx);
+  var f = document.getElementById("f"), err = document.getElementById("err"), okb = document.getElementById("ok");
   f.addEventListener("submit", async function (e) {
     e.preventDefault();
     var btn = f.querySelector("button"), label = btn.textContent;
     var data = Object.fromEntries(new FormData(f).entries());
-    data.next = new URLSearchParams(location.search).get('next') || '';
-    btn.disabled = true; btn.textContent = "Please wait..."; err.hidden = true;
+    
+    btn.disabled = true; btn.textContent = "Please wait..."; err.hidden = true; okb.hidden = true;
     try {
-      var res = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin",
+      var res = await fetch("/api/auth/forgot", { method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
       var out = await res.json();
-      if (out.success) { location.href = out.redirect || "/app"; return; }
-      err.textContent = out.error || "Something went wrong."; err.hidden = false;
+      if (out.success) { okb.textContent = out.message || "Done."; okb.hidden = false; f.reset();  }
+      else { err.textContent = out.error || "Something went wrong."; err.hidden = false; }
     } catch (x) { err.textContent = "Network error - try again."; err.hidden = false; }
     btn.disabled = false; btn.textContent = label;
   });

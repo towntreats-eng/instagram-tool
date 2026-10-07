@@ -162,6 +162,16 @@
     priority_support: "Priority WhatsApp support"
   };
 
+  // Pricing state: billing cycle and whether the visitor is already signed in.
+  var PR = { cycle: "monthly", plans: [], tax: 0, loggedIn: false };
+
+  function buyHref(p) {
+    var free = Number(p.price_monthly) === 0;
+    if (free) return PR.loggedIn ? "/app" : "/signup";
+    var target = "/app/billing?plan=" + encodeURIComponent(p.id) + "&cycle=" + PR.cycle;
+    return PR.loggedIn ? target : "/signup?next=" + encodeURIComponent(target);
+  }
+
   function planCard(p) {
     var lines = [];
     ["automations", "contacts", "dms_per_month"].forEach(function (k) {
@@ -173,21 +183,53 @@
       }
     });
     lines = lines.slice(0, 6);
+    var free = Number(p.price_monthly) === 0;
+    var yearly = PR.cycle === "yearly" && Number(p.price_yearly) > 0;
+    var price = free ? 0 : (yearly ? p.price_yearly : p.price_monthly);
+    var sub = free ? "No card required"
+      : yearly ? "≈ " + inr(Math.round(p.price_yearly / 12)) + " / month, billed yearly"
+      : (p.price_yearly ? "or " + inr(p.price_yearly) + " / year" : "Billed monthly");
+    var gst = !free && PR.tax ? " + " + PR.tax + "% GST" : "";
 
     return '<div class="price-card' + (p.highlight ? " featured" : "") + '">' +
       (p.badge ? '<span class="price-tag">' + esc(p.badge) + '</span>' : "") +
       '<div class="price-name">' + esc(p.name) + '</div>' +
       '<div class="price-desc">' + esc(p.tagline || "") + '</div>' +
-      '<div class="price-amount"><b>' + inr(p.price_monthly) + '</b><span>' +
-      (p.price_monthly === 0 ? "forever" : "/ month") + '</span></div>' +
-      '<div class="price-sub">' +
-      (p.price_yearly ? inr(p.price_yearly) + " billed yearly" : "No card required") +
-      (p.trial_days ? " · " + p.trial_days + "-day free trial" : "") + '</div>' +
+      '<div class="price-amount"><b>' + inr(price) + '</b><span>' +
+      (free ? "forever" : yearly ? "/ year" : "/ month") + esc(gst) + '</span></div>' +
+      '<div class="price-sub">' + esc(sub) + '</div>' +
       '<ul class="price-list">' + lines.map(function (l) {
         return "<li>" + CHECK + " " + esc(l) + "</li>";
       }).join("") + '</ul>' +
-      '<a href="/signup" class="btn ' + (p.highlight ? "btn-green" : "btn-ghost") + ' btn-block">' +
-      (p.price_monthly === 0 ? "Start free" : "Choose " + esc(p.name)) + '</a></div>';
+      '<a href="' + buyHref(p) + '" class="btn ' + (p.highlight ? "btn-green" : "btn-ghost") + ' btn-block">' +
+      (free ? (PR.loggedIn ? "Open dashboard" : "Start free") : "Buy " + esc(p.name)) + '</a>' +
+      (free ? "" : '<div class="price-pay">UPI · Cards · Net banking</div>') + '</div>';
+  }
+
+  function cycleToggle() {
+    var save = 0;
+    PR.plans.forEach(function (p) {
+      if (p.price_monthly > 0 && p.price_yearly > 0) save = Math.max(save, Math.round(100 - p.price_yearly / (p.price_monthly * 12) * 100));
+    });
+    var wrap = document.createElement("div");
+    wrap.className = "cycle-toggle";
+    wrap.innerHTML = '<button type="button" data-cyc="monthly" class="on">Monthly</button>' +
+      '<button type="button" data-cyc="yearly">Yearly' + (save > 0 ? " <em>save " + save + "%</em>" : "") + "</button>";
+    wrap.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cyc]");
+      if (!b) return;
+      PR.cycle = b.dataset.cyc;
+      Array.prototype.forEach.call(wrap.children, function (x) { x.classList.toggle("on", x === b); });
+      paintPlans();
+    });
+    return wrap;
+  }
+
+  function paintPlans() {
+    if (!grid) return;
+    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(230px, 1fr))";
+    grid.style.maxWidth = "1180px";
+    grid.innerHTML = PR.plans.map(planCard).join("");
   }
 
   function comparison(plans) {
@@ -218,25 +260,20 @@
       "</tbody>";
   }
 
+  var meReq = fetch("/api/me", { credentials: "same-origin" })
+    .then(function (r) { return r.ok; }).catch(function () { return false; });
+
   fetch("/api/public/plans")
     .then(function (r) { return r.json(); })
     .then(function (out) {
       if (!out.plans || !out.plans.length) return;
+      PR.plans = out.plans; PR.tax = out.tax_percent || 0;
       if (grid) {
-        grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(230px, 1fr))";
-        grid.style.maxWidth = "1180px";
-        grid.innerHTML = out.plans.map(planCard).join("");
+        grid.parentNode.insertBefore(cycleToggle(), grid);
+        paintPlans();
+        meReq.then(function (ok) { if (ok) { PR.loggedIn = true; paintPlans(); } });
       }
       if (table) table.innerHTML = comparison(out.plans);
-
-      if (out.offers && out.offers.length && grid) {
-        var o = out.offers[0];
-        var banner = document.createElement("p");
-        banner.style.cssText = "text-align:center;margin-top:22px;font-size:14px;color:var(--muted)";
-        banner.innerHTML = 'Use code <b style="font-family:var(--mono);color:var(--green)">' + esc(o.code) +
-          "</b> at checkout — " + esc(o.description || o.title || "");
-        grid.parentNode.insertBefore(banner, grid.nextSibling);
-      }
     })
     .catch(function () { /* static fallback stays */ });
 })();

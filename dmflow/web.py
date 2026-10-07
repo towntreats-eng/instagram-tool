@@ -26,7 +26,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTe
                                RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 
-from dmflow import accounts, auth, db, email_service, engine, instagram, poller, settings
+from dmflow import accounts, auth, billing, db, email_service, engine, instagram, poller, settings
 
 log = logging.getLogger("dmflow")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -48,6 +48,34 @@ async def _startup():
     log.info("DM Flow up - storage=%s imported=%s", "postgres" if db.is_postgres() else "sqlite", imported)
     if POLL_ENABLED:
         asyncio.create_task(_poll_loop())
+    asyncio.create_task(_billing_loop())
+
+
+async def _billing_loop():
+    """Renewal reminders and plan expiry, once an hour."""
+    await asyncio.sleep(30)
+    loop = asyncio.get_running_loop()
+    while True:
+        try:
+            stats = await loop.run_in_executor(None, billing.sweep)
+            settings.put("last_billing_sweep", db.jdump({"at": db.now(), **stats}))
+        except Exception as exc:
+            log.error("billing sweep failed: %s", exc)
+        await asyncio.sleep(3600)
+
+
+@app.middleware("http")
+async def _remember_base(request: Request, call_next):
+    # Email links need the public address; learn it from real traffic when
+    # BASE_URL is not set.
+    if not email_service.SEEN_BASE:
+        try:
+            host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").split(":")[0]
+            if host and host not in ("localhost", "127.0.0.1", "0.0.0.0", "testserver"):
+                email_service.SEEN_BASE = settings.base_url(request)
+        except Exception:
+            pass
+    return await call_next(request)
 
 
 async def _poll_loop():
@@ -99,7 +127,8 @@ def _static_page(fname: str):
 
 for _path, _file in (("/pricing", "pricing.html"), ("/privacy", "privacy.html"),
                      ("/terms", "terms.html"), ("/deletion", "deletion.html"),
-                     ("/login", "login.html"), ("/signup", "signup.html")):
+                     ("/login", "login.html"), ("/signup", "signup.html"),
+                     ("/forgot", "forgot.html"), ("/reset", "reset.html")):
     app.add_api_route(_path, _static_page(_file), methods=["GET"], include_in_schema=False)
 
 
@@ -108,7 +137,9 @@ for _path, _file in (("/pricing", "pricing.html"), ("/privacy", "privacy.html"),
 async def panel(request: Request, rest: str = ""):
     u = auth.user_from_request(request)
     if not u:
-        return RedirectResponse("/login?next=/app", status_code=303)
+        from urllib.parse import quote as _q
+        nxt = request.url.path + (("?" + request.url.query) if request.url.query else "")
+        return RedirectResponse("/login?next=" + _q(nxt, safe=""), status_code=303)
     # The owner account MUST ALWAYS open the Admin Panel directly, NEVER the customer interface
     if u.get("role") == "admin":
         return RedirectResponse("/admin", status_code=303)
@@ -174,7 +205,10 @@ async def signup(request: Request):
         email_service.notify_welcome(user)
     except Exception:
         pass
-    resp = JSONResponse(ok(redirect="/app"))
+    nxt = str(d.get("next") or "")
+    if not nxt.startswith("/app") or nxt.startswith("//"):
+        nxt = "/app"
+    resp = JSONResponse(ok(redirect=nxt))
     auth.set_cookie(resp, auth.start_session(user["id"]))
     return resp
 
@@ -215,6 +249,44 @@ async def logout(request: Request):
     resp = JSONResponse(ok(redirect="/login"))
     auth.clear_cookie(resp)
     return resp
+
+
+@app.post("/api/auth/forgot")
+async def forgot_password(request: Request):
+    d = await body_json(request)
+    email = (d.get("email") or "").strip().lower()
+    key = f"forgot:{request.client.host if request.client else ''}"
+    if _throttled(key, limit=5, window=900):
+        return fail("Too many requests. Wait a few minutes and try again.", 429)
+    _note_attempt(key)
+    if not email_service.ready():
+        return fail("Password reset by email is not available yet. Contact support.")
+    user = db.one("SELECT * FROM dm_users WHERE email = ?", (email,)) if "@" in email else None
+    if user and user.get("status") != "suspended":
+        import secrets as _secrets
+        token = _secrets.token_urlsafe(32)
+        db.execute("DELETE FROM dm_password_resets WHERE user_id = ?", (user["id"],))
+        db.execute("INSERT INTO dm_password_resets (token_hash, user_id, expires_at, used) VALUES (?, ?, ?, 0)",
+                   (hashlib.sha256(token.encode()).hexdigest(), user["id"], db.now() + 3600))
+        email_service.notify_password_reset(user, f"{settings.base_url(request)}/reset?token={token}")
+    # Same answer either way, so nobody can test which emails have accounts.
+    return ok(message="If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.")
+
+
+@app.post("/api/auth/reset")
+async def reset_password(request: Request):
+    d = await body_json(request)
+    token, pw = (d.get("token") or "").strip(), d.get("password") or ""
+    if len(pw) < 8:
+        return fail("Use a password of at least 8 characters.")
+    row = db.one("SELECT * FROM dm_password_resets WHERE token_hash = ?",
+                 (hashlib.sha256(token.encode()).hexdigest(),)) if token else None
+    if not row or row["used"] or row["expires_at"] < db.now():
+        return fail("This reset link has expired or was already used. Ask for a new one.")
+    db.execute("UPDATE dm_password_resets SET used = 1 WHERE token_hash = ?", (row["token_hash"],))
+    db.execute("UPDATE dm_users SET password_hash = ? WHERE id = ?", (auth.hash_password(pw), row["user_id"]))
+    auth.end_all_sessions(row["user_id"])
+    return ok(message="Password changed. Sign in with your new password.", redirect="/login")
 
 
 @app.get("/api/me")
@@ -687,7 +759,7 @@ async def admin_overview(request: Request):
         "instagram_ready": settings.instagram_ready(),
         "maintenance_mode": settings.get("maintenance_mode") in ("1", "true", "yes"),
         "signups_open": settings.get("signups_open") not in ("0", "false", "no"),
-        "smtp_configured": bool(settings.get("smtp_host")),
+        "smtp_configured": email_service.ready(),
         "last_webhook": last_webhook,
         "last_poll": last_poll,
     },
@@ -881,7 +953,8 @@ async def admin_billing_get(request: Request):
         if k in settings.SECRETS:
             val = ("•" * 8 + val[-4:]) if val else ""
         data[k] = val
-    return ok(billing=data)
+    return ok(billing=data, webhook_url=f"{settings.base_url(request)}/api/razorpay/webhook",
+              ready=billing.enabled(), mode=billing.mode())
 
 
 @app.post("/api/admin/billing/settings")
@@ -901,12 +974,28 @@ async def admin_billing_save(request: Request):
 
 
 # ---------------------------------------------------------------- email admin
+EMAIL_KEYS = ["smtp_enabled", "smtp_provider", "smtp_host", "smtp_port", "smtp_user", "smtp_password",
+              "smtp_from_name", "smtp_from_email", "smtp_security",
+              "email_welcome_enabled", "email_ticket_enabled", "email_lifetime_enabled",
+              "email_payment_enabled", "email_payment_failed_enabled", "email_renewal_enabled",
+              "email_expired_enabled", "email_admin_alerts_enabled", "admin_alert_email",
+              "renewal_reminder_days"]
+
+
+@app.get("/api/admin/email/log")
+async def admin_email_log(request: Request):
+    auth.require_admin(request)
+    since = db.now() - 86400
+    sent_today = int((db.one("SELECT COUNT(*) AS n FROM dm_email_log WHERE status = 'sent' AND at >= ?",
+                             (since,)) or {}).get("n") or 0)
+    return ok(log=db.query("SELECT * FROM dm_email_log ORDER BY at DESC LIMIT 60"),
+              sent_today=sent_today, ready=email_service.ready(),
+              provider=email_service.get_smtp_config()["provider"])
+
 @app.get("/api/admin/email/settings")
 async def admin_email_get(request: Request):
     auth.require_admin(request)
-    keys = ["smtp_enabled", "smtp_host", "smtp_port", "smtp_user", "smtp_password",
-            "smtp_from_name", "smtp_from_email", "smtp_security",
-            "email_welcome_enabled", "email_ticket_enabled", "email_lifetime_enabled"]
+    keys = EMAIL_KEYS
     data = {}
     for k in keys:
         val = settings.get(k)
@@ -920,15 +1009,18 @@ async def admin_email_get(request: Request):
 async def admin_email_save(request: Request):
     auth.require_admin(request)
     d = await body_json(request)
-    keys = ["smtp_enabled", "smtp_host", "smtp_port", "smtp_user", "smtp_password",
-            "smtp_from_name", "smtp_from_email", "smtp_security",
-            "email_welcome_enabled", "email_ticket_enabled", "email_lifetime_enabled"]
+    keys = EMAIL_KEYS
     for k in keys:
         if k in d:
             val = str(d[k] or "").strip()
             if k in settings.SECRETS and (not val or "•" in val):
                 continue
             settings.put(k, val)
+    if d.get("smtp_provider") == "gmail" and d.get("smtp_user"):
+        settings.put("smtp_host", email_service.GMAIL_HOST)
+        settings.put("smtp_port", str(email_service.GMAIL_PORT))
+        settings.put("smtp_security", "tls")
+        settings.put("smtp_from_email", str(d["smtp_user"]).strip())
     return ok(message="Email settings saved successfully.")
 
 
@@ -1170,6 +1262,7 @@ async def validate_offer_code(request: Request):
 async def admin_platform_settings_get(request: Request):
     auth.require_admin(request)
     keys = ["brand_name", "support_email", "support_whatsapp", "company_name",
+            "company_address", "company_gstin",
             "announcement", "maintenance_mode", "signups_open"]
     return ok(platform={k: settings.get(k) for k in keys})
 
@@ -1179,6 +1272,7 @@ async def admin_platform_settings_save(request: Request):
     auth.require_admin(request)
     d = await body_json(request)
     keys = ["brand_name", "support_email", "support_whatsapp", "company_name",
+            "company_address", "company_gstin",
             "announcement", "maintenance_mode", "signups_open"]
     for k in keys:
         if k in d:
@@ -1222,7 +1316,146 @@ async def admin_events(request: Request):
                               "ORDER BY e.at DESC LIMIT 100"))
 
 
+# ================================================================== billing
+@app.get("/api/billing")
+async def billing_overview(request: Request):
+    u = auth.require_user(request)
+    pays = db.query("SELECT * FROM dm_payments WHERE user_id = ? AND status IN ('paid', 'failed') "
+                    "ORDER BY created_at DESC LIMIT 50", (u["id"],))
+    plans = [p for p in settings.plans() if p.get("is_active", True) and not p.get("is_hidden")
+             and p.get("id") != "lifetime"]
+    return ok(plan=settings.user_plan(u), plan_id=u.get("plan"), is_lifetime=bool(u.get("is_lifetime")),
+              expires_at=int(u.get("plan_expires_at") or 0), plans=plans,
+              payments=[billing.public(p) for p in pays],
+              gateway={"enabled": billing.enabled(), "mode": billing.mode(),
+                       "tax_percent": billing.tax_percent(),
+                       "currency": (settings.get("currency") or "INR").upper()})
+
+
+@app.post("/api/billing/quote")
+async def billing_quote(request: Request):
+    auth.require_user(request)
+    d = await body_json(request)
+    try:
+        return ok(quote=billing.quote(d.get("plan_id") or "", d.get("cycle") or "monthly", d.get("coupon") or ""))
+    except ValueError as exc:
+        return fail(str(exc))
+
+
+@app.post("/api/billing/checkout")
+async def billing_checkout(request: Request):
+    u = auth.require_user(request)
+    if u.get("is_lifetime"):
+        return fail("You already have Lifetime VIP - nothing to pay.")
+    d = await body_json(request)
+    key = f"checkout:{u['id']}"
+    if _throttled(key, limit=15, window=600):
+        return fail("Too many payment attempts. Wait a few minutes.", 429)
+    _note_attempt(key)
+    try:
+        out = await asyncio.get_running_loop().run_in_executor(
+            None, billing.create_checkout, u, d.get("plan_id") or "", d.get("cycle") or "monthly", d.get("coupon") or "")
+    except ValueError as exc:
+        return fail(str(exc))
+    return ok(**out)
+
+
+@app.post("/api/billing/verify")
+async def billing_verify(request: Request):
+    u = auth.require_user(request)
+    d = await body_json(request)
+    order_id = d.get("razorpay_order_id") or ""
+    payment_id = d.get("razorpay_payment_id") or ""
+    row = billing.by_order(order_id)
+    if not row or row["user_id"] != u["id"]:
+        return fail("Payment not found.")
+    if not billing.verify_checkout_signature(order_id, payment_id, d.get("razorpay_signature") or ""):
+        return fail("Payment could not be verified. If money was taken, it will be confirmed shortly "
+                    "or refunded automatically.")
+    billing.mark_paid(row["id"], payment_id, d.get("method") or "")
+    return ok(message="Payment successful - your plan is active.", payment=billing.public(billing.get(row["id"])))
+
+
+@app.post("/api/billing/failed")
+async def billing_failed(request: Request):
+    u = auth.require_user(request)
+    d = await body_json(request)
+    row = billing.by_order(d.get("razorpay_order_id") or "")
+    if row and row["user_id"] == u["id"]:
+        billing.mark_failed(row["id"], (d.get("reason") or "Payment failed")[:200], d.get("razorpay_payment_id") or "")
+    return ok()
+
+
+@app.get("/api/billing/invoice/{pid}", include_in_schema=False)
+async def billing_invoice(request: Request, pid: str):
+    u = auth.user_from_request(request)
+    if not u:
+        return RedirectResponse(f"/login?next=/app/billing", status_code=303)
+    p = billing.get(pid)
+    if not p or p["status"] != "paid" or (p["user_id"] != u["id"] and u.get("role") != "admin"):
+        return HTMLResponse("Invoice not found.", status_code=404)
+    owner = db.one("SELECT * FROM dm_users WHERE id = ?", (p["user_id"],)) or {}
+    return HTMLResponse(billing.invoice_html(p, owner))
+
+
+@app.post("/api/razorpay/webhook", include_in_schema=False)
+async def razorpay_webhook(request: Request):
+    raw = await request.body()
+    if not billing.verify_webhook_signature(raw, request.headers.get("x-razorpay-signature") or ""):
+        log.warning("razorpay webhook: bad signature")
+        return JSONResponse({"ok": False, "error": "bad signature"}, status_code=400)
+    try:
+        event = json.loads(raw.decode() or "{}")
+        result = await asyncio.get_running_loop().run_in_executor(None, billing.handle_webhook, event)
+    except Exception as exc:
+        log.error("razorpay webhook error: %s", exc)
+        return JSONResponse({"ok": False}, status_code=500)   # Razorpay retries
+    settings.put("last_razorpay_webhook", db.jdump({"at": db.now(), "result": result}))
+    return {"ok": True, "result": result}
+
+
+@app.get("/api/admin/payments")
+async def admin_payments(request: Request):
+    auth.require_admin(request)
+    now = db.now()
+    month_start = int(time.mktime(time.strptime(time.strftime("%Y-%m-01"), "%Y-%m-%d")))
+
+    def total(where: str, params=()):
+        return int((db.one(f"SELECT COALESCE(SUM(amount), 0) AS n FROM dm_payments WHERE status = 'paid' {where}",
+                           params) or {}).get("n") or 0)
+    rows = db.query("SELECT p.*, u.email, u.name FROM dm_payments p LEFT JOIN dm_users u ON u.id = p.user_id "
+                    "WHERE p.status != 'created' OR p.created_at > ? ORDER BY p.created_at DESC LIMIT 200",
+                    (now - 3600,))
+    paying = int((db.one("SELECT COUNT(*) AS n FROM dm_users WHERE is_lifetime = 0 AND plan != 'free' "
+                         "AND plan_expires_at > ?", (now,)) or {}).get("n") or 0)
+    mrr = 0
+    for u in db.query("SELECT plan, plan_expires_at FROM dm_users WHERE is_lifetime = 0 AND plan != 'free' "
+                      "AND plan_expires_at > ?", (now,)):
+        mrr += int(round(float(settings.plan(u["plan"]).get("price_monthly") or 0) * 100))
+    return ok(payments=rows, stats={
+        "revenue_month": total("AND paid_at >= ?", (month_start,)),
+        "revenue_total": total(""),
+        "paid_count": int((db.one("SELECT COUNT(*) AS n FROM dm_payments WHERE status = 'paid'") or {}).get("n") or 0),
+        "failed_count": int((db.one("SELECT COUNT(*) AS n FROM dm_payments WHERE status = 'failed'") or {}).get("n") or 0),
+        "paying_customers": paying, "mrr": mrr},
+        gateway={"enabled": billing.enabled(), "mode": billing.mode(),
+                 "webhook_url": f"{settings.base_url(request)}/api/razorpay/webhook",
+                 "last_webhook": db.jload(settings._raw("last_razorpay_webhook"), {}),
+                 "last_sweep": db.jload(settings._raw("last_billing_sweep"), {})})
+
+
+@app.post("/api/admin/billing/sweep")
+async def admin_billing_sweep(request: Request):
+    auth.require_admin(request)
+    stats = await asyncio.get_running_loop().run_in_executor(None, billing.sweep)
+    return ok(stats=stats)
+
+
 # =================================================================== public
 @app.get("/api/public/plans")
 async def public_plans():
-    return {"success": True, "plans": [p for p in settings.plans() if p.get("is_active", True) and not p.get("is_hidden", False)]}
+    plans = [p for p in settings.plans() if p.get("is_active", True) and not p.get("is_hidden", False)
+             and p.get("id") != "lifetime"]
+    return {"success": True, "plans": plans, "tax_percent": billing.tax_percent(),
+            "payments_enabled": billing.enabled(),
+            "currency": (settings.get("currency") or "INR").upper()}

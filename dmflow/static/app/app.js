@@ -120,8 +120,8 @@
   }
 
   // ------------------------------------------------------------ router
-  var VIEWS = { home: viewHome, automations: viewAutomations, contacts: viewContacts, settings: viewSettings, support: viewSupport };
-  var TITLES = { home: "Home", automations: "Automations", contacts: "Contacts", settings: "Settings", support: "Support" };
+  var VIEWS = { home: viewHome, automations: viewAutomations, contacts: viewContacts, settings: viewSettings, support: viewSupport, billing: viewBilling };
+  var TITLES = { home: "Home", automations: "Automations", contacts: "Contacts", settings: "Settings", support: "Support", billing: "Billing" };
 
   function current() {
     var p = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
@@ -302,7 +302,7 @@
       '<dl class="kv"><dt>Plan</dt><dd>' + esc(p.name) + "</dd><dt>Automations</dt><dd>" + cap(lim.automations) + " live</dd>" +
       "<dt>DMs a month</dt><dd>" + num(S.usage.dms) + " of " + cap(lim.dms_per_month) + "</dd>" +
       "<dt>Contacts</dt><dd>" + num(S.usage.contacts) + " of " + cap(lim.contacts) + "</dd></dl>" +
-      '<a class="btn" href="/pricing" target="_blank" rel="noopener">See plans</a></div>' +
+      '<a class="btn btn-primary" href="/app/billing">Upgrade or renew</a></div>' +
       '<div class="card pad set-card"><h3>Profile</h3><p>Your login.</p>' +
       '<div class="field"><label>Name</label><input class="input" id="pName" value="' + esc(S.me.name || "") + '"></div>' +
       '<div class="field"><label>Email</label><input class="input" value="' + esc(S.me.email) + '" disabled></div>' +
@@ -732,6 +732,170 @@
     }
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && W) closeWizard(); });
+
+
+  // ------------------------------------------------------------ BILLING
+  var B = { cycle: "monthly", coupon: "", data: null };
+  function rupees(paise) {
+    var v = Number(paise || 0) / 100;
+    return "₹" + v.toLocaleString("en-IN", { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  }
+  function inrWhole(n) { return "₹" + Number(n || 0).toLocaleString("en-IN"); }
+
+  function loadRazorpay() {
+    return new Promise(function (res, rej) {
+      if (window.Razorpay) return res();
+      var sc = document.createElement("script");
+      sc.src = "https://checkout.razorpay.com/v1/checkout.js";
+      sc.onload = function () { res(); }; sc.onerror = function () { rej(new Error("load")); };
+      document.head.appendChild(sc);
+    });
+  }
+
+  function planLines(p) {
+    var l = p.limits || {}, out = [];
+    out.push((l.automations === -1 ? "Unlimited" : l.automations) + " live automation" + (l.automations === 1 ? "" : "s"));
+    out.push(cap(l.dms_per_month) + " DMs a month");
+    out.push(cap(l.contacts) + " contacts");
+    if ((p.features || {}).follow_gate) out.push("Follow-to-unlock links");
+    if ((p.features || {}).any_post) out.push("Works on any post");
+    if ((p.features || {}).priority_support) out.push("Priority support");
+    return out;
+  }
+
+  async function viewBilling() {
+    var out = await api("/api/billing");
+    if (!out.success) { $("#view").innerHTML = '<div class="errbox">' + esc(out.error || "Could not load billing.") + "</div>"; return; }
+    B.data = out;
+    renderBilling();
+    var qs = new URLSearchParams(location.search), want = qs.get("plan");
+    if (qs.get("cycle") === "yearly" || qs.get("cycle") === "monthly") { B.cycle = qs.get("cycle"); renderBilling(); }
+    if (want) {
+      history.replaceState({}, "", "/app/billing");
+      var p = out.plans.filter(function (x) { return x.id === want; })[0];
+      if (p && Number(p.price_monthly) > 0 && !out.is_lifetime) openCheckout(p.id);
+    }
+  }
+
+  function renderBilling() {
+    var d = B.data, now = Date.now() / 1000;
+    var left = d.expires_at ? Math.ceil((d.expires_at - now) / 86400) : 0;
+    var status = d.is_lifetime ? '<span class="pill ink">Lifetime VIP</span>'
+      : d.plan_id === "free" ? '<span class="pill">Free plan</span>'
+      : !d.expires_at ? '<span class="pill green">Active</span>'
+      : left <= 3 ? '<span class="pill amber">Ends in ' + Math.max(0, left) + " day" + (left === 1 ? "" : "s") + "</span>"
+      : '<span class="pill green">Active</span>';
+    var sub = d.is_lifetime ? "Everything unlocked, no monthly fee."
+      : d.plan_id === "free" ? "Upgrade any time - pay with UPI, card or net banking."
+      : d.expires_at ? "Paid till " + day(d.expires_at) + " · " + Math.max(0, left) + " days left. Renewing adds the new period after this one."
+      : "Active plan.";
+    var yearlySave = 0;
+    d.plans.forEach(function (p) {
+      if (p.price_monthly > 0 && p.price_yearly > 0) yearlySave = Math.max(yearlySave, Math.round(100 - p.price_yearly / (p.price_monthly * 12) * 100));
+    });
+    var gstNote = d.gateway.tax_percent ? "+ " + d.gateway.tax_percent + "% GST" : "";
+    var cards = d.plans.map(function (p) {
+      var price = B.cycle === "yearly" ? p.price_yearly : p.price_monthly;
+      var isFree = Number(p.price_monthly) === 0;
+      var isCur = !d.is_lifetime && d.plan_id === p.id;
+      var btn;
+      if (d.is_lifetime) btn = '<button class="btn" disabled>Included</button>';
+      else if (isFree) btn = '<button class="btn" disabled>' + (isCur ? "Current plan" : "Free forever") + "</button>";
+      else if (!price) btn = '<button class="btn" disabled>Not available ' + B.cycle + "</button>";
+      else btn = '<button class="btn ' + (p.highlight || isCur ? "btn-green" : "btn-primary") + '" data-buy="' + esc(p.id) + '">' +
+        (isCur ? "Renew " : "Get ") + esc(p.name) + "</button>";
+      return '<div class="card plan' + (p.highlight ? " hi" : "") + (isCur ? " cur" : "") + '">' +
+        (isCur ? '<span class="pill green badge">Current</span>' : p.badge ? '<span class="pill badge">' + esc(p.badge) + "</span>" : "") +
+        "<h3>" + esc(p.name) + '</h3><div class="tag">' + esc(p.tagline || "") + "</div>" +
+        '<div class="amt">' + (isFree ? "₹0" : inrWhole(price)) + "<span> / " + (isFree ? "forever" : B.cycle === "yearly" ? "year" : "month") + "</span></div>" +
+        '<div class="gst">' + (isFree ? "No card needed" : esc(gstNote)) + "</div>" +
+        "<ul>" + planLines(p).map(function (x) { return "<li>" + I.check + esc(x) + "</li>"; }).join("") + "</ul>" + btn + "</div>";
+    }).join("");
+    var hist = d.payments.length
+      ? '<div class="card bill-table"><table class="t"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th><th>Invoice</th></tr></thead><tbody>' +
+        d.payments.map(function (p) {
+          return "<tr><td>" + day(p.paid_at || p.created_at) + "</td><td>" + esc(p.plan_name) + " · " + esc(p.cycle) + "</td><td>" + rupees(p.amount) +
+            '</td><td><span class="pill ' + (p.status === "paid" ? "green" : "red") + '">' + esc(p.status === "paid" ? "Paid" : "Failed") + "</span></td><td>" +
+            (p.status === "paid" ? '<a class="link" href="/api/billing/invoice/' + esc(p.id) + '" target="_blank" rel="noopener">' + esc(p.invoice_no || "View") + "</a>" : "-") + "</td></tr>";
+        }).join("") + "</tbody></table></div>"
+      : '<div class="card empty"><b>No payments yet</b>Your invoices appear here after you pay.</div>';
+
+    $("#view").innerHTML =
+      '<div class="card bill-head"><div><span class="hint">Your plan</span><h2>' + esc(d.plan.name) + "</h2>" +
+      '<div class="meta">' + esc(sub) + '</div></div><div class="sp"></div>' + status + "</div>" +
+      (d.gateway.enabled || d.is_lifetime ? "" : '<div class="errbox" style="margin-bottom:16px">Online payments are being set up. To upgrade now, message us from the Support page.</div>') +
+      (d.gateway.mode === "test" ? '<div class="errbox" style="margin-bottom:16px;background:var(--amber-soft);color:var(--amber)">Test mode - no real money is charged.</div>' : "") +
+      '<div class="row" style="align-items:center;justify-content:space-between"><div class="cycle">' +
+      '<button data-cycle="monthly" class="' + (B.cycle === "monthly" ? "on" : "") + '">Monthly</button>' +
+      '<button data-cycle="yearly" class="' + (B.cycle === "yearly" ? "on" : "") + '">Yearly' + (yearlySave > 0 ? "<em>save " + yearlySave + "%</em>" : "") + "</button></div>" +
+      '<div class="coupon"><input class="input" id="cpn" placeholder="Coupon code" value="' + esc(B.coupon) + '"></div></div>' +
+      '<div class="plans">' + cards + "</div>" +
+      '<h3 style="margin:8px 0 12px">Payment history</h3>' + hist;
+  }
+
+  async function openCheckout(planId) {
+    B.coupon = (($("#cpn") || {}).value || B.coupon || "").trim().toUpperCase();
+    var q = await api("/api/billing/quote", { method: "POST", body: { plan_id: planId, cycle: B.cycle, coupon: B.coupon } });
+    if (!q.success) {
+      if (B.coupon && /coupon/i.test(q.error || "")) { toast(q.error, true); return; }
+      return toast(q.error || "Could not price this plan.", true);
+    }
+    q = q.quote;
+    var rows = "<tr><td>" + esc(q.plan_name) + " · " + (q.cycle === "yearly" ? "1 year" : "1 month") + "</td><td>" + rupees(q.base_amount) + "</td></tr>" +
+      (q.discount ? '<tr class="off"><td>Coupon ' + esc(q.coupon) + "</td><td>- " + rupees(q.discount) + "</td></tr>" : "") +
+      (q.tax ? "<tr><td>GST " + q.tax_percent + "%</td><td>" + rupees(q.tax) + "</td></tr>" : "") +
+      '<tr class="total"><td>Total</td><td>' + rupees(q.amount) + "</td></tr>";
+    var m = modal("<h3>Confirm your plan</h3><p>Pay securely with UPI, card, net banking or wallet.</p>" +
+      '<table class="sum">' + rows + "</table>" +
+      '<div class="errbox" id="payErr" hidden></div>' +
+      '<div class="row"><button class="btn" data-x>Cancel</button><button class="btn btn-green" id="payBtn">' +
+      (q.amount ? "Pay " + rupees(q.amount) : "Activate free") + "</button></div>" +
+      '<div class="secure"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments by Razorpay · we never see your card or UPI PIN</div>');
+    m.querySelector("[data-x]").onclick = function () { m.remove(); };
+    var btn = m.querySelector("#payBtn"), err = m.querySelector("#payErr");
+    function showErr(t) { err.textContent = t; err.hidden = false; btn.disabled = false; btn.textContent = q.amount ? "Pay " + rupees(q.amount) : "Activate free"; }
+    btn.onclick = async function () {
+      btn.disabled = true; btn.textContent = "Starting payment..."; err.hidden = true;
+      var co = await api("/api/billing/checkout", { method: "POST", body: { plan_id: planId, cycle: B.cycle, coupon: B.coupon } });
+      if (!co.success) return showErr(co.error || "Could not start the payment.");
+      if (co.free) { m.remove(); await paid("Activated! Enjoy your plan."); return; }
+      try { await loadRazorpay(); } catch (e) { return showErr("Could not load Razorpay. Check your internet and try again."); }
+      var c = co.checkout;
+      var rzp = new window.Razorpay({
+        key: c.key, order_id: c.order_id, amount: c.amount, currency: c.currency,
+        name: c.name, description: c.description, prefill: c.prefill, notes: c.notes,
+        theme: { color: "#0fbf73" },
+        handler: async function (r) {
+          btn.textContent = "Confirming...";
+          var v = await api("/api/billing/verify", { method: "POST", body: r });
+          m.remove();
+          if (v.success) await paid(v.message);
+          else { toast(v.error || "We are confirming your payment. Refresh in a minute.", true); viewBilling(); }
+        },
+        modal: { ondismiss: function () { showErr("Payment cancelled. You can try again."); } }
+      });
+      rzp.on("payment.failed", function (r) {
+        var e = (r && r.error) || {};
+        api("/api/billing/failed", { method: "POST", body: { razorpay_order_id: c.order_id,
+          razorpay_payment_id: (e.metadata || {}).payment_id || "", reason: e.description || "Payment failed" } });
+      });
+      rzp.open();
+      btn.textContent = "Complete payment in the Razorpay window...";
+    };
+  }
+
+  async function paid(msg) {
+    toast(msg || "Payment successful");
+    await loadMe();
+    viewBilling();
+  }
+
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest("[data-cycle]");
+    if (c && B.data) { B.coupon = (($("#cpn") || {}).value || "").trim().toUpperCase(); B.cycle = c.dataset.cycle; return renderBilling(); }
+    var b = e.target.closest("[data-buy]");
+    if (b) openCheckout(b.dataset.buy);
+  });
 
   // ------------------------------------------------------------ boot
   (async function boot() {

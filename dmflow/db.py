@@ -145,6 +145,47 @@ SCHEMA = [
         is_active INTEGER NOT NULL DEFAULT 1,
         created_at BIGINT NOT NULL DEFAULT 0)""",
     "CREATE INDEX IF NOT EXISTS dm_offers_code ON dm_offers (code)",
+    # One row per checkout attempt. Amounts are in paise (INR x 100).
+    """CREATE TABLE IF NOT EXISTS dm_payments (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        plan_id TEXT NOT NULL DEFAULT '',
+        cycle TEXT NOT NULL DEFAULT 'monthly',
+        gateway TEXT NOT NULL DEFAULT 'razorpay',
+        order_id TEXT NOT NULL DEFAULT '',
+        payment_id TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'created',
+        currency TEXT NOT NULL DEFAULT 'INR',
+        base_amount BIGINT NOT NULL DEFAULT 0,
+        discount BIGINT NOT NULL DEFAULT 0,
+        tax BIGINT NOT NULL DEFAULT 0,
+        amount BIGINT NOT NULL DEFAULT 0,
+        tax_percent REAL NOT NULL DEFAULT 0,
+        coupon TEXT NOT NULL DEFAULT '',
+        method TEXT NOT NULL DEFAULT '',
+        invoice_no TEXT NOT NULL DEFAULT '',
+        period_start BIGINT NOT NULL DEFAULT 0,
+        period_end BIGINT NOT NULL DEFAULT 0,
+        error TEXT NOT NULL DEFAULT '',
+        created_at BIGINT NOT NULL DEFAULT 0,
+        paid_at BIGINT NOT NULL DEFAULT 0)""",
+    "CREATE INDEX IF NOT EXISTS dm_payments_user ON dm_payments (user_id)",
+    "CREATE INDEX IF NOT EXISTS dm_payments_order ON dm_payments (order_id)",
+    # Every email the platform tries to send, so delivery problems are visible.
+    """CREATE TABLE IF NOT EXISTS dm_email_log (
+        id TEXT PRIMARY KEY,
+        at BIGINT NOT NULL DEFAULT 0,
+        kind TEXT NOT NULL DEFAULT '',
+        to_email TEXT NOT NULL DEFAULT '',
+        subject TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT '',
+        error TEXT NOT NULL DEFAULT '')""",
+    "CREATE INDEX IF NOT EXISTS dm_email_log_at ON dm_email_log (at)",
+    """CREATE TABLE IF NOT EXISTS dm_password_resets (
+        token_hash TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        expires_at BIGINT NOT NULL DEFAULT 0,
+        used INTEGER NOT NULL DEFAULT 0)""",
 ]
 
 
@@ -209,7 +250,9 @@ def _ensure_migrations(eng) -> None:
     # Ensure columns exist on dm_users if table already existed prior
     for col, col_type in (("is_lifetime", "INTEGER NOT NULL DEFAULT 0"),
                           ("plan_expires_at", "BIGINT NOT NULL DEFAULT 0"),
-                          ("notes", "TEXT NOT NULL DEFAULT ''")):
+                          ("notes", "TEXT NOT NULL DEFAULT ''"),
+                          # plan_expires_at value a renewal reminder was last sent for
+                          ("reminded_for", "BIGINT NOT NULL DEFAULT 0")):
         try:
             eng.execute(f"ALTER TABLE dm_users ADD COLUMN {col} {col_type}")
         except Exception:

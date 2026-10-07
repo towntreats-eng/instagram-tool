@@ -673,3 +673,12 @@ h3 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.022e
   color: var(--ink-800);
 }
 
+
+/* billing cycle switch on the pricing grid */
+.cycle-toggle { display: inline-flex; gap: 2px; padding: 4px; margin-top: 34px; border-radius: 999px; background: var(--paper); border: 1px solid var(--ink-200, #e3e5e4); }
+.cycle-toggle button { border: 0; background: none; font: inherit; font-weight: 700; font-size: 14px; padding: 9px 18px; border-radius: 999px; cursor: pointer; color: var(--ink-500); }
+.cycle-toggle button.on { background: var(--ink-950); color: var(--paper); }
+.cycle-toggle em { font-style: normal; color: var(--signal-dim, #0a8f56); margin-left: 4px; }
+.cycle-toggle button.on em { color: var(--signal, #0fbf73); }
+.cycle-toggle + .price-grid { margin-top: 26px; }
+.price-pay { margin-top: 10px; font-size: 12px; color: var(--ink-400); font-weight: 600; }

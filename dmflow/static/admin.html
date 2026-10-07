@@ -602,6 +602,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9h.01M15 15h.01"/></svg>
         Offers & Coupons
       </button>
+      <button data-tab="payments">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Payments & Revenue
+      </button>
       <button data-tab="billing">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         Payment Gateways
@@ -832,6 +836,44 @@
       </div>
     </section>
 
+    <!-- TAB: PAYMENTS & REVENUE -->
+    <section id="tab-payments" class="adm-tab-section" style="display:none">
+      <div class="adm-grid-4">
+        <div class="adm-card adm-kpi highlight-emerald">
+          <div class="kpi-label">Revenue this month</div>
+          <div class="kpi-val" id="kpiRevMonth">₹0</div>
+          <div class="kpi-sub">Paid payments since the 1st</div>
+        </div>
+        <div class="adm-card adm-kpi">
+          <div class="kpi-label">MRR (active plans)</div>
+          <div class="kpi-val" id="kpiMrr">₹0</div>
+          <div class="kpi-sub"><span id="kpiPaying">0</span> paying customers</div>
+        </div>
+        <div class="adm-card adm-kpi">
+          <div class="kpi-label">All-time revenue</div>
+          <div class="kpi-val" id="kpiRevTotal">₹0</div>
+          <div class="kpi-sub"><span id="kpiPaidCount">0</span> successful payments</div>
+        </div>
+        <div class="adm-card adm-kpi highlight-rose">
+          <div class="kpi-label">Failed payments</div>
+          <div class="kpi-val" id="kpiFailed">0</div>
+          <div class="kpi-sub">Customer got a "try again" email</div>
+        </div>
+      </div>
+      <div class="adm-card" style="margin-bottom:20px;">
+        <h3>Gateway status</h3>
+        <div id="payGatewayStatus"></div>
+        <button class="adm-btn adm-btn-dark adm-btn-sm" id="btnRunSweep" style="margin-top:6px">Run renewal check now</button>
+        <span id="sweepResult" style="font-size:12px;color:var(--adm-muted);margin-left:10px"></span>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Date</th><th>Customer</th><th>Plan</th><th>Amount</th><th>Method</th><th>Status</th><th>Invoice</th></tr></thead>
+          <tbody id="paymentsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- TAB 6: PAYMENT GATEWAYS -->
     <section id="tab-billing" class="adm-tab-section" style="display:none">
       <form id="billingForm">
@@ -895,6 +937,13 @@
               <label>Webhook Secret</label>
               <input class="adm-input" name="razorpay_webhook_secret" type="password" placeholder="Leave empty to keep existing secret">
             </div>
+            <div id="rzpStatus" style="margin:4px 0 12px"></div>
+            <div class="copy-box"><span class="title">Webhook URL</span><code id="rzpWebhookUrl">-</code><button type="button" class="adm-btn adm-btn-dark adm-btn-sm" id="rzpCopy">Copy</button></div>
+            <ol style="color:var(--adm-muted);font-size:12.5px;padding-left:18px;line-height:1.7;margin:8px 0 0;">
+              <li>Razorpay Dashboard → <b>Account &amp; Settings → API Keys</b> → Generate key. Paste Key ID + Key Secret above. (<code>rzp_test_</code> = test mode, <code>rzp_live_</code> = real money)</li>
+              <li>Razorpay Dashboard → <b>Webhooks → Add New Webhook</b>. Paste the URL above, type any secret (same as Webhook Secret here), tick <b>payment.captured</b>, <b>payment.failed</b>, <b>order.paid</b>.</li>
+              <li>Tick <b>Enable Razorpay</b> and Save. Customers can now pay from Billing.</li>
+            </ol>
           </div>
         </div>
 
@@ -944,7 +993,21 @@
               </div>
               <input type="checkbox" id="smtp_enabled_check">
             </div>
-            <div class="adm-grid-2">
+            <div class="adm-field">
+              <label>Send emails through</label>
+              <select class="adm-select" name="smtp_provider" id="smtpProvider">
+                <option value="gmail">Gmail (free - your own Gmail account)</option>
+                <option value="custom">Custom SMTP server</option>
+              </select>
+            </div>
+            <div id="gmailGuide" style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;color:#065f46;line-height:1.65;">
+              <b>Gmail setup (2 minutes, free):</b><br>
+              1. Turn on <b>2-Step Verification</b> on your Google account.<br>
+              2. Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" style="color:#047857;font-weight:700">myaccount.google.com/apppasswords</a>, name it "DM Flow", click Create.<br>
+              3. Paste your Gmail below and the 16-letter App Password (not your normal password).<br>
+              Free Gmail sends about <b>500 emails a day</b>. Host/port are filled in automatically.
+            </div>
+            <div class="adm-grid-2 smtp-custom">
               <div class="adm-field">
                 <label>SMTP Host</label>
                 <input class="adm-input" name="smtp_host" placeholder="smtp.gmail.com or smtp.resend.com">
@@ -956,8 +1019,8 @@
             </div>
             <div class="adm-grid-2">
               <div class="adm-field">
-                <label>Username / Email</label>
-                <input class="adm-input" name="smtp_user" placeholder="your-email@domain.com">
+                <label id="smtpUserLabel">Username / Email</label>
+                <input class="adm-input" name="smtp_user" placeholder="yourname@gmail.com">
               </div>
               <div class="adm-field">
                 <label>Password / App Password</label>
@@ -969,12 +1032,12 @@
                 <label>From Name</label>
                 <input class="adm-input" name="smtp_from_name" placeholder="DM Flow Support">
               </div>
-              <div class="adm-field">
+              <div class="adm-field smtp-custom">
                 <label>From Email</label>
                 <input class="adm-input" name="smtp_from_email" placeholder="support@domain.com">
               </div>
             </div>
-            <div class="adm-field">
+            <div class="adm-field smtp-custom">
               <label>Security Encryption</label>
               <select class="adm-select" name="smtp_security">
                 <option value="tls">STARTTLS (Standard on Port 587)</option>
@@ -996,6 +1059,37 @@
               <div class="adm-switch-info"><b>Lifetime VIP Gift Email</b><span>Send when granting a Free Lifetime VIP account</span></div>
               <input type="checkbox" id="email_lifetime_check">
             </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Payment Receipt</b><span>Invoice email after every successful payment</span></div>
+              <input type="checkbox" id="email_payment_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Payment Failed</b><span>"Try again" email when a payment fails</span></div>
+              <input type="checkbox" id="email_payment_failed_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Renewal Reminder</b><span>Sent a few days before a plan ends</span></div>
+              <input type="checkbox" id="email_renewal_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Plan Expired</b><span>Sent when a plan ends and moves to Free</span></div>
+              <input type="checkbox" id="email_expired_check">
+            </div>
+            <div class="adm-switch">
+              <div class="adm-switch-info"><b>Owner Alerts</b><span>Email me on every new signup and payment</span></div>
+              <input type="checkbox" id="email_admin_alerts_check">
+            </div>
+            <div class="adm-grid-2">
+              <div class="adm-field">
+                <label>Owner alert email</label>
+                <input class="adm-input" name="admin_alert_email" placeholder="Blank = support email">
+              </div>
+              <div class="adm-field">
+                <label>Reminder days before expiry</label>
+                <input class="adm-input" name="renewal_reminder_days" type="number" min="1" max="15" placeholder="3">
+              </div>
+            </div>
+            <div class="hint" style="font-size:12px;color:var(--adm-muted);margin-bottom:6px">Password-reset emails are always sent - a locked-out customer has no other way back in.</div>
 
             <button class="adm-btn adm-btn-emerald" type="submit" style="margin-top:10px;">Save Email Settings</button>
           </form>
@@ -1016,14 +1110,9 @@
           </div>
 
           <div class="adm-card">
-            <h3>Recommended Mail Providers</h3>
-            <p class="sub">Reliable SMTP hosts with free tiers:</p>
-            <ul style="color:var(--adm-muted);font-size:13px;padding-left:18px;line-height:1.7;">
-              <li><b>Resend</b> (smtp.resend.com, Port 587) — 3,000 free emails/mo</li>
-              <li><b>SendGrid</b> (smtp.sendgrid.net, Port 587) — 100 free emails/day</li>
-              <li><b>Google Workspace / Gmail</b> (smtp.gmail.com, Port 587) — use App Password</li>
-              <li><b>Amazon SES</b> — highly scalable & low cost</li>
-            </ul>
+            <h3>Email delivery log</h3>
+            <p class="sub" id="emailLogSummary">Last 60 emails.</p>
+            <div id="emailLog" style="max-height:420px;overflow:auto;font-size:12.5px;"></div>
           </div>
         </div>
       </div>

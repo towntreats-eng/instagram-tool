@@ -32,6 +32,8 @@ ENV = {
     "smtp_user": "SMTP_USER",
     "smtp_password": "SMTP_PASSWORD",
     "smtp_from_email": "SMTP_FROM_EMAIL",
+    "smtp_from_name": "SMTP_FROM_NAME",
+    "smtp_enabled": "SMTP_ENABLED",
     # Gateways
     "razorpay_key_id": "RAZORPAY_KEY_ID",
     "razorpay_key_secret": "RAZORPAY_KEY_SECRET",
@@ -68,6 +70,16 @@ DEFAULTS = {
     "email_welcome_enabled": "1",
     "email_ticket_enabled": "1",
     "email_lifetime_enabled": "1",
+    "smtp_provider": "gmail",          # gmail | custom
+    "email_payment_enabled": "1",      # receipt after a successful payment
+    "email_payment_failed_enabled": "1",
+    "email_renewal_enabled": "1",      # reminder a few days before the plan ends
+    "email_expired_enabled": "1",      # plan ended, moved to Free
+    "email_admin_alerts_enabled": "1", # owner hears about new signups and payments
+    "admin_alert_email": "",           # blank = support_email
+    "renewal_reminder_days": "3",
+    "company_address": "Shalin Complex, Unjha, Gujarat, India",
+    "company_gstin": "",
     # Payment Gateway
     "payment_gateway": "razorpay",
     "payment_mode": "manual",  # manual | test | live

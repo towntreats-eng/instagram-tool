@@ -55,7 +55,7 @@
     btn.disabled = true; btn.textContent = "Please wait..."; err.hidden = true;
     try {
       var res = await fetch("/api/auth/signup", { method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign(data, { next: new URLSearchParams(location.search).get("next") || "" })) });
       var out = await res.json();
       if (out.success) { location.href = out.redirect || "/app"; return; }
       err.textContent = out.error || "Something went wrong."; err.hidden = false;

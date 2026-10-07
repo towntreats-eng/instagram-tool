@@ -22,6 +22,9 @@ Start command comes from `Procfile` (`uvicorn main:app`). Set these variables:
 | `META_APP_SECRET` | optional | App settings > Basic secret; signs webhooks (else set in /admin) |
 | `VERIFY_TOKEN`, `BASE_URL` | optional | webhook verify token, public https URL |
 
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | optional | else set in /admin > Payment Gateways |
+| `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_ENABLED=1` | optional | Gmail + 16-letter App Password (else set in /admin > Email) |
+
 Never commit secrets — this repo is public.
 
 ## Meta URLs (shown in /admin)
@@ -30,6 +33,20 @@ Never commit secrets — this repo is public.
 - Webhook: `https://<domain>/api/meta/webhook` (fields: comments, messages, messaging_postbacks)
 - Deauthorize: `https://<domain>/api/meta/deauthorize`
 - Data deletion: `https://<domain>/api/meta/data-deletion`
+
+## Payments (Razorpay)
+
+Customers pay from `/app/billing` (UPI, cards, net banking). One payment per month/year;
+paying early adds the new period on top. Razorpay webhook: `https://<domain>/api/razorpay/webhook`
+(events: payment.captured, payment.failed, order.paid). An hourly job emails renewal reminders and
+moves expired plans to Free. Invoices: `/api/billing/invoice/<id>`.
+
+## Email (free via Gmail)
+
+Admin > Email: choose Gmail, enter the Gmail address and a Google App Password
+(myaccount.google.com/apppasswords, needs 2-Step Verification). About 500 emails/day.
+Emails: welcome, payment receipt, payment failed, renewal reminder, plan expired, password reset,
+ticket reply, lifetime VIP, owner alerts (signup + payment). Every send is logged in Admin > Email.
 
 ## Layout
 
@@ -42,6 +59,8 @@ dmflow/
   poller.py     fallback comment polling (unpublished apps get no webhooks)
   db.py         Postgres or SQLite, dm_* tables
   settings.py   config + plans
+  billing.py    Razorpay orders, verification, webhook, renewals, invoices
+  email_service.py  Gmail/SMTP sending + all email templates
   auth.py       users, sessions, passwords
   static/       landing, app panel, admin
 legacy/         old code, kept for reference only (safe to delete)
